@@ -1,0 +1,627 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../domain/entities/post.dart';
+import '../../domain/entities/api_source.dart';
+import '../../domain/entities/creator.dart';
+import '../providers/posts_provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/tag_filter_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/media_resolver.dart';
+import 'post_detail_screen.dart';
+import 'creator_detail_screen.dart';
+import 'download_manager_screen.dart';
+import 'fullscreen_media_viewer.dart';
+
+/// Latest Posts Screen - Quick Update Feed
+class LatestPostsScreen extends StatefulWidget {
+  const LatestPostsScreen({super.key});
+
+  @override
+  State<LatestPostsScreen> createState() => _LatestPostsScreenState();
+}
+
+class _LatestPostsScreenState extends State<LatestPostsScreen> 
+    with AutomaticKeepAliveClientMixin {
+  
+  // Core Controllers
+  final ScrollController _scrollController = ScrollController();
+  
+  // State Management
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  List<Post> _posts = [];
+  String? _error;
+  String _selectedService = 'all';
+  List<String> _blockedTags = [];
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialPosts();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadMorePosts();
+    }
+  }
+
+  Future<void> _loadInitialPosts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final postsProvider = context.read<PostsProvider>();
+      await postsProvider.loadLatestPosts();
+      
+      setState(() {
+        _posts = postsProvider.posts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      // Simple pagination simulation
+      await Future.delayed(const Duration(seconds: 1));
+      
+      setState(() {
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  Future<void> _refreshPosts() async {
+    await _loadInitialPosts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      appBar: AppBar(
+        title: Text(
+          'Latest Posts',
+          style: AppTheme.getTitleStyle(context),
+        ),
+        backgroundColor: AppTheme.getSurfaceColor(context),
+        foregroundColor: AppTheme.getOnSurfaceColor(context),
+        elevation: 0,
+        actions: [
+          // Service Filter
+          PopupMenuButton<String>(
+            icon: Icon(Icons.filter_list, color: AppTheme.getOnSurfaceColor(context)),
+            onSelected: (service) {
+              setState(() {
+                _selectedService = service;
+              });
+              _loadInitialPosts();
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'all', child: Text('All Services')),
+              const PopupMenuItem(value: 'patreon', child: Text('Patreon')),
+              const PopupMenuItem(value: 'fanbox', child: Text('Fanbox')),
+              const PopupMenuItem(value: 'fantia', child: Text('Fantia')),
+              const PopupMenuItem(value: 'onlyfans', child: Text('OnlyFans')),
+              const PopupMenuItem(value: 'fansly', child: Text('Fansly')),
+            ],
+          ),
+          
+          // Download Manager
+          IconButton(
+            icon: Icon(Icons.folder, color: AppTheme.getOnSurfaceColor(context)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const DownloadManagerScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refreshPosts,
+        child: _isLoading 
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _buildErrorWidget()
+                : _posts.isEmpty
+                    ? _buildEmptyWidget()
+                    : _buildPostsGrid(),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: AppTheme.getOnSurfaceColor(context),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Error loading posts',
+            style: AppTheme.getTitleStyle(context),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _error!,
+            style: AppTheme.getCaptionStyle(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadInitialPosts,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.article_outlined,
+            size: 64,
+            color: AppTheme.getOnSurfaceColor(context),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No posts yet',
+            style: AppTheme.getTitleStyle(context),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pull down to refresh',
+            style: AppTheme.getCaptionStyle(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostsGrid() {
+    return GridView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _posts.length) {
+          return _buildLoadingMoreIndicator();
+        }
+        return _buildPostCard(_posts[index]);
+      },
+    );
+  }
+
+  Widget _buildLoadingMoreIndicator() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildPostCard(Post post) {
+    // Get thumbnail URL for Kemono/Coomer - CORRECT PATTERN!
+    String getThumbnailUrl(String originalUrl) {
+      try {
+        final uri = Uri.parse(originalUrl);
+        final apiSource = post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans' ? 'coomer' : 'kemono';
+        
+        // CORRECT: Use thumbnail URLs from website
+        if (apiSource == 'kemono' && (uri.host.contains('kemono.party') || uri.host.contains('kemono.cr'))) {
+          final segments = uri.pathSegments;
+          if (segments.length >= 2 && segments[0] == 'data') {
+            // Kemono thumbnail: //img.kemono.cr/thumbnail/data/XX/XX/filename.jpg
+            final thumbnailPath = 'thumbnail/data/${segments[1]}/${segments.length > 2 ? segments[2] : ''}';
+            return 'https://img.kemono.cr/$thumbnailPath';
+          }
+        }
+        
+        if (apiSource == 'coomer' && (uri.host.contains('coomer.party') || uri.host.contains('coomer.st'))) {
+          final segments = uri.pathSegments;
+          if (segments.length >= 2 && segments[0] == 'data') {
+            // Coomer thumbnail: //img.coomer.st/thumbnail/data/XX/XX/filename.jpg
+            final thumbnailPath = 'thumbnail/data/${segments[1]}/${segments.length > 2 ? segments[2] : ''}';
+            return 'https://img.coomer.st/$thumbnailPath';
+          }
+        }
+        
+        return originalUrl; // Fallback to original
+      } catch (e) {
+        return originalUrl;
+      }
+    }
+
+    // Get original URL for fullscreen viewing - ORIGINAL RESOLUTION
+    String getOriginalUrl(String originalUrl) {
+      try {
+        final uri = Uri.parse(originalUrl);
+        final apiSource = post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans' ? 'coomer' : 'kemono';
+        
+        // Kemono original: https://n2.kemono.cr/data/XX/XX/filename.jpg
+        if (apiSource == 'kemono' && (uri.host.contains('kemono.party') || uri.host.contains('kemono.cr'))) {
+          final segments = uri.pathSegments;
+          if (segments.length >= 2 && segments[0] == 'data') {
+            return 'https://n2.kemono.cr/${segments.join('/')}';
+          }
+        }
+        
+        // Coomer original: https://n3.coomer.st/data/XX/XX/filename.jpg
+        if (apiSource == 'coomer' && (uri.host.contains('coomer.party') || uri.host.contains('coomer.st'))) {
+          final segments = uri.pathSegments;
+          if (segments.length >= 2 && segments[0] == 'data') {
+            return 'https://n3.coomer.st/${segments.join('/')}';
+          }
+        }
+        
+        return originalUrl; // Fallback
+      } catch (e) {
+        return originalUrl;
+      }
+    }
+
+    String buildFullUrl(String path) {
+      if (path.startsWith('http')) return path;
+      
+      String domain;
+      if (post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans') {
+        domain = 'https://n2.coomer.st';
+      } else {
+        domain = 'https://kemono.cr';
+      }
+      
+      return '$domain/data$path';
+    }
+
+    bool isMediaFile(String filename) {
+      final name = filename.toLowerCase();
+      return name.endsWith('.jpg') ||
+             name.endsWith('.jpeg') ||
+             name.endsWith('.png') ||
+             name.endsWith('.gif') ||
+             name.endsWith('.webp') ||
+             name.endsWith('.mp4') ||
+             name.endsWith('.webm') ||
+             name.endsWith('.mov');
+    }
+
+    String getMediaType(String filename) {
+      final name = filename.toLowerCase();
+      if (name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.mov')) {
+        return 'video';
+      }
+      return 'image';
+    }
+
+    final mediaItems = <Map<String, dynamic>>[];
+    
+    // Collect media items with thumbnail and original URL support
+    for (final attachment in post.attachments) {
+      if (isMediaFile(attachment.name)) {
+        final fullUrl = buildFullUrl(attachment.path!);
+        final thumbnailUrl = getThumbnailUrl(fullUrl);
+        final originalUrl = getOriginalUrl(fullUrl);
+        
+        mediaItems.add({
+          'url': fullUrl,
+          'original_url': originalUrl, // ← ORIGINAL FOR FULLSCREEN
+          'thumbnail_url': thumbnailUrl, // ← THUMBNAIL FOR UI
+          'name': attachment.name,
+          'type': getMediaType(attachment.name),
+        });
+      }
+    }
+    
+    for (final file in post.file) {
+      if (isMediaFile(file.name)) {
+        final fullUrl = buildFullUrl(file.path);
+        final thumbnailUrl = getThumbnailUrl(fullUrl);
+        final originalUrl = getOriginalUrl(fullUrl);
+        
+        mediaItems.add({
+          'url': fullUrl,
+          'original_url': originalUrl, // ← ORIGINAL FOR FULLSCREEN
+          'thumbnail_url': thumbnailUrl, // ← THUMBNAIL FOR UI
+          'name': file.name,
+          'type': getMediaType(file.name),
+        });
+      }
+    }
+    
+    // Sort: images first, then videos
+    mediaItems.sort((a, b) {
+      if (a['type'] == 'image' && b['type'] == 'video') return -1;
+      if (a['type'] == 'video' && b['type'] == 'image') return 1;
+      return 0;
+    });
+    
+    final hasVideo = mediaItems.any((item) => item['type'] == 'video');
+    final firstMedia = mediaItems.isNotEmpty ? mediaItems.first : null;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      color: AppTheme.getSurfaceColor(context),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _navigateToPostDetail(post),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Media thumbnail
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: firstMedia != null
+                      ? GestureDetector(
+                          onTap: () {
+                            if (firstMedia['type'] == 'image') {
+                              _previewImage(firstMedia, post);
+                            } else {
+                              _playVideo(firstMedia, post);
+                            }
+                          },
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // Use thumbnail for images, placeholder for videos
+                              firstMedia['type'] == 'image'
+                                  ? CachedNetworkImage(
+                                      imageUrl: firstMedia['thumbnail_url'],
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[800],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) => Container(
+                                        color: Colors.grey[800],
+                                        child: const Center(
+                                          child: Icon(Icons.broken_image, color: Colors.grey),
+                                        ),
+                                      ),
+                                    )
+                                  : Container(
+                                      color: Colors.grey[800],
+                                      child: const Center(
+                                        child: Icon(Icons.play_circle_outline, color: Colors.white, size: 32),
+                                      ),
+                                    ),
+                              
+                              // Video indicator
+                              if (hasVideo)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'Video',
+                                      style: TextStyle(color: Colors.white, fontSize: 10),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        )
+                      : Container(
+                          color: Colors.grey[800],
+                          child: const Center(
+                            child: Icon(Icons.image_not_supported, color: Colors.grey),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            
+            // Post info
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Creator name
+                    Text(
+                      post.user,
+                      style: AppTheme.getSubtitleStyle(context).copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Service badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _getServiceColor(post.service).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        post.service.toUpperCase(),
+                        style: TextStyle(
+                          color: _getServiceColor(post.service),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Date
+                    Text(
+                      _formatDate(post.published),
+                      style: AppTheme.getCaptionStyle(context),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getServiceColor(String service) {
+    switch (service.toLowerCase()) {
+      case 'patreon': return Colors.orange;
+      case 'fanbox': return Colors.blue;
+      case 'fantia': return Colors.purple;
+      case 'onlyfans': return Colors.pink;
+      case 'fansly': return Colors.teal;
+      case 'candfans': return Colors.red;
+      default: return Colors.grey;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    if (difference.inDays < 30) return '${(difference.inDays / 7).floor()}w ago';
+    return '${(difference.inDays / 30).floor()}mo ago';
+  }
+
+  void _navigateToPostDetail(Post post) {
+    final apiSource = post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans' 
+        ? ApiSource.coomer 
+        : ApiSource.kemono;
+        
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostDetailScreen(
+          post: post,
+          apiSource: apiSource,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToCreatorDetail(Creator creator) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreatorDetailScreen(
+          creator: creator,
+          apiSource: creator.service == 'onlyfans' || creator.service == 'fansly' || creator.service == 'candfans' ? ApiSource.coomer : ApiSource.kemono,
+        ),
+      ),
+    );
+  }
+
+  void _previewImage(Map<String, dynamic> item, Post post) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenMediaViewer(
+          mediaItems: [{
+            'type': 'image',
+            'url': item['original_url'] ?? item['url'], // ← ORIGINAL URL FOR FULLSCREEN
+            'name': item['name'],
+          }],
+          initialIndex: 0,
+          apiSource: post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans' ? ApiSource.coomer : ApiSource.kemono,
+        ),
+      ),
+    );
+  }
+
+  void _playVideo(Map<String, dynamic> item, Post post) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenMediaViewer(
+          mediaItems: [{
+            'type': 'video',
+            'url': item['original_url'] ?? item['url'], // ← ORIGINAL URL FOR FULLSCREEN
+            'name': item['name'],
+          }],
+          initialIndex: 0,
+          apiSource: post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans' ? ApiSource.coomer : ApiSource.kemono,
+        ),
+      ),
+    );
+  }
+}

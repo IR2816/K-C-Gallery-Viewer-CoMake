@@ -1,0 +1,765 @@
+Analyzing creator_detail_screen.dart...
+
+  error - creator_detail_screen.dart:3:8 - Target of URI doesn't exist: 'package:flutter/material.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - creator_detail_screen.dart:4:8 - Target of URI doesn't exist: 'package:provider/provider.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - creator_detail_screen.dart:5:8 - Target of URI doesn't exist: 'package:url_launcher/url_launcher.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - creator_detail_screen.dart:6:8 - Target of URI doesn't exist: 'package:html/parser.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - creator_detail_screen.dart:7:8 - Target of URI doesn't exist: 'package:cached_network_image/cached_network_image.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - creator_detail_screen.dart:8:8 - Target of URI doesn't exist: 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart'. Try creating the file referenced by the URI, or try using a URI for a file that does exist. - uri_does_not_exist
+  error - creator_detail_screen.dart:40:35 - Classes can only extend other classes. Try specifying a different superclass, or removing the extends clause. - extends_non_class
+  error - creator_detail_screen.dart:45:11 - No associated named super constructor parameter. Try changing the name to the name of an existing named super constructor parameter, or creating such named parameter. - super_formal_parameter_without_associated_named
+  error - creator_detail_screen.dart:51:3 - Undefined class 'State'. Try changing the name to the name of an existing class, or creating a class with the name 'State'. - undefined_class
+  error - creator_detail_screen.dart:54:41 - Mixin can only be applied to class. - mixin_with_non_class_superclass
+  error - creator_detail_screen.dart:55:10 - Classes can only mix in mixins and classes. - mixin_of_non_class
+  error - creator_detail_screen.dart:55:36 - Classes can only mix in mixins and classes. - mixin_of_non_class
+  error - creator_detail_screen.dart:57:9 - Undefined class 'ScrollController'. Try changing the name to the name of an existing class, or creating a class with the name 'ScrollController'. - undefined_class
+  error - creator_detail_screen.dart:57:46 - The method 'ScrollController' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ScrollController'. - undefined_method
+  error - creator_detail_screen.dart:58:8 - Undefined class 'TabController'. Try changing the name to the name of an existing class, or creating a class with the name 'TabController'. - undefined_class
+  error - creator_detail_screen.dart:59:9 - Undefined class 'ScrollController'. Try changing the name to the name of an existing class, or creating a class with the name 'ScrollController'. - undefined_class
+  error - creator_detail_screen.dart:59:51 - The method 'ScrollController' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ScrollController'. - undefined_method
+  error - creator_detail_screen.dart:60:9 - Undefined class 'ScrollController'. Try changing the name to the name of an existing class, or creating a class with the name 'ScrollController'. - undefined_class
+  error - creator_detail_screen.dart:60:51 - The method 'ScrollController' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ScrollController'. - undefined_method
+  error - creator_detail_screen.dart:69:28 - The name 'Size' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'Size'. - non_type_as_type_argument
+  error - creator_detail_screen.dart:80:11 - The method 'initState' isn't defined in a superclass of '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'initState' in a superclass. - undefined_super_member
+  error - creator_detail_screen.dart:81:24 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:82:22 - The method 'TabController' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TabController'. - undefined_method
+  error - creator_detail_screen.dart:95:11 - The method 'dispose' isn't defined in a superclass of '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'dispose' in a superclass. - undefined_super_member
+  error - creator_detail_screen.dart:109:5 - Undefined name 'WidgetsBinding'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:114:18 - Undefined name 'Curves'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:120:18 - Undefined name 'Curves'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:129:29 - Undefined name 'Provider'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:129:56 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:135:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:136:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:147:26 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:149:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:150:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:293:10 - The name 'Size' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'Size'. - non_type_as_type_argument
+  error - creator_detail_screen.dart:295:35 - The name 'Size' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'Size'. - non_type_as_type_argument
+  error - creator_detail_screen.dart:296:21 - The method 'Image' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Image'. - undefined_method
+  error - creator_detail_screen.dart:297:16 - The method 'CachedNetworkImageProvider' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImageProvider'. - undefined_method
+  error - creator_detail_screen.dart:304:26 - The name 'ImageConfiguration' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:306:13 - The method 'ImageStreamListener' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ImageStreamListener'. - undefined_method
+  error - creator_detail_screen.dart:310:21 - The method 'Size' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Size'. - undefined_method
+  error - creator_detail_screen.dart:319:44 - The name 'Size' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:377:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:377:16 - Undefined class 'BuildContext'. Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. - undefined_class
+  error - creator_detail_screen.dart:378:11 - The method 'build' isn't defined in a superclass of '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'build' in a superclass. - undefined_super_member
+  error - creator_detail_screen.dart:379:12 - The method 'Scaffold' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Scaffold'. - undefined_method
+  error - creator_detail_screen.dart:381:13 - The method 'Consumer' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Consumer'. - undefined_method
+  error - creator_detail_screen.dart:383:18 - The method 'CustomScrollView' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CustomScrollView'. - undefined_method
+  error - creator_detail_screen.dart:393:15 - The method 'SliverFillRemaining' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverFillRemaining'. - undefined_method
+  error - creator_detail_screen.dart:394:24 - The method 'TabBarView' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TabBarView'. - undefined_method
+  error - creator_detail_screen.dart:409:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:410:12 - The method 'SliverAppBar' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverAppBar'. - undefined_method
+  error - creator_detail_screen.dart:413:52 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:414:51 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:418:16 - The method 'IconButton' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'IconButton'. - undefined_method
+  error - creator_detail_screen.dart:419:15 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:420:26 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:421:23 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:422:20 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:423:20 - Undefined name 'BoxShape'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:425:24 - The name 'Icon' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:425:29 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:425:54 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:427:26 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:427:40 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:431:17 - The name 'Padding' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:432:22 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:433:20 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:434:22 - The method 'SizedBox' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SizedBox'. - undefined_method
+  error - creator_detail_screen.dart:437:24 - The method 'CircularProgressIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CircularProgressIndicator'. - undefined_method
+  error - creator_detail_screen.dart:445:9 - The method 'Consumer' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Consumer'. - undefined_method
+  error - creator_detail_screen.dart:448:15 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:450:20 - The method 'IconButton' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'IconButton'. - undefined_method
+  error - creator_detail_screen.dart:451:21 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:452:32 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:453:29 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:454:26 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:455:26 - Undefined name 'BoxShape'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:457:24 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:458:33 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:458:50 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:459:64 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:469:9 - The method 'IconButton' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'IconButton'. - undefined_method
+  error - creator_detail_screen.dart:470:17 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:471:28 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:472:25 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:473:22 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:474:22 - Undefined name 'BoxShape'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:476:26 - The name 'Icon' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:477:15 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:478:22 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:485:22 - The method 'FlexibleSpaceBar' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'FlexibleSpaceBar'. - undefined_method
+  error - creator_detail_screen.dart:486:29 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:487:16 - The method 'ShaderMask' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ShaderMask'. - undefined_method
+  error - creator_detail_screen.dart:488:45 - The name 'LinearGradient' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:489:22 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:489:36 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:490:20 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:491:18 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:493:18 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:494:13 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:495:26 - The name 'TextStyle' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:496:22 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:497:27 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:501:17 - The method 'Shadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Shadow'. - undefined_method
+  error - creator_detail_screen.dart:502:26 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:504:27 - The method 'Offset' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Offset'. - undefined_method
+  error - creator_detail_screen.dart:509:23 - Undefined name 'TextOverflow'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:512:21 - The method 'Stack' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Stack'. - undefined_method
+  error - creator_detail_screen.dart:517:13 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:518:27 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:519:27 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:520:26 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:521:24 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:523:21 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:524:21 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:525:21 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:526:21 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:534:13 - The method 'Positioned' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Positioned'. - undefined_method
+  error - creator_detail_screen.dart:541:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:542:12 - The method 'SliverPersistentHeader' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverPersistentHeader'. - undefined_method
+  error - creator_detail_screen.dart:545:9 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:546:46 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:547:26 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:548:18 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:549:20 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:550:22 - Undefined name 'MediaQuery'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:550:36 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:552:27 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:553:46 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:554:31 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:555:25 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:556:50 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:559:19 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:560:28 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:562:35 - The name 'Offset' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:566:22 - The method 'TabBar' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TabBar'. - undefined_method
+  error - creator_detail_screen.dart:568:31 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:569:33 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:570:29 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:571:70 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:572:32 - Undefined name 'TabBarIndicatorSize'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:573:28 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:575:33 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:577:21 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:580:37 - The name 'Offset' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:584:35 - The name 'TextStyle' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:585:31 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:589:45 - The name 'TextStyle' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:590:31 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:594:19 - The method 'Tab' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Tab'. - undefined_method
+  error - creator_detail_screen.dart:594:19 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:595:28 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:596:42 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:598:25 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:598:25 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:598:30 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:599:25 - The method 'SizedBox' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SizedBox'. - undefined_method
+  error - creator_detail_screen.dart:599:25 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:600:25 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:600:25 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:604:19 - The method 'Tab' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Tab'. - undefined_method
+  error - creator_detail_screen.dart:604:19 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:605:28 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:606:42 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:608:25 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:608:25 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:608:30 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:609:25 - The method 'SizedBox' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SizedBox'. - undefined_method
+  error - creator_detail_screen.dart:609:25 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:610:25 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:610:25 - The values in a const list literal must be constants. Try removing the keyword 'const' from the list literal. - non_constant_list_element
+  error - creator_detail_screen.dart:624:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:627:16 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:628:18 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:631:12 - The method 'SizedBox' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SizedBox'. - undefined_method
+  error - creator_detail_screen.dart:634:14 - The method 'CachedNetworkImage' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImage'. - undefined_method
+  error - creator_detail_screen.dart:636:14 - Undefined name 'BoxFit'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:640:18 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:641:25 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:642:25 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:643:24 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:644:22 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:651:20 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:652:22 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:653:17 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:661:18 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:662:25 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:663:25 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:664:24 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:665:22 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:672:20 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:673:22 - The method 'CircularProgressIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CircularProgressIndicator'. - undefined_method
+  error - creator_detail_screen.dart:685:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:688:16 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:689:18 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:692:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:693:19 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:694:16 - Undefined name 'BoxShape'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:695:17 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:695:35 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:697:11 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:698:20 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:704:14 - The method 'CircleAvatar' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CircleAvatar'. - undefined_method
+  error - creator_detail_screen.dart:706:48 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:707:26 - The method 'CachedNetworkImageProvider' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImageProvider'. - undefined_method
+  error - creator_detail_screen.dart:712:16 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:713:11 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:714:49 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:744:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:745:22 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:746:25 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:753:14 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:754:16 - The method 'CircularProgressIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CircularProgressIndicator'. - undefined_method
+  error - creator_detail_screen.dart:759:14 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:760:16 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:761:30 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:763:13 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:764:15 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:766:45 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:768:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:769:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:772:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:773:56 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:775:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:776:13 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:777:29 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:778:30 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:779:27 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:780:24 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:781:31 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:782:25 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:782:43 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:784:22 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:787:19 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:788:58 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:789:28 - Undefined name 'TextAlign'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:792:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:793:13 - The method 'ElevatedButton' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ElevatedButton'. - undefined_method
+  error - creator_detail_screen.dart:795:28 - The name 'Text' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:797:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:798:13 - The method 'TextButton' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextButton'. - undefined_method
+  error - creator_detail_screen.dart:799:32 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:799:46 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:800:22 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:802:24 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:812:14 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:813:16 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:814:30 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:816:13 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:817:15 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:819:49 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:821:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:822:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:825:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:828:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:829:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:834:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:842:12 - The method 'NotificationListener' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'NotificationListener'. - undefined_method
+  error - creator_detail_screen.dart:842:33 - The name 'ScrollNotification' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'ScrollNotification'. - non_type_as_type_argument
+  error - creator_detail_screen.dart:844:14 - The method 'RefreshIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'RefreshIndicator'. - undefined_method
+  error - creator_detail_screen.dart:846:16 - The method 'CustomScrollView' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CustomScrollView'. - undefined_method
+  error - creator_detail_screen.dart:848:26 - The name 'AlwaysScrollableScrollPhysics' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:851:15 - The method 'SliverToBoxAdapter' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverToBoxAdapter'. - undefined_method
+  error - creator_detail_screen.dart:853:13 - The method 'SliverToBoxAdapter' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverToBoxAdapter'. - undefined_method
+  error - creator_detail_screen.dart:866:27 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:870:27 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:876:27 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:877:27 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:886:13 - The method 'SliverPadding' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverPadding'. - undefined_method
+  error - creator_detail_screen.dart:887:30 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:888:23 - The method 'SliverList' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverList'. - undefined_method
+  error - creator_detail_screen.dart:889:27 - The method 'SliverChildBuilderDelegate' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SliverChildBuilderDelegate'. - undefined_method
+  error - creator_detail_screen.dart:893:36 - The name 'Center' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:894:32 - The method 'Padding' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Padding'. - undefined_method
+  error - creator_detail_screen.dart:895:36 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:896:34 - The method 'CircularProgressIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CircularProgressIndicator'. - undefined_method
+  error - creator_detail_screen.dart:918:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:921:14 - Undefined class 'Color'. Try changing the name to the name of an existing class, or creating a class with the name 'Color'. - undefined_class
+  error - creator_detail_screen.dart:922:19 - The name 'Widget' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'Widget'. - non_type_as_type_argument
+  error - creator_detail_screen.dart:924:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:925:21 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:926:22 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:927:19 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:928:19 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:929:18 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:930:16 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:932:35 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:933:45 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:936:23 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:937:17 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:938:42 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:941:11 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:942:20 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:945:27 - The name 'Offset' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:949:14 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:950:29 - Undefined name 'CrossAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:952:11 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:954:15 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:957:29 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:958:29 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:964:33 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:965:27 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:967:24 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:968:19 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:973:21 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:974:15 - The method 'Expanded' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Expanded'. - undefined_method
+  error - creator_detail_screen.dart:975:24 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:976:39 - Undefined name 'CrossAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:978:21 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:980:30 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:981:61 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:983:37 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:987:27 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:988:21 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:990:30 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:992:27 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:995:37 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1001:15 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1002:32 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1006:29 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1008:33 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1009:27 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1013:24 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1015:26 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1018:33 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1025:17 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1026:11 - The method 'Wrap' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Wrap'. - undefined_method
+  error - creator_detail_screen.dart:1032:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1032:39 - Undefined class 'IconData'. Try changing the name to the name of an existing class, or creating a class with the name 'IconData'. - undefined_class
+  error - creator_detail_screen.dart:1033:20 - Undefined name 'Theme'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1033:29 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1033:52 - Undefined name 'Brightness'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1034:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1035:22 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1036:19 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1038:11 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1040:23 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1041:17 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1043:13 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1047:14 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:1048:23 - Undefined name 'MainAxisSize'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1050:11 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1050:70 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1051:17 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1052:11 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1054:20 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1055:53 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1057:27 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1066:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1067:22 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1068:25 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1077:14 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:1078:16 - The method 'CircularProgressIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CircularProgressIndicator'. - undefined_method
+  error - creator_detail_screen.dart:1086:14 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:1087:16 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:1088:30 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1090:13 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1091:15 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1093:45 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1095:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1096:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1099:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1100:56 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1102:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1103:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1106:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1107:56 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1108:26 - Undefined name 'TextAlign'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1110:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1111:13 - The method 'ElevatedButton' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ElevatedButton'. - undefined_method
+  error - creator_detail_screen.dart:1113:28 - The name 'Text' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1122:14 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:1123:16 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:1124:30 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1126:13 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1127:15 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1129:49 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1131:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1132:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1137:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1140:19 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1141:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1146:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1154:12 - The method 'RefreshIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'RefreshIndicator'. - undefined_method
+  error - creator_detail_screen.dart:1156:14 - Undefined name 'MasonryGridView'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1158:24 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1171:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1172:12 - The method 'FutureBuilder' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'FutureBuilder'. - undefined_method
+  error - creator_detail_screen.dart:1175:41 - Undefined name 'ConnectionState'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1176:24 - Undefined name 'SizedBox'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1179:41 - Undefined name 'SizedBox'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1181:16 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1182:25 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1183:18 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:1184:33 - Undefined name 'CrossAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1187:21 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1188:15 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:1200:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1201:12 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1204:9 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1205:30 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1209:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1217:20 - Undefined name 'Theme'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1217:29 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1217:52 - Undefined name 'Brightness'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1218:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1219:21 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1220:19 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1221:38 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1222:23 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1223:17 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1225:13 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1229:11 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:1230:20 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1232:27 - The name 'Offset' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1236:14 - The method 'ClipRRect' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ClipRRect'. - undefined_method
+  error - creator_detail_screen.dart:1237:23 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1238:16 - The method 'Material' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Material'. - undefined_method
+  error - creator_detail_screen.dart:1239:18 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1240:18 - The method 'InkWell' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'InkWell'. - undefined_method
+  error - creator_detail_screen.dart:1252:17 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1253:19 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1254:19 - The method 'MaterialPageRoute' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'MaterialPageRoute'. - undefined_method
+  error - creator_detail_screen.dart:1269:15 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1270:17 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1271:17 - The method 'MaterialPageRoute' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'MaterialPageRoute'. - undefined_method
+  error - creator_detail_screen.dart:1279:20 - The method 'SizedBox' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SizedBox'. - undefined_method
+  error - creator_detail_screen.dart:1281:22 - The method 'Stack' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Stack'. - undefined_method
+  error - creator_detail_screen.dart:1284:19 - Undefined name 'Positioned'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1285:28 - The method 'CachedNetworkImage' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImage'. - undefined_method
+  error - creator_detail_screen.dart:1288:28 - Undefined name 'BoxFit'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1289:61 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1290:37 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1291:37 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:1292:36 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1293:34 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1305:19 - Undefined name 'Positioned'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1306:28 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1307:35 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1308:35 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:1309:34 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1310:32 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1312:29 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1313:29 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1314:29 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1323:19 - The method 'Padding' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Padding'. - undefined_method
+  error - creator_detail_screen.dart:1324:36 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1325:28 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:1328:25 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1331:39 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1332:43 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1333:37 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1334:38 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1338:31 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:1339:40 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1345:34 - The method 'ClipRRect' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ClipRRect'. - undefined_method
+  error - creator_detail_screen.dart:1346:43 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1347:36 - The method 'CachedNetworkImage' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImage'. - undefined_method
+  error - creator_detail_screen.dart:1350:36 - Undefined name 'BoxFit'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1351:69 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1353:40 - The method 'Center' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Center'. - undefined_method
+  error - creator_detail_screen.dart:1354:42 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1358:50 - The name 'TextStyle' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1359:46 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1360:51 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1369:31 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1370:25 - The method 'Expanded' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Expanded'. - undefined_method
+  error - creator_detail_screen.dart:1371:34 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:1372:48 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1373:49 - Undefined name 'CrossAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1375:31 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1376:48 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1380:45 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1382:49 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1384:37 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:1389:53 - The name 'Offset' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1393:40 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1395:48 - The name 'TextStyle' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1396:44 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1398:49 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1403:37 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1404:31 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1406:46 - The name 'TextStyle' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1407:42 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1409:47 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1413:43 - Undefined name 'TextOverflow'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1415:31 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1417:40 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1418:42 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1420:47 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1423:43 - Undefined name 'TextOverflow'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1428:25 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1429:27 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1430:34 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1433:31 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1446:3 - Undefined class 'Color'. Try changing the name to the name of an existing class, or creating a class with the name 'Color'. - undefined_class
+  error - creator_detail_screen.dart:1449:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1452:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1454:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1456:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1458:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1460:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1462:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1464:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1466:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1468:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1470:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1472:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1502:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1504:12 - The method 'GestureDetector' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'GestureDetector'. - undefined_method
+  error - creator_detail_screen.dart:1512:13 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1513:15 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1514:15 - The method 'MaterialPageRoute' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'MaterialPageRoute'. - undefined_method
+  error - creator_detail_screen.dart:1523:13 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1524:15 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1525:15 - The method 'MaterialPageRoute' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'MaterialPageRoute'. - undefined_method
+  error - creator_detail_screen.dart:1536:14 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1537:21 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1538:25 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1539:19 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1539:37 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1541:13 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:1542:22 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1545:29 - The name 'Offset' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1549:16 - The method 'Stack' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Stack'. - undefined_method
+  error - creator_detail_screen.dart:1551:13 - The method 'ClipRRect' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'ClipRRect'. - undefined_method
+  error - creator_detail_screen.dart:1552:29 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1555:13 - Undefined name 'Positioned'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1556:22 - The method 'DecoratedBox' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'DecoratedBox'. - undefined_method
+  error - creator_detail_screen.dart:1557:29 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1558:33 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1559:29 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:1560:28 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1561:26 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1563:23 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1564:23 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1565:23 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1572:13 - The method 'Positioned' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Positioned'. - undefined_method
+  error - creator_detail_screen.dart:1575:22 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1576:32 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1577:29 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1578:26 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1579:33 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1580:27 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1581:28 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1584:24 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:1585:33 - Undefined name 'MainAxisSize'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1587:21 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1588:33 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1588:58 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1590:29 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1594:27 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1595:21 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1597:36 - The name 'TextStyle' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1598:32 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1600:37 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1608:13 - The method 'Positioned' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Positioned'. - undefined_method
+  error - creator_detail_screen.dart:1611:22 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1614:29 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1615:26 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1616:26 - Undefined name 'BoxShape'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1617:27 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1618:28 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1621:24 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1622:29 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1622:56 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1623:26 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1628:13 - Undefined name 'Positioned'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1629:22 - The method 'Material' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Material'. - undefined_method
+  error - creator_detail_screen.dart:1630:24 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1631:24 - The method 'InkWell' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'InkWell'. - undefined_method
+  error - creator_detail_screen.dart:1632:33 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1639:23 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1640:25 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1641:25 - The method 'MaterialPageRoute' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'MaterialPageRoute'. - undefined_method
+  error - creator_detail_screen.dart:1650:23 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1651:25 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1652:25 - The method 'MaterialPageRoute' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'MaterialPageRoute'. - undefined_method
+  error - creator_detail_screen.dart:1672:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1673:22 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1678:16 - The method 'AspectRatio' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'AspectRatio'. - undefined_method
+  error - creator_detail_screen.dart:1680:18 - The method 'CachedNetworkImage' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImage'. - undefined_method
+  error - creator_detail_screen.dart:1682:18 - Undefined name 'BoxFit'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1692:16 - The method 'AspectRatio' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'AspectRatio'. - undefined_method
+  error - creator_detail_screen.dart:1706:14 - The method 'FutureBuilder' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'FutureBuilder'. - undefined_method
+  error - creator_detail_screen.dart:1706:28 - The name 'Size' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'Size'. - non_type_as_type_argument
+  error - creator_detail_screen.dart:1716:18 - The method 'AspectRatio' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'AspectRatio'. - undefined_method
+  error - creator_detail_screen.dart:1718:20 - The method 'CachedNetworkImage' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImage'. - undefined_method
+  error - creator_detail_screen.dart:1723:26 - The method 'CachedNetworkImage' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CachedNetworkImage'. - undefined_method
+  error - creator_detail_screen.dart:1726:59 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1727:30 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1728:36 - The name 'Center' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1729:32 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1730:27 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1731:34 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1738:24 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1739:26 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1740:32 - The name 'Center' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1741:28 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1742:23 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1743:30 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1760:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1761:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1762:14 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1763:20 - The name 'Center' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1764:16 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:1765:30 - Undefined name 'MainAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1767:13 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1767:18 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1767:52 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1768:13 - The method 'SizedBox' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SizedBox'. - undefined_method
+  error - creator_detail_screen.dart:1769:13 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1771:22 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1771:39 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1780:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1781:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1782:14 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1783:20 - The name 'Center' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1784:16 - The method 'CircularProgressIndicator' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'CircularProgressIndicator'. - undefined_method
+  error - creator_detail_screen.dart:1784:49 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1789:34 - Undefined class 'ScrollNotification'. Try changing the name to the name of an existing class, or creating a class with the name 'ScrollNotification'. - undefined_class
+  error - creator_detail_screen.dart:1790:27 - Undefined name 'Provider'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1790:54 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1792:23 - The name 'ScrollEndNotification' isn't defined, so it can't be used in an 'is' expression. Try changing the name to the name of an existing type, or creating a type with the name 'ScrollEndNotification'. - type_test_with_undefined_name
+  error - creator_detail_screen.dart:1798:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1799:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1808:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1813:20 - Undefined name 'Theme'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1813:29 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1813:52 - Undefined name 'Brightness'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1815:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1816:21 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1817:19 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1818:19 - The method 'LinearGradient' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'LinearGradient'. - undefined_method
+  error - creator_detail_screen.dart:1819:18 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1820:16 - Undefined name 'Alignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1823:15 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1826:15 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1830:23 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1831:17 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1833:13 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1837:11 - The method 'BoxShadow' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxShadow'. - undefined_method
+  error - creator_detail_screen.dart:1838:20 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1841:27 - The name 'Offset' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1845:14 - The method 'Material' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Material'. - undefined_method
+  error - creator_detail_screen.dart:1846:16 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1847:16 - The method 'InkWell' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'InkWell'. - undefined_method
+  error - creator_detail_screen.dart:1849:25 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1850:18 - The method 'Padding' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Padding'. - undefined_method
+  error - creator_detail_screen.dart:1851:28 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1852:20 - The method 'Column' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Column'. - undefined_method
+  error - creator_detail_screen.dart:1853:35 - Undefined name 'CrossAxisAlignment'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1855:17 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:1857:21 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1858:38 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1862:35 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1864:39 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1865:33 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1869:30 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1871:32 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1874:39 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1879:27 - The name 'Spacer' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1880:21 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1882:30 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1883:63 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1885:37 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1890:23 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1891:17 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1893:26 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1894:57 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1896:33 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1901:29 - Undefined name 'TextOverflow'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1904:25 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1905:19 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1907:28 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1909:25 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1915:31 - Undefined name 'TextOverflow'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1918:23 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1919:17 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:1922:29 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1925:27 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1927:29 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1930:27 - The name 'Spacer' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1931:21 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1934:35 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1936:32 - Undefined name 'BoxShape'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1937:33 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1941:36 - The name 'Icon' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1942:25 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1957:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:1957:39 - Undefined class 'IconData'. Try changing the name to the name of an existing class, or creating a class with the name 'IconData'. - undefined_class
+  error - creator_detail_screen.dart:1958:20 - Undefined name 'Theme'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1958:29 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1958:52 - Undefined name 'Brightness'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1959:12 - The method 'Container' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+  error - creator_detail_screen.dart:1960:22 - Undefined name 'EdgeInsets'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1961:19 - The method 'BoxDecoration' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'BoxDecoration'. - undefined_method
+  error - creator_detail_screen.dart:1963:11 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1965:23 - Undefined name 'BorderRadius'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1966:17 - Undefined name 'Border'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1968:13 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1972:14 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:1973:23 - Undefined name 'MainAxisSize'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1975:11 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:1975:70 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1976:17 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:1977:11 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:1979:20 - The method 'TextStyle' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'TextStyle'. - undefined_method
+  error - creator_detail_screen.dart:1980:53 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1982:27 - Undefined name 'FontWeight'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1995:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:1999:23 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2002:12 - Undefined name 'mounted'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2006:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2010:48 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2010:63 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2012:7 - Undefined name 'ScaffoldMessenger'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2012:28 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2013:9 - The method 'SnackBar' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SnackBar'. - undefined_method
+  error - creator_detail_screen.dart:2014:20 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:2016:15 - The method 'Icon' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Icon'. - undefined_method
+  error - creator_detail_screen.dart:2017:34 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2017:51 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2018:24 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2021:21 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:2022:15 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:2027:21 - Undefined name 'SnackBarBehavior'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2031:12 - Undefined name 'mounted'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2032:7 - Undefined name 'ScaffoldMessenger'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2032:28 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2033:9 - The method 'SnackBar' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'SnackBar'. - undefined_method
+  error - creator_detail_screen.dart:2034:20 - The method 'Row' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Row'. - undefined_method
+  error - creator_detail_screen.dart:2036:21 - The name 'Icon' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:2036:26 - Undefined name 'Icons'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2036:46 - Undefined name 'Colors'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2037:21 - The name 'SizedBox' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - creator_detail_screen.dart:2038:15 - The method 'Text' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'Text'. - undefined_method
+  error - creator_detail_screen.dart:2043:21 - Undefined name 'SnackBarBehavior'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2053:17 - The method 'canLaunchUrl' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'canLaunchUrl'. - undefined_method
+  error - creator_detail_screen.dart:2054:15 - The method 'launchUrl' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'launchUrl'. - undefined_method
+  error - creator_detail_screen.dart:2054:36 - Undefined name 'LaunchMode'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2064:23 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2064:54 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2068:5 - Undefined name 'Navigator'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2069:7 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - creator_detail_screen.dart:2070:7 - The method 'MaterialPageRoute' isn't defined for the type '_CreatorDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'MaterialPageRoute'. - undefined_method
+  error - creator_detail_screen.dart:2140:31 - Classes can only extend other classes. Try specifying a different superclass, or removing the extends clause. - extends_non_class
+  error - creator_detail_screen.dart:2141:9 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:2153:3 - Undefined class 'Widget'. Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. - undefined_class
+  error - creator_detail_screen.dart:2154:5 - Undefined class 'BuildContext'. Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. - undefined_class
+  error - creator_detail_screen.dart:2158:12 - The method 'Container' isn't defined for the type '_TabBarDelegate'. Try correcting the name to the name of an existing method, or defining a method named 'Container'. - undefined_method
+warning - creator_detail_screen.dart:51:30 - The method doesn't override an inherited method. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:76:12 - The getter doesn't override an inherited getter. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:79:8 - The method doesn't override an inherited method. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:89:8 - The method doesn't override an inherited method. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:377:10 - The method doesn't override an inherited method. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:2147:14 - The getter doesn't override an inherited getter. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:2150:14 - The getter doesn't override an inherited getter. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:2153:10 - The method doesn't override an inherited method. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+warning - creator_detail_screen.dart:2162:8 - The method doesn't override an inherited method. Try updating this class to match the superclass, or removing the override annotation. - override_on_non_overriding_member
+
+761 issues found.

@@ -1,0 +1,681 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+
+// Domain
+import '../../domain/entities/api_source.dart';
+import '../../domain/entities/creator.dart';
+
+// Providers
+import '../providers/creator_search_provider.dart';
+import '../providers/settings_provider.dart';
+
+// Services
+import '../services/creator_index_manager.dart';
+
+// Data
+import '../../data/datasources/creator_index_datasource_impl.dart';
+import '../../data/models/creator_index_item.dart';
+
+// Theme
+import '../theme/app_theme.dart';
+
+// Screens
+import 'creator_detail_screen.dart';
+
+// Utils
+import '../../utils/logger.dart';
+
+/// 🎯 NEW SearchScreen with Creator Index System
+/// 
+/// Features:
+/// - ✅ Local creator index search (no API calls during typing)
+/// - ✅ Streaming download of creators.txt
+/// - ✅ Cache management (24h validity)
+/// - ✅ Real-time search results
+/// - ✅ Popular creators section
+/// - ✅ API source switching
+class SearchScreenNew extends StatefulWidget {
+  const SearchScreenNew({super.key});
+
+  @override
+  State<SearchScreenNew> createState() => _SearchScreenNewState();
+}
+
+class _SearchScreenNewState extends State<SearchScreenNew> 
+    with TickerProviderStateMixin {
+  
+  // Controllers
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _searchFocusNode = FocusNode();
+  
+  // Animation Controllers
+  late TabController _tabController;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  
+  // State
+  ApiSource _selectedApiSource = ApiSource.kemono;
+  bool _showPopular = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    
+    // Initialize provider and prepare index
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSearch();
+    });
+    
+    // Search listener
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _fadeController.dispose();
+    _searchController.dispose();
+    _scrollController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _initializeSearch() {
+    final settingsProvider = context.read<SettingsProvider>();
+    _selectedApiSource = settingsProvider.defaultApiSource;
+    
+    // Prepare index for current API source
+    context.read<CreatorSearchProvider>().prepareIndex(_selectedApiSource);
+    
+    // Start animation
+    _fadeController.forward();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
+    final provider = context.read<CreatorSearchProvider>();
+    
+    if (query.isEmpty) {
+      setState(() {
+        _showPopular = true;
+      });
+      provider.clearSearch();
+    } else {
+      setState(() {
+        _showPopular = false;
+      });
+      provider.search(query);
+    }
+  }
+
+  Future<void> _switchApiSource(ApiSource apiSource) async {
+    if (_selectedApiSource == apiSource) return;
+    
+    setState(() {
+      _selectedApiSource = apiSource;
+      _searchController.clear();
+      _showPopular = true;
+    });
+    
+    HapticFeedback.lightImpact();
+    
+    // Prepare index for new API source
+    await context.read<CreatorSearchProvider>().switchApiSource(apiSource);
+    
+    // Update settings
+    context.read<SettingsProvider>().setDefaultApiSource(apiSource);
+  }
+
+  void _navigateToCreatorDetail(CreatorIndexItem creator) {
+    HapticFeedback.lightImpact();
+    
+    // Create Creator object from index item
+    final creatorObj = Creator(
+      id: creator.userId,
+      service: creator.service,
+      name: creator.name,
+      indexed: 0,
+      updated: 0,
+    );
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreatorDetailScreen(
+          creator: creatorObj,
+          apiSource: _selectedApiSource,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => CreatorSearchProvider(
+        CreatorIndexManager(CreatorIndexDatasourceImpl()),
+      ),
+      child: Builder(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.background,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(context),
+                  _buildSearchBar(context),
+                  _buildApiSourceSelector(context),
+                  Expanded(child: _buildContent(context)),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      color: Theme.of(context).colorScheme.surface,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: Icon(
+              Icons.arrow_back,
+              color: AppTheme.getOnBackgroundColor(context),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              'Creator Search',
+              style: AppTheme.titleStyle.copyWith(
+                color: AppTheme.getOnBackgroundColor(context),
+                fontSize: 20,
+              ),
+            ),
+          ),
+          Consumer<CreatorSearchProvider>(
+            builder: (context, provider, _) {
+              if (!provider.isReady) {
+                return Container(
+                  width: 20,
+                  height: 20,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                  ),
+                );
+              }
+              return Container(
+                width: 40,
+                height: 40,
+                margin: const EdgeInsets.only(right: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.successColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.check_circle,
+                  color: AppTheme.successColor,
+                  size: 20,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        style: AppTheme.bodyStyle.copyWith(
+          color: AppTheme.getOnBackgroundColor(context),
+        ),
+        decoration: InputDecoration(
+          hintText: 'Search creator by name...',
+          hintStyle: AppTheme.bodyStyle.copyWith(
+            color: AppTheme.getOnSurfaceColor(context),
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppTheme.getOnSurfaceColor(context),
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    _onSearchChanged();
+                  },
+                  icon: Icon(
+                    Icons.clear,
+                    color: AppTheme.getOnSurfaceColor(context),
+                  ),
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(AppTheme.mdPadding),
+        ),
+        autofocus: true,
+      ),
+    );
+  }
+
+  Widget _buildApiSourceSelector(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Row(
+        children: [
+          Text(
+            'API Source:',
+            style: AppTheme.captionStyle.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(width: AppTheme.smSpacing),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppTheme.smRadius),
+              ),
+              child: Row(
+                children: [
+                  _buildApiSourceButton(ApiSource.kemono),
+                  _buildApiSourceButton(ApiSource.coomer),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApiSourceButton(ApiSource apiSource) {
+    final isSelected = _selectedApiSource == apiSource;
+    final isPreparing = context.select<CreatorSearchProvider, bool>(
+      (provider) => provider.preparing && provider.currentApiSource == apiSource,
+    );
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: isPreparing ? null : () => _switchApiSource(apiSource),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.smRadius),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isPreparing)
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isSelected ? Colors.white : AppTheme.primaryColor,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  apiSource == ApiSource.kemono ? Icons.star : Icons.favorite,
+                  size: 16,
+                  color: isSelected ? Colors.white : AppTheme.primaryTextColor,
+                ),
+              const SizedBox(width: 6),
+              Text(
+                apiSource.name.toUpperCase(),
+                style: AppTheme.captionStyle.copyWith(
+                  color: isSelected ? Colors.white : AppTheme.primaryTextColor,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return Consumer<CreatorSearchProvider>(
+      builder: (context, provider, _) {
+        // Show preparation screen if not ready
+        if (!provider.isReady) {
+          return _buildPreparationScreen(context, provider);
+        }
+
+        // Show popular creators if no search query
+        if (_showPopular) {
+          return _buildPopularCreators(context, provider);
+        }
+
+        // Show search results
+        return _buildSearchResults(context, provider);
+      },
+    );
+  }
+
+  Widget _buildPreparationScreen(BuildContext context, CreatorSearchProvider provider) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.xlPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.download,
+                size: 64,
+                color: AppTheme.primaryColor,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              Text(
+                'Prepare Creator Index',
+                style: AppTheme.titleStyle.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground,
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(height: AppTheme.smSpacing),
+              Text(
+                'Download creator database for fast local search',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              if (provider.preparing) ...[
+                CircularProgressIndicator(
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(height: AppTheme.smSpacing),
+                Text(
+                  'Downloading creator index...',
+                  style: AppTheme.captionStyle.copyWith(
+                    color: AppTheme.getOnSurfaceColor(context),
+                  ),
+                ),
+              ] else ...[
+                ElevatedButton.icon(
+                  onPressed: provider.preparing ? null : () => provider.retry(),
+                  icon: const Icon(Icons.download),
+                  label: const Text('Download Index'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                if (provider.error != null) ...[
+                  const SizedBox(height: AppTheme.smSpacing),
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.mdPadding),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppTheme.smRadius),
+                    ),
+                    child: Text(
+                      provider.error!,
+                      style: AppTheme.captionStyle.copyWith(
+                        color: AppTheme.errorColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPopularCreators(BuildContext context, CreatorSearchProvider provider) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppTheme.mdPadding),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
+                const SizedBox(width: AppTheme.smSpacing),
+                Text(
+                  'Popular Creators',
+                  style: AppTheme.titleStyle.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                    fontSize: 16,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${provider.indexSize} total',
+                  style: AppTheme.captionStyle.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+              itemCount: provider.popularCreators.length,
+              itemBuilder: (context, index) {
+                final creator = provider.popularCreators[index];
+                return _buildCreatorTile(creator, index);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults(BuildContext context, CreatorSearchProvider provider) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          if (provider.currentQuery.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(AppTheme.mdPadding),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search,
+                    color: AppTheme.primaryColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppTheme.smSpacing),
+                  Text(
+                    'Results for "${provider.currentQuery}"',
+                    style: AppTheme.titleStyle.copyWith(
+                      color: Theme.of(context).colorScheme.onBackground,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${provider.results.length} found',
+                    style: AppTheme.captionStyle.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: provider.results.isEmpty
+                ? _buildEmptySearch()
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+                    itemCount: provider.results.length,
+                    itemBuilder: (context, index) {
+                      final creator = provider.results[index];
+                      return _buildCreatorTile(creator, index);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreatorTile(CreatorIndexItem creator, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.smSpacing),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(AppTheme.mdPadding),
+        leading: CircleAvatar(
+          radius: 20,
+          backgroundColor: _getServiceColor(creator.service),
+          child: Text(
+            creator.name.isNotEmpty ? creator.name[0].toUpperCase() : '?',
+            style: AppTheme.captionStyle.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(
+          creator.name,
+          style: AppTheme.titleStyle.copyWith(
+            color: Theme.of(context).colorScheme.onBackground,
+            fontSize: 14,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 2),
+            Text(
+              creator.service.toUpperCase(),
+              style: AppTheme.captionStyle.copyWith(
+                color: _getServiceColor(creator.service),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'ID: ${creator.userId}',
+              style: AppTheme.captionStyle.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        onTap: () => _navigateToCreatorDetail(creator),
+      ),
+    );
+  }
+
+  Widget _buildEmptySearch() {
+    return Builder(
+      builder: (context) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.xlPadding),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_off,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                const SizedBox(height: AppTheme.mdSpacing),
+                Text(
+                  'No creators found',
+                  style: AppTheme.titleStyle.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.smSpacing),
+                Text(
+                  'Try different keywords or check spelling',
+                  style: AppTheme.bodyStyle.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    );
+  }
+
+  Color _getServiceColor(String service) {
+    switch (service.toLowerCase()) {
+      case 'fanbox':
+        return Colors.blue[600]!;
+      case 'patreon':
+        return Colors.orange[600]!;
+      case 'fantia':
+        return Colors.purple[600]!;
+      case 'afdian':
+        return Colors.green[600]!;
+      case 'boosty':
+        return Colors.red[600]!;
+      case 'onlyfans':
+        return Colors.pink[600]!;
+      case 'fansly':
+        return Colors.cyan[600]!;
+      case 'candfans':
+        return Colors.indigo[600]!;
+      default:
+        return Colors.grey[600]!;
+    }
+  }
+}

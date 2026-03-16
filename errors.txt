@@ -1,0 +1,105 @@
+﻿Analyzing kemono_coomer_viewer - Copy...
+
+  error - lib\presentation\screens\creator_detail_screen.dart:1076:40 - The getter 'mediaGridColumns' isn't defined for the type 'SettingsProvider'. Try importing the library that defines 'mediaGridColumns', correcting the name to the name of an existing getter, or defining a getter or field named 'mediaGridColumns'. - undefined_getter
+  error - lib\presentation\screens\discord_channel_posts_screen.dart:798:12 - The method 'AppErrorState' isn't defined for the type '_DiscordChannelPostsScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'AppErrorState'. - undefined_method
+  error - lib\presentation\screens\discord_channel_posts_screen.dart:806:18 - The name 'AppEmptyState' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - lib\presentation\screens\discord_post_detail_screen.dart:253:7 - The named parameter 'margin' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'margin'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:259:7 - The named parameter 'padding' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'padding'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:260:7 - The named parameter 'decoration' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'decoration'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:274:17 - The named parameter 'width' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'width'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:275:17 - The named parameter 'height' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'height'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:276:17 - The named parameter 'decoration' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'decoration'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:309:27 - The named parameter 'padding' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'padding'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:313:27 - The named parameter 'decoration' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'decoration'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:381:7 - The named parameter 'margin' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'margin'. - undefined_named_parameter
+  error - lib\presentation\screens\discord_post_detail_screen.dart:681:15 - The method '_buildVideoPlaceholder' isn't defined for the type '_DiscordPostDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named '_buildVideoPlaceholder'. - undefined_method
+  error - lib\presentation\screens\discord_post_detail_screen.dart:685:19 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:685:20 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:686:17 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:686:18 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:687:15 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:688:13 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:690:22 - Named parameters must be enclosed in curly braces ('{' and '}'). Try surrounding the named parameters in curly braces. - named_parameter_outside_group
+  error - lib\presentation\screens\discord_post_detail_screen.dart:690:22 - Using a colon as the separator before a default value is no longer supported. Try replacing the colon with an equal sign. - obsolete_colon_for_default_value
+  error - lib\presentation\screens\discord_post_detail_screen.dart:691:22 - Named parameters must be enclosed in curly braces ('{' and '}'). Try surrounding the named parameters in curly braces. - named_parameter_outside_group
+  error - lib\presentation\screens\discord_post_detail_screen.dart:691:22 - Using a colon as the separator before a default value is no longer supported. Try replacing the colon with an equal sign. - obsolete_colon_for_default_value
+  error - lib\presentation\screens\discord_post_detail_screen.dart:691:30 - The name 'Center' isn't a class. Try correcting the name to match an existing class. - creation_with_non_type
+  error - lib\presentation\screens\discord_post_detail_screen.dart:694:16 - A function body must be provided. Try adding a function body. - missing_function_body
+  error - lib\presentation\screens\discord_post_detail_screen.dart:694:16 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:695:13 - The name 'Container' is already defined. Try renaming one of the declarations. - duplicate_definition
+           - The first definition of this name at lib\presentation\screens\discord_post_detail_screen.dart:689:15.
+  error - lib\presentation\screens\discord_post_detail_screen.dart:695:28 - Named parameters must be enclosed in curly braces ('{' and '}'). Try surrounding the named parameters in curly braces. - named_parameter_outside_group
+  error - lib\presentation\screens\discord_post_detail_screen.dart:695:28 - Using a colon as the separator before a default value is no longer supported. Try replacing the colon with an equal sign. - obsolete_colon_for_default_value
+  error - lib\presentation\screens\discord_post_detail_screen.dart:695:30 - Methods can't be invoked in constant expressions. - const_eval_method_invocation
+  error - lib\presentation\screens\discord_post_detail_screen.dart:695:67 - A function body must be provided. Try adding a function body. - missing_function_body
+  error - lib\presentation\screens\discord_post_detail_screen.dart:695:67 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:697:20 - Named parameters must be enclosed in curly braces ('{' and '}'). Try surrounding the named parameters in curly braces. - named_parameter_outside_group
+  error - lib\presentation\screens\discord_post_detail_screen.dart:697:20 - Using a colon as the separator before a default value is no longer supported. Try replacing the colon with an equal sign. - obsolete_colon_for_default_value
+  error - lib\presentation\screens\discord_post_detail_screen.dart:697:22 - The default value of an optional parameter must be constant. - non_constant_default_value
+  error - lib\presentation\screens\discord_post_detail_screen.dart:712:14 - A function body must be provided. Try adding a function body. - missing_function_body
+  error - lib\presentation\screens\discord_post_detail_screen.dart:712:14 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:713:11 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:713:12 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:714:9 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:714:10 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:715:7 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:715:8 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:716:5 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:716:6 - Expected a class member. Try placing this code inside a class member. - expected_class_member
+  error - lib\presentation\screens\discord_post_detail_screen.dart:723:41 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:726:45 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:740:42 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:741:49 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:832:5 - The function '_ensureMediaCache' isn't defined. Try importing the library that defines '_ensureMediaCache', correcting the name to the name of an existing function, or defining a function named '_ensureMediaCache'. - undefined_function
+  error - lib\presentation\screens\discord_post_detail_screen.dart:833:25 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:836:35 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:838:36 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:847:42 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:848:49 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:862:55 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:872:29 - The function '_launchURL' isn't defined. Try importing the library that defines '_launchURL', correcting the name to the name of an existing function, or defining a function named '_launchURL'. - undefined_function
+  error - lib\presentation\screens\discord_post_detail_screen.dart:890:60 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:891:67 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:902:33 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:925:9 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:926:35 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:928:36 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:942:42 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:943:49 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:949:19 - Undefined name 'widget'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:951:15 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:952:58 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:958:21 - The function '_launchURL' isn't defined. Try importing the library that defines '_launchURL', correcting the name to the name of an existing function, or defining a function named '_launchURL'. - undefined_function
+  error - lib\presentation\screens\discord_post_detail_screen.dart:969:26 - Undefined name 'context'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - lib\presentation\screens\discord_post_detail_screen.dart:985:1 - Expected a method, getter, setter or operator declaration. This appears to be incomplete code. Try removing it or completing it. - expected_executable
+  error - lib\presentation\screens\discord_server_screen.dart:291:52 - The getter 'servers' isn't defined for the type 'DiscordSearchProvider'. Try importing the library that defines 'servers', correcting the name to the name of an existing getter, or defining a getter or field named 'servers'. - undefined_getter
+  error - lib\presentation\screens\post_detail_screen.dart:1089:7 - The named parameter 'shrinkWrap' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'shrinkWrap'. - undefined_named_parameter
+  error - lib\presentation\screens\post_detail_screen.dart:1090:7 - The named parameter 'physics' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'physics'. - undefined_named_parameter
+  error - lib\presentation\screens\post_detail_screen.dart:1094:7 - The named parameter 'padding' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'padding'. - undefined_named_parameter
+  error - lib\presentation\screens\post_detail_screen.dart:1095:7 - The named parameter 'itemCount' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'itemCount'. - undefined_named_parameter
+  error - lib\presentation\screens\post_detail_screen.dart:1096:7 - The named parameter 'itemBuilder' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'itemBuilder'. - undefined_named_parameter
+  error - lib\presentation\screens\post_detail_screen.dart:2843:7 - 'catch' can't be used as an identifier because it's a keyword. Try renaming this to be an identifier that isn't a keyword. - expected_identifier_but_got_keyword
+  error - lib\presentation\screens\post_detail_screen.dart:2843:7 - The method 'catch' isn't defined for the type '_PostDetailScreenState'. Try correcting the name to the name of an existing method, or defining a method named 'catch'. - undefined_method
+  error - lib\presentation\screens\post_detail_screen.dart:2843:15 - Expected to find ';'. - expected_token
+warning - lib\presentation\screens\discord_post_detail_screen.dart:49:16 - The declaration '_launchURL' isn't referenced. Try removing the declaration of '_launchURL'. - unused_element
+warning - lib\presentation\screens\discord_server_screen.dart:15:8 - Unused import: '../../utils/logger.dart'. Try removing the import directive. - unused_import
+warning - lib\presentation\screens\latest_posts_screen.dart:16:8 - Unused import: '../widgets/popular_creators_section.dart'. Try removing the import directive. - unused_import
+warning - lib\presentation\screens\post_detail_screen.dart:810:10 - The declaration '_buildInfoChip' isn't referenced. Try removing the declaration of '_buildInfoChip'. - unused_element
+warning - lib\presentation\screens\post_detail_screen.dart:1068:10 - The declaration '_buildMediaHeader' isn't referenced. Try removing the declaration of '_buildMediaHeader'. - unused_element
+warning - lib\presentation\screens\post_detail_screen.dart:1519:8 - The declaration '_openVideoFullscreen' isn't referenced. Try removing the declaration of '_openVideoFullscreen'. - unused_element
+warning - lib\presentation\screens\post_detail_screen.dart:1533:16 - The declaration '_downloadSingleFile' isn't referenced. Try removing the declaration of '_downloadSingleFile'. - unused_element
+warning - lib\presentation\screens\post_detail_screen.dart:3383:9 - The declaration '_getServiceColor' isn't referenced. Try removing the declaration of '_getServiceColor'. - unused_element
+warning - lib\presentation\screens\saved_screen.dart:11:8 - Unused import: '../widgets/post_card.dart'. Try removing the import directive. - unused_import
+warning - lib\presentation\widgets\app_video_player.dart:180:8 - The declaration '_isWebViewPreferred' isn't referenced. Try removing the declaration of '_isWebViewPreferred'. - unused_element
+   info - lib\presentation\screens\discord_post_detail_screen.dart:689:15 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\presentation\screens\discord_post_detail_screen.dart:689:15 - The variable name 'Container' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style. - non_constant_identifier_names
+   info - lib\presentation\screens\discord_post_detail_screen.dart:690:17 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\presentation\screens\discord_post_detail_screen.dart:691:17 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\presentation\screens\discord_post_detail_screen.dart:695:13 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\presentation\screens\discord_post_detail_screen.dart:695:13 - The variable name 'Container' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style. - non_constant_identifier_names
+   info - lib\presentation\screens\discord_post_detail_screen.dart:695:23 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\presentation\screens\discord_post_detail_screen.dart:696:13 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\presentation\screens\discord_post_detail_screen.dart:696:13 - The variable name 'Center' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style. - non_constant_identifier_names
+   info - lib\presentation\screens\discord_post_detail_screen.dart:697:15 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+
+100 issues found.

@@ -1,0 +1,1746 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../domain/entities/post.dart';
+import '../../domain/entities/api_source.dart';
+import '../../domain/entities/creator.dart';
+import '../providers/posts_provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/tag_filter_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/media_resolver.dart';
+import 'post_detail_screen.dart';
+import 'creator_detail_screen.dart';
+import 'download_manager_screen.dart';
+import 'fullscreen_media_viewer.dart';
+
+/// Latest Posts Screen - Quick Update Feed
+/// 
+/// Design Principles:
+/// - Fast to scan
+/// - Lightweight scrolling
+/// - Media preview only
+/// - No autoplay
+/// - Minimal visual noise
+/// 
+/// User Goals:
+/// - See what's new
+/// - Decide which post to open
+/// - Quick scroll, not marathon
+class LatestPostsScreen extends StatefulWidget {
+  const LatestPostsScreen({super.key});
+
+  @override
+  State<LatestPostsScreen> createState() => _LatestPostsScreenState();
+}
+
+class _LatestPostsScreenState extends State<LatestPostsScreen> 
+    with AutomaticKeepAliveClientMixin {
+  
+  // Core Controllers
+  final ScrollController _scrollController = ScrollController();
+  
+  // State Management
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  List<Post> _posts = [];
+  String? _error;
+  int _currentPage = 0;
+  bool _hasMore = true;
+
+  // Filter State
+  String _selectedService = 'kemono'; // Default to kemono instead of 'all'
+  List<String> _blockedTags = [];
+
+  @override
+  bool get wantKeepAlive => true; // Preserve scroll position
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialPosts();
+    _loadFilterState();
+    _setupScrollListener();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _setupScrollListener() {
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= 
+          _scrollController.position.maxScrollExtent - 200) {
+        _loadMorePosts();
+      }
+    });
+  }
+
+  Future<void> _loadFilterState() async {
+    final tagFilter = Provider.of<TagFilterProvider>(context, listen: false);
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    
+    setState(() {
+      _selectedService = settings.defaultApiSource.name; // Will be 'kemono' or 'coomer'
+      _blockedTags = tagFilter.blacklist.toList();
+    });
+  }
+
+  Future<void> _loadInitialPosts() async {
+    if (_isLoading) return;
+    
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _currentPage = 0;
+      _hasMore = true;
+    });
+
+    try {
+      final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+      await postsProvider.loadLatestPosts(
+        refresh: true,
+        apiSource: ApiSource.values.firstWhere((a) => a.name == _selectedService),
+      );
+      
+      if (mounted) {
+        setState(() {
+          _posts = _getFilteredPosts(postsProvider.posts);
+          _isLoading = false;
+          _error = null; // Clear local error, use provider error
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Don't override provider error - let auto-retry handle it
+          // Only set local error if provider doesn't have one
+          final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+          _error = postsProvider.error ?? e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isLoadingMore || !_hasMore || _isLoading) return;
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      _currentPage++;
+      final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+      await postsProvider.loadMorePosts();
+      
+      if (mounted) {
+        final newPosts = _getFilteredPosts(postsProvider.posts);
+        final existingIds = _posts.map((p) => p.id).toSet();
+        final uniqueNewPosts = newPosts.where((p) => !existingIds.contains(p.id)).toList();
+        
+        setState(() {
+          _posts.addAll(uniqueNewPosts);
+          _isLoadingMore = false;
+          _hasMore = uniqueNewPosts.length >= 20; // Assume page size is 20
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+          // Don't set _hasMore = false on error - let auto-retry handle it
+          // Only show error if provider has one
+          final postsProvider = Provider.of<PostsProvider>(context, listen: false);
+          if (postsProvider.error != null) {
+            _error = postsProvider.error;
+          }
+        });
+      }
+    }
+  }
+
+  List<Post> _getFilteredPosts(List<Post> posts) {
+    if (_blockedTags.isEmpty) return posts;
+    
+    return posts.where((post) {
+      return !_blockedTags.any((blockedTag) => 
+        post.tags.any((postTag) => 
+          postTag.toLowerCase().contains(blockedTag.toLowerCase())
+        )
+      );
+    }).toList();
+  }
+
+  void _navigateToPostDetail(Post post) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostDetailScreen(
+          post: post,
+          apiSource: ApiSource.values.firstWhere((a) => a.name == _selectedService),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToCreatorDetail(Creator creator) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreatorDetailScreen(
+          creator: creator,
+          apiSource: ApiSource.values.firstWhere((a) => a.name == _selectedService),
+        ),
+      ),
+    );
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildFilterBottomSheet(),
+    );
+  }
+
+  String _cleanHtmlContent(String content) {
+    try {
+      final document = html_parser.parse(content);
+      String cleanText = document.body?.text ?? content;
+      cleanText = cleanText.replaceAll(RegExp(r'\s+'), ' ').trim();
+      return cleanText;
+    } catch (e) {
+      return content;
+    }
+  }
+
+  /// Check if post contains any blocked tags
+  bool _hasBlockedTags(Post post) {
+    final tagFilterProvider = Provider.of<TagFilterProvider>(context, listen: false);
+    final blockedTags = tagFilterProvider.blacklist;
+    
+    if (blockedTags.isEmpty) return false;
+    
+    // Check post title for blocked tags
+    for (final blockedTag in blockedTags) {
+      if (post.title.toLowerCase().contains(blockedTag.toLowerCase())) {
+        return true;
+      }
+    }
+    
+    // Check post content for blocked tags
+    for (final blockedTag in blockedTags) {
+      if (post.content.toLowerCase().contains(blockedTag.toLowerCase())) {
+        return true;
+      }
+    }
+    
+    // Check post tags if available
+    if (post.tags.isNotEmpty) {
+      for (final postTag in post.tags) {
+        for (final blockedTag in blockedTags) {
+          if (postTag.toLowerCase().contains(blockedTag.toLowerCase())) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  /// Get list of blocked tags found in post
+  List<String> _getBlockedTagsInPost(Post post) {
+    final tagFilterProvider = Provider.of<TagFilterProvider>(context, listen: false);
+    final blockedTags = tagFilterProvider.blacklist;
+    final foundTags = <String>[];
+    
+    if (blockedTags.isEmpty) return foundTags;
+    
+    // Check post title
+    for (final blockedTag in blockedTags) {
+      if (post.title.toLowerCase().contains(blockedTag.toLowerCase())) {
+        foundTags.add(blockedTag);
+      }
+    }
+    
+    // Check post content
+    for (final blockedTag in blockedTags) {
+      if (post.content.toLowerCase().contains(blockedTag.toLowerCase()) && !foundTags.contains(blockedTag)) {
+        foundTags.add(blockedTag);
+      }
+    }
+    
+    // Check post tags
+    if (post.tags.isNotEmpty) {
+      for (final postTag in post.tags) {
+        for (final blockedTag in blockedTags) {
+          if (postTag.toLowerCase().contains(blockedTag.toLowerCase()) && !foundTags.contains(blockedTag)) {
+            foundTags.add(blockedTag);
+          }
+        }
+      }
+    }
+    
+    return foundTags;
+  }
+
+  String _getServiceDisplayName(String service) {
+    switch (service.toLowerCase()) {
+      case 'patreon':
+        return 'Patreon';
+      case 'fanbox':
+        return 'Fanbox';
+      case 'fantia':
+        return 'Fantia';
+      case 'onlyfans':
+        return 'OnlyFans';
+      case 'fansly':
+        return 'Fansly';
+      case 'candfans':
+        return 'CandFans';
+      default:
+        return service.toUpperCase();
+    }
+  }
+
+  Color _getServiceColor(String service) {
+    switch (service.toLowerCase()) {
+      case 'patreon':
+        return Colors.orange;
+      case 'fanbox':
+        return Colors.blue;
+      case 'fantia':
+        return Colors.purple;
+      case 'onlyfans':
+        return Colors.pink;
+      case 'fansly':
+        return Colors.teal;
+      case 'candfans':
+        return Colors.red;
+      default:
+        return AppTheme.primaryColor;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${date.day} ${_getMonthName(date.month)}';
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
+  }
+
+  bool _isMediaFile(String filename) {
+    final name = filename.toLowerCase();
+    return name.endsWith('.jpg') ||
+           name.endsWith('.jpeg') ||
+           name.endsWith('.png') ||
+           name.endsWith('.gif') ||
+           name.endsWith('.webp') ||
+           name.endsWith('.mp4') ||
+           name.endsWith('.webm') ||
+           name.endsWith('.mov') ||
+           name.endsWith('.m3u8');
+  }
+
+  String _getMediaType(String filename) {
+    final name = filename.toLowerCase();
+    if (name.endsWith('.mp4') || name.endsWith('.webm') || 
+        name.endsWith('.mov') || name.endsWith('.m3u8')) {
+      return 'video';
+    }
+    return 'image';
+  }
+
+  /// Get thumbnail URL for Kemono/Coomer - FIXED!
+  String _getThumbnailUrl(String originalUrl, String apiSource) {
+    try {
+      final uri = Uri.parse(originalUrl);
+      
+      // Kemono thumbnail format: //img.kemono.cr/thumbnail/data/XX/XX/filename.jpg
+      if (apiSource == 'kemono' && (uri.host.contains('kemono.party') || uri.host.contains('kemono.cr'))) {
+        final segments = uri.pathSegments;
+        if (segments.length >= 2 && segments[0] == 'data') {
+          // Reconstruct as thumbnail URL
+          final thumbnailPath = 'thumbnail/data/${segments[1]}/${segments.length > 2 ? segments[2] : ''}';
+          return 'https://img.kemono.cr/$thumbnailPath';
+        }
+      }
+      
+      // Coomer thumbnail format: //img.coomer.st/thumbnail/data/XX/XX/filename.jpg
+      if (apiSource == 'coomer' && (uri.host.contains('coomer.party') || uri.host.contains('coomer.st'))) {
+        final segments = uri.pathSegments;
+        if (segments.length >= 2 && segments[0] == 'data') {
+          // Reconstruct as thumbnail URL
+          final thumbnailPath = 'thumbnail/data/${segments[1]}/${segments.length > 2 ? segments[2] : ''}';
+          return 'https://img.coomer.st/$thumbnailPath';
+        }
+      }
+      
+      // Fallback to original URL
+      return originalUrl;
+    } catch (e) {
+      return originalUrl;
+    }
+  }
+
+  String _buildFullUrl(String path, String service) {
+    if (path.startsWith('http')) {
+      return path;
+    }
+    
+    String domain;
+    if (service == 'onlyfans' || service == 'fansly' || service == 'candfans') {
+      domain = 'https://n2.coomer.st';
+    } else {
+      domain = 'https://kemono.cr';
+    }
+    
+    return '$domain/data$path';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      appBar: _buildTopAppBar(),
+      body: RefreshIndicator(
+        onRefresh: _loadInitialPosts,
+        child: Column(
+          children: [
+            _buildFilterInfoBar(),
+            Expanded(child: _buildPostList()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildTopAppBar() {
+    return AppBar(
+      title: const Text(
+        'Latest',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 20,
+        ),
+      ),
+      backgroundColor: AppTheme.getSurfaceColor(context),
+      foregroundColor: AppTheme.getOnSurfaceColor(context),
+      elevation: 0,
+      actions: [
+        // Refresh button
+        IconButton(
+          onPressed: _loadInitialPosts,
+          icon: _isLoading 
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.primaryColor,
+                  ),
+                )
+              : const Icon(Icons.refresh),
+          tooltip: 'Refresh',
+        ),
+        // Filter button
+        IconButton(
+          onPressed: _showFilterBottomSheet,
+          icon: const Icon(Icons.filter_list),
+          tooltip: 'Filter',
+        ),
+        // Settings button
+        IconButton(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Settings coming soon!')),
+            );
+          },
+          icon: const Icon(Icons.settings),
+          tooltip: 'Settings',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterInfoBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppTheme.getSurfaceColor(context),
+      child: Row(
+        children: [
+          Text(
+            _getServiceDisplayName(_selectedService),
+            style: AppTheme.captionStyle.copyWith(
+              color: _getServiceColor(_selectedService),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (_blockedTags.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            Text(
+              '•',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${_blockedTags.length} tags blocked',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+            ),
+          ],
+          const Spacer(),
+          // Download Manager button
+          GestureDetector(
+            onTap: _showDownloadManager,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.download,
+                    color: Colors.green,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Downloads',
+                    style: AppTheme.captionStyle.copyWith(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Settings button
+          GestureDetector(
+            onTap: _showLatestPostsSettings,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.settings,
+                    color: AppTheme.primaryColor,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Settings',
+                    style: AppTheme.captionStyle.copyWith(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _showFilterBottomSheet,
+            child: Text(
+              'Filter',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.primaryColor,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show Download Manager
+  void _showDownloadManager() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DownloadManagerScreen(),
+      ),
+    );
+  }
+
+  /// Show Latest Posts settings bottom sheet
+  void _showLatestPostsSettings() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildLatestPostsSettingsSheet(),
+    );
+  }
+
+  /// Build Latest Posts settings bottom sheet
+  Widget _buildLatestPostsSettingsSheet() {
+    return Consumer<TagFilterProvider>(
+      builder: (context, tagFilterProvider, _) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          decoration: BoxDecoration(
+            color: AppTheme.getSurfaceColor(context),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.settings,
+                      color: AppTheme.primaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Latest Posts Settings',
+                      style: AppTheme.subtitleStyle.copyWith(
+                        color: AppTheme.getOnSurfaceColor(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        color: AppTheme.getOnSurfaceColor(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const Divider(height: 1),
+              
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Blocked content section
+                    _buildBlockedContentSection(tagFilterProvider),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Display options section
+                    _buildDisplayOptionsSection(),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Filter options section
+                    _buildFilterOptionsSection(tagFilterProvider),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build blocked content section
+  Widget _buildBlockedContentSection(TagFilterProvider tagFilterProvider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.block,
+                color: Colors.red,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Blocked Content',
+                style: AppTheme.subtitleStyle.copyWith(
+                  color: AppTheme.getOnSurfaceColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Blur blocked content toggle
+          SwitchListTile(
+            title: Text(
+              'Blur blocked content',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+            ),
+            subtitle: Text(
+              'Posts with blocked tags will be blurred',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context).withOpacity(0.7),
+              ),
+            ),
+            value: true, // Always enabled for now
+            onChanged: (value) {
+              // Could be made configurable in the future
+            },
+            activeColor: AppTheme.primaryColor,
+          ),
+          
+          // Show blocked tags indicator toggle
+          SwitchListTile(
+            title: Text(
+              'Show blocked indicator',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+            ),
+            subtitle: Text(
+              'Display "Blocked" badge on filtered posts',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context).withOpacity(0.7),
+              ),
+            ),
+            value: true, // Always enabled for now
+            onChanged: (value) {
+              // Could be made configurable in the future
+            },
+            activeColor: AppTheme.primaryColor,
+          ),
+          
+          // Blocked tags count
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.red,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${tagFilterProvider.blacklist.length} tags currently blocked',
+                    style: AppTheme.captionStyle.copyWith(
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build display options section
+  Widget _buildDisplayOptionsSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.visibility,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Display Options',
+                style: AppTheme.subtitleStyle.copyWith(
+                  color: AppTheme.getOnSurfaceColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Media preview toggle
+          SwitchListTile(
+            title: Text(
+              'Show media previews',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+            ),
+            subtitle: Text(
+              'Display image/video thumbnails in posts',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context).withOpacity(0.7),
+              ),
+            ),
+            value: true, // Always enabled for now
+            onChanged: (value) {
+              // Could be made configurable in the future
+            },
+            activeColor: AppTheme.primaryColor,
+          ),
+          
+          // Content preview toggle
+          SwitchListTile(
+            title: Text(
+              'Show content preview',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+            ),
+            subtitle: Text(
+              'Display first 60 characters of post content',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context).withOpacity(0.7),
+              ),
+            ),
+            value: true, // Always enabled for now
+            onChanged: (value) {
+              // Could be made configurable in the future
+            },
+            activeColor: AppTheme.primaryColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build filter options section
+  Widget _buildFilterOptionsSection(TagFilterProvider tagFilterProvider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.filter_list,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Filter Options',
+                style: AppTheme.subtitleStyle.copyWith(
+                  color: AppTheme.getOnSurfaceColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Auto-hide blocked posts toggle
+          SwitchListTile(
+            title: Text(
+              'Auto-hide blocked posts',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+            ),
+            subtitle: Text(
+              'Completely hide posts with blocked tags',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context).withOpacity(0.7),
+              ),
+            ),
+            value: false, // Default to show but blur
+            onChanged: (value) {
+              // Could be made configurable in the future
+            },
+            activeColor: AppTheme.primaryColor,
+          ),
+          
+          // Quick filter button
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 8),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _showFilterBottomSheet();
+              },
+              icon: const Icon(Icons.tune, size: 16),
+              label: const Text('Manage Blocked Tags'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostList() {
+    if (_isLoading && _posts.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.touch_app_outlined,
+              size: 64,
+              color: AppTheme.getOnBackgroundColor(context),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Press to show posts',
+              style: AppTheme.getTitleStyle(context).copyWith(color: AppTheme.getOnBackgroundColor(context)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap to load content',
+              style: AppTheme.getCaptionStyle(context).copyWith(color: AppTheme.getOnBackgroundColor(context)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadInitialPosts,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Show Posts'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_posts.isEmpty && !_isLoading) {
+      return _buildEmptyState();
+    }
+
+    return GridView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.75, // Adjust for better card proportions
+      ),
+      itemCount: _posts.length + (_hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _posts.length) {
+          return _buildLoadingMoreIndicator();
+        }
+        return _buildPostCard(_posts[index]);
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final isFiltered = _blockedTags.isNotEmpty || _selectedService != 'kemono'; // Update condition
+    
+    if (isFiltered) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_list_off,
+              size: 64,
+              color: AppTheme.getOnSurfaceColor(context),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'All posts hidden by filters',
+              style: AppTheme.titleStyle.copyWith(color: AppTheme.secondaryTextColor),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try adjusting your filters',
+              style: AppTheme.captionStyle.copyWith(color: AppTheme.secondaryTextColor),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _showFilterBottomSheet,
+              icon: const Icon(Icons.filter_list),
+              label: const Text('Manage Filters'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.article_outlined,
+            size: 64,
+            color: AppTheme.getOnSurfaceColor(context),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No posts yet',
+            style: AppTheme.titleStyle.copyWith(color: AppTheme.secondaryTextColor),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pull down to refresh',
+            style: AppTheme.captionStyle.copyWith(color: AppTheme.secondaryTextColor),
+          ),
+        ],
+      ),
+    );
+  }
+    final mediaItems = <Map<String, dynamic>>[];
+    
+    // Check if post contains blocked tags
+    final tagFilter = context.read<TagFilterProvider>();
+    final hasBlockedTag = post.tags.any(tagFilter.isTagBlocked);
+    
+    if (hasBlockedTag) {
+      return const SizedBox.shrink();
+    }
+    
+    // Collect media items with thumbnail support
+    for (final attachment in post.attachments) {
+      if (_isMediaFile(attachment.name)) {
+        final fullUrl = _buildFullUrl(attachment.path!, post.service);
+        final thumbnailUrl = _getThumbnailUrl(fullUrl, post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans' ? 'coomer' : 'kemono');
+        
+        mediaItems.add({
+          'url': fullUrl,
+          'thumbnail_url': thumbnailUrl,
+          'name': attachment.name,
+          'type': _getMediaType(attachment.name),
+        });
+      }
+    }
+    
+    for (final file in post.file) {
+      if (_isMediaFile(file.name)) {
+        final fullUrl = _buildFullUrl(file.path, post.service);
+        final thumbnailUrl = _getThumbnailUrl(fullUrl, post.service == 'onlyfans' || post.service == 'fansly' || post.service == 'candfans' ? 'coomer' : 'kemono');
+        
+        mediaItems.add({
+          'url': fullUrl,
+          'thumbnail_url': thumbnailUrl,
+          'name': file.name,
+          'type': _getMediaType(file.name),
+        });
+      }
+    }
+    
+    // Sort: images first, then videos
+    mediaItems.sort((a, b) {
+      if (a['type'] == 'image' && b['type'] == 'video') return -1;
+      if (a['type'] == 'video' && b['type'] == 'image') return 1;
+      return 0;
+    });
+    
+    final hasVideo = mediaItems.any((item) => item['type'] == 'video');
+    final firstMedia = mediaItems.isNotEmpty ? mediaItems.first : null;
+    final mediaCount = mediaItems.length;
+
+    return Card(
+      margin: EdgeInsets.zero, // Remove margin since GridView handles spacing
+      color: AppTheme.getSurfaceColor(context),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: hasBlockedTag 
+          color: hasBlockedTags 
+              ? Colors.red.withOpacity(0.3) 
+              : Colors.grey.withOpacity(0.2),
+          width: hasBlockedTags ? 2 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _navigateToPostDetail(post),
+        onLongPress: () => _showPostOptions(post),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Media preview (takes most of the space)
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  color: Colors.grey[900],
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  child: hasMedia && firstMedia != null
+                      ? _buildMediaPreview(firstMedia, mediaCount, hasVideo, hasBlockedTags)
+                      : Container(
+                          color: Colors.grey[800],
+                          child: Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey[600],
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            
+            // Content section
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Creator row (compact)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            post.user,
+                            style: AppTheme.captionStyle.copyWith(
+                              color: hasBlockedTags 
+                                  ? Colors.red.withOpacity(0.8)
+                                  : AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (hasBlockedTags) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Icon(
+                              Icons.block,
+                              color: Colors.red,
+                              size: 10,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Post title (compact)
+                    if (post.title.isNotEmpty)
+                      Expanded(
+                        child: Text(
+                          _cleanHtmlContent(post.title),
+                          style: AppTheme.captionStyle.copyWith(
+                            color: hasBlockedTags 
+                                ? Colors.red.withOpacity(0.8)
+                                : AppTheme.getOnSurfaceColor(context),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    
+                    const Spacer(),
+                    
+                    // Bottom row with service and time
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: _getServiceColor(post.service).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _getServiceDisplayName(post.service),
+                            style: TextStyle(
+                              color: _getServiceColor(post.service),
+                              fontSize: 8,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _formatDate(post.published),
+                          style: AppTheme.captionStyle.copyWith(
+                            color: AppTheme.getOnSurfaceColor(context).withOpacity(0.6),
+                            fontSize: 8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaPreview(Map<String, dynamic> media, int totalCount, bool hasVideo, [bool hasBlockedTags = false]) {
+    return Stack(
+      fit: StackFit.expand, // Make it fill the available space
+      children: [
+        // Media thumbnail dengan proper aspect ratio
+        ClipRRect(
+          borderRadius: BorderRadius.circular(0), // No radius since parent handles it
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[900],
+            ),
+            child: _buildOptimizedMediaThumbnail(media, hasVideo),
+          ),
+        ),
+        
+        // Video overlay
+        if (hasVideo)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.3),
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.play_circle_filled,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+        
+        // Blocked content overlay
+        if (hasBlockedTags)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.red.withOpacity(0.8),
+                    Colors.red.withOpacity(0.4),
+                  ],
+                  begin: Alignment.center,
+                  end: Alignment.topCenter,
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.block,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Contains blocked tags',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.5),
+                            offset: const Offset(0, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        
+        // Media count badge
+        if (totalCount > 1)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: hasBlockedTags 
+                    ? Colors.red.withOpacity(0.9)
+                    : Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '+${totalCount - 1}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingMoreIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: const Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppTheme.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterBottomSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Text(
+                  'Filter Posts',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          
+          // Service filter
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Service',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    'kemono',
+                    'coomer',
+                  ].map((service) {
+                    final isSelected = _selectedService == service;
+                    return FilterChip(
+                      label: Text(service.toUpperCase()),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedService = service;
+                        });
+                        _loadInitialPosts();
+                        Navigator.pop(context);
+                      },
+                      backgroundColor: Colors.grey.withOpacity(0.2),
+                      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                      labelStyle: TextStyle(
+                        color: isSelected ? AppTheme.primaryColor : AppTheme.getOnBackgroundColor(context),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          
+          // Tag filter info
+          if (_blockedTags.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Blocked Tags',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_blockedTags.length} tags are blocked',
+                    style: TextStyle(
+                      color: AppTheme.getOnSurfaceColor(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Show actual blocked tags
+                  Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(8),
+                      itemCount: _blockedTags.length,
+                      itemBuilder: (context, index) {
+                        final tag = _blockedTags[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.block,
+                                size: 16,
+                                color: Colors.red[400],
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  tag,
+                                  style: TextStyle(
+                                    color: AppTheme.getOnSurfaceColor(context),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _blockedTags.remove(tag);
+                                  });
+                                  // Update tag filter provider
+                                  final tagFilter = Provider.of<TagFilterProvider>(context, listen: false);
+                                  tagFilter.removeFromBlacklist(tag);
+                                },
+                                icon: Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showPostOptions(Post post) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppTheme.getSurfaceColor(context),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.bookmark_border),
+                    title: const Text('Bookmark Post'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Bookmark feature coming soon!')),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: const Text('View Creator'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      final creator = Creator(
+                        id: post.user,
+                        service: post.service,
+                        name: post.user,
+                        indexed: 0,
+                        updated: 0,
+                        favorited: false,
+                      );
+                      _navigateToCreatorDetail(creator);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptimizedMediaThumbnail(Map<String, dynamic> media, bool hasVideo) {
+    // Untuk video, jangan load WebView di Latest Posts (lag!)
+    if (hasVideo) {
+      return _buildVideoPlaceholder();
+    }
+    
+    // Untuk gambar, gunakan cached network image dengan optimasi
+    return _buildOptimizedImage(media['url']);
+  }
+
+  Widget _buildVideoPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+      ),
+      child: Stack(
+        children: [
+          // Video icon
+          const Center(
+            child: Icon(
+              Icons.play_circle_outline,
+              color: Colors.white54,
+              size: 48,
+            ),
+          ),
+          // Video indicator
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Video',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptimizedImage(String imageUrl) {
+    return Image.network(
+      imageUrl,
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        
+        // Show placeholder while loading
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+          ),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
+              ),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.broken_image,
+              color: Colors.white54,
+              size: 32,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

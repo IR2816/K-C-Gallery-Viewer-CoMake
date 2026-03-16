@@ -1,0 +1,1026 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../domain/entities/post.dart';
+import '../../domain/entities/creator.dart';
+import '../../domain/entities/api_source.dart';
+import '../providers/posts_provider.dart';
+import '../providers/creators_provider.dart';
+import '../providers/creator_search_provider.dart';
+import '../providers/settings_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/post_card.dart';
+import '../widgets/creator_card.dart';
+import 'post_detail_screen.dart';
+import 'creator_detail_screen.dart';
+import 'post_detail_screen.dart';
+
+/// CONSOLIDATED SearchScreen - Unified Search with Mode Switching
+/// 
+/// Features:
+/// - ✅ Creator search (ID + name) from search_screen_new.dart
+/// - ✅ Post search from search_screen.dart
+/// - ✅ Tag search from tag_search_screen.dart
+/// - ✅ Service filtering from all variations
+/// - ✅ Search history
+/// - ✅ Animations & transitions
+/// - ✅ AppTheme consistency
+/// - ✅ Mode switching (Creator/Post/Tag)
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
+  // Search Controllers
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _searchFocusNode = FocusNode();
+  
+  // State Management
+  SearchMode _searchMode = SearchMode.name;  // Default to name search
+  SearchTarget _searchTarget = SearchTarget.kemono;  // Default to kemono
+  CreatorSearchType _creatorSearchType = CreatorSearchType.name; // For backward compatibility
+  bool _isSearching = false;
+  bool _hasSearched = false;
+  List<String> _searchHistory = [];
+  bool _showHistory = true;
+  
+  // Animation Controllers
+  late AnimationController _searchAnimationController;
+  late AnimationController _fadeAnimationController;
+  late AnimationController _tabAnimationController;
+  late Animation<double> _searchAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _slideAnimation;
+  late TabController _tabController;
+
+  // Service Data (for different purposes)
+  final List<Map<String, dynamic>> _kemonoServices = [
+    {'id': 'all', 'name': 'All Services', 'icon': Icons.apps, 'color': Colors.blue},
+    {'id': 'patreon', 'name': 'Patreon', 'icon': Icons.star, 'color': Colors.orange},
+    {'id': 'fanbox', 'name': 'Pixiv Fanbox', 'icon': Icons.palette, 'color': Colors.purple},
+    {'id': 'discord', 'name': 'Discord', 'icon': Icons.chat, 'color': Colors.blueGrey},
+    {'id': 'fantia', 'name': 'Fantia', 'icon': Icons.favorite, 'color': Colors.pink},
+    {'id': 'afdian', 'name': 'Afdian', 'icon': Icons.attach_money, 'color': Colors.teal},
+    {'id': 'boosty', 'name': 'Boosty', 'icon': Icons.rocket, 'color': Colors.red},
+    {'id': 'gumroad', 'name': 'Gumroad', 'icon': Icons.shopping_cart, 'color': Colors.green},
+    {'id': 'subscribestar', 'name': 'SubscribeStar', 'icon': Icons.star_border, 'color': Colors.amber},
+    {'id': 'dlsite', 'name': 'DLsite', 'icon': Icons.download, 'color': Colors.indigo},
+  ];
+
+  final List<Map<String, dynamic>> _coomerServices = [
+    {'id': 'all', 'name': 'All Services', 'icon': Icons.apps, 'color': Colors.blue},
+    {'id': 'onlyfans', 'name': 'OnlyFans', 'icon': Icons.lock, 'color': Colors.deepPurple},
+    {'id': 'fansly', 'name': 'Fansly', 'icon': Icons.people, 'color': Colors.pink},
+    {'id': 'candfans', 'name': 'CandFans', 'icon': Icons.cake, 'color': Colors.orange},
+  ];
+
+  // Get current services based on target
+  List<Map<String, dynamic>> get _currentServices {
+    return _searchTarget == SearchTarget.kemono 
+        ? _kemonoServices 
+        : _coomerServices;
+  }
+
+  // Get selected service (for ID search mode)
+  String get _selectedService {
+    return _currentServices.firstWhere((service) => service['id'] != 'all')['id'];
+  }
+
+  // Get API source for backward compatibility
+  ApiSource get _selectedApiSource {
+    return _searchTarget == SearchTarget.kemono ? ApiSource.kemono : ApiSource.coomer;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+    _setupListeners();
+    _loadSearchHistory();
+  }
+
+  @override
+  void dispose() {
+    _disposeAnimations();
+    _searchController.dispose();
+    _scrollController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  // 🎯 INITIALIZATION
+  void _initializeAnimations() {
+    _tabController = TabController(length: 2, vsync: this); // Only 2 tabs now
+    
+    _searchAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _fadeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _tabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _searchAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _searchAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _searchAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start animations
+    _fadeAnimationController.forward();
+  }
+
+  void _setupListeners() {
+    _searchController.addListener(() {
+      final query = _searchController.text.trim();
+      setState(() {
+        _showHistory = query.isEmpty && _searchHistory.isNotEmpty;
+      });
+    });
+
+    _scrollController.addListener(() {
+      // Scroll listener - no infinite scroll needed for new design
+    });
+
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        HapticFeedback.lightImpact();
+        setState(() {
+          // Map tab index to search mode
+          if (_tabController.index == 0) {
+            _searchMode = SearchMode.name;
+            _creatorSearchType = CreatorSearchType.name;
+          } else if (_tabController.index == 1) {
+            _searchMode = SearchMode.id;
+            _creatorSearchType = CreatorSearchType.id;
+          }
+          _clearSearch();
+        });
+      }
+    });
+  }
+
+  void _disposeAnimations() {
+    _searchAnimationController.dispose();
+    _fadeAnimationController.dispose();
+    _tabAnimationController.dispose();
+    _tabController.dispose();
+  }
+
+  void _loadSearchHistory() {
+    // TODO: Load search history from local storage
+    _searchHistory = ['artist123', 'popular_creator', 'favorite_content'];
+  }
+
+  void _saveSearchHistory(String query) {
+    if (query.isEmpty) return;
+    
+    setState(() {
+      _searchHistory.remove(query);
+      _searchHistory.insert(0, query);
+      if (_searchHistory.length > 10) {
+        _searchHistory = _searchHistory.take(10).toList();
+      }
+    });
+    
+    // TODO: Save to local storage
+  }
+
+  // 🎯 BUILD METHOD
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: _buildAppBar(),
+      body: Column(
+        children: [
+          // Search Section
+          _buildSearchSection(),
+          
+          // Mode Tabs
+          _buildModeTabs(),
+          
+          // Content
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildNameSearchContent(),
+                _buildIdSearchContent(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🎯 WIDGET BUILDERS
+
+  /// Enhanced App Bar with contextual toggle function
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: Text(
+        'Search',
+        style: AppTheme.titleStyle.copyWith(
+          color: AppTheme.primaryTextColor,
+        ),
+      ),
+      backgroundColor: AppTheme.surfaceColor,
+      foregroundColor: AppTheme.primaryTextColor,
+      elevation: 0,
+      actions: [
+        // Contextual Target Selector - Different function based on search mode
+        Container(
+          margin: const EdgeInsets.only(right: AppTheme.smPadding),
+          child: Consumer<SettingsProvider>(
+            builder: (context, settings, _) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).primaryColor.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _searchMode == SearchMode.name 
+                        ? Icons.public  // Community index for name search
+                        : Icons.dns,     // Official domain for ID search
+                    size: 16,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _searchMode == SearchMode.name
+                        ? '${_searchTarget.name}'  // kemono/coomer for mbaharip API
+                        : '${_searchTarget.name.replaceFirst('kemono', 'kemono.cr').replaceFirst('coomer', 'coomer.st')}',  // official domains
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Search Section with contextual service filter
+  Widget _buildSearchSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        children: [
+          // Search Bar
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+              border: Border.all(color: AppTheme.cardColor),
+            ),
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.primaryTextColor,
+              ),
+              decoration: InputDecoration(
+                hintText: _getSearchHint(),
+                hintStyle: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.secondaryTextColor,
+                ),
+                prefixIcon: Icon(
+                  _getSearchIcon(),
+                  color: AppTheme.secondaryTextColor,
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          color: AppTheme.secondaryTextColor,
+                        ),
+                        onPressed: _clearSearch,
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(AppTheme.mdPadding),
+              ),
+              onSubmitted: (value) => _performSearch(value),
+            ),
+          ),
+          
+          const SizedBox(height: AppTheme.mdSpacing),
+          
+          // Service Filter (only for ID search mode)
+          if (_searchMode == SearchMode.id) ...[
+            _buildServiceFilter(),
+            const SizedBox(height: AppTheme.mdSpacing),
+          ],
+          
+          // Search History
+          if (_showHistory && _searchHistory.isNotEmpty) ...[
+            _buildSearchHistory(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Mode Tabs - Clean 2-tab design
+  Widget _buildModeTabs() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicatorColor: AppTheme.primaryColor,
+        labelColor: AppTheme.primaryTextColor,
+        unselectedLabelColor: AppTheme.secondaryTextColor,
+        indicatorWeight: 2,
+        labelStyle: AppTheme.captionStyle.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+        tabs: const [
+          Tab(
+            icon: Icon(Icons.search),
+            text: 'Search by Name',
+          ),
+          Tab(
+            icon: Icon(Icons.person_search),
+            text: 'Search by ID',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Creator Search Type Toggle
+  Widget _buildCreatorSearchTypeToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+        border: Border.all(color: AppTheme.cardColor),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _creatorSearchType = CreatorSearchType.name;
+                  _clearSearch();
+                });
+                HapticFeedback.lightImpact();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: _creatorSearchType == CreatorSearchType.name 
+                      ? AppTheme.primaryColor.withOpacity(0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+                  border: _creatorSearchType == CreatorSearchType.name
+                      ? Border.all(color: AppTheme.primaryColor.withOpacity(0.3))
+                      : null,
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.search,
+                      size: 20,
+                      color: _creatorSearchType == CreatorSearchType.name
+                          ? AppTheme.primaryColor
+                          : AppTheme.secondaryTextColor,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Search by Name',
+                      style: AppTheme.captionStyle.copyWith(
+                        color: _creatorSearchType == CreatorSearchType.name
+                            ? AppTheme.primaryColor
+                            : AppTheme.secondaryTextColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Community Index',
+                      style: AppTheme.captionStyle.copyWith(
+                        color: Colors.orange,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 40,
+            color: AppTheme.cardColor,
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _creatorSearchType = CreatorSearchType.id;
+                  _clearSearch();
+                });
+                HapticFeedback.lightImpact();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: _creatorSearchType == CreatorSearchType.id 
+                      ? AppTheme.primaryColor.withOpacity(0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+                  border: _creatorSearchType == CreatorSearchType.id
+                      ? Border.all(color: AppTheme.primaryColor.withOpacity(0.3))
+                      : null,
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.person_search,
+                      size: 20,
+                      color: _creatorSearchType == CreatorSearchType.id
+                          ? AppTheme.primaryColor
+                          : AppTheme.secondaryTextColor,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Search by ID',
+                      style: AppTheme.captionStyle.copyWith(
+                        color: _creatorSearchType == CreatorSearchType.id
+                            ? AppTheme.primaryColor
+                            : AppTheme.secondaryTextColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Official API',
+                      style: AppTheme.captionStyle.copyWith(
+                        color: Colors.green,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Service Filter - Only for ID search mode
+  Widget _buildServiceFilter() {
+    return Container(
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _currentServices.length,
+        itemBuilder: (context, index) {
+          final service = _currentServices[index];
+          final isSelected = _selectedService == service['id'];
+          
+          return Container(
+            margin: const EdgeInsets.only(right: AppTheme.smSpacing),
+            child: FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    service['icon'],
+                    size: 16,
+                    color: isSelected ? Colors.white : service['color'],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    service['name'],
+                    style: AppTheme.captionStyle.copyWith(
+                      color: isSelected ? Colors.white : AppTheme.primaryTextColor,
+                    ),
+                  ),
+                ],
+              ),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  HapticFeedback.lightImpact();
+                  setState(() {
+                    // Update selected service for ID search
+                  });
+                  _performSearch(_searchController.text);
+                }
+              },
+              backgroundColor: AppTheme.backgroundColor,
+              selectedColor: service['color'],
+              checkmarkColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.smRadius),
+                side: BorderSide(
+                  color: isSelected ? service['color']! : AppTheme.cardColor,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Search History
+  Widget _buildSearchHistory() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+        border: Border.all(color: AppTheme.cardColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppTheme.mdPadding),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.history,
+                  color: AppTheme.secondaryTextColor,
+                  size: 20,
+                ),
+                const SizedBox(width: AppTheme.smSpacing),
+                Text(
+                  'Recent Searches',
+                  style: AppTheme.captionStyle.copyWith(
+                    color: AppTheme.secondaryTextColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: _clearSearchHistory,
+                  child: Text(
+                    'Clear',
+                    style: AppTheme.captionStyle.copyWith(
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ..._searchHistory.take(5).map((query) => ListTile(
+            dense: true,
+            leading: Icon(
+              Icons.history,
+              color: AppTheme.secondaryTextColor,
+              size: 20,
+            ),
+            title: Text(
+              query,
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.primaryTextColor,
+              ),
+            ),
+            onTap: () {
+              _searchController.text = query;
+              _performSearch(query);
+            },
+          )),
+        ],
+      ),
+    );
+  }
+
+  /// Content based on search mode
+  Widget _buildContent() {
+    switch (_searchMode) {
+      case SearchMode.name:
+        return _buildNameSearchContent();
+      case SearchMode.id:
+        return _buildIdSearchContent();
+    }
+  }
+
+  /// Name Search Content - Uses third-party API
+  Widget _buildNameSearchContent() {
+    return Consumer<CreatorSearchProvider>(
+      builder: (context, creatorSearchProvider, child) {
+        if (!_hasSearched) {
+          return _buildSearchPlaceholder();
+        }
+
+        if (_isSearching && creatorSearchProvider.loading) {
+          return _buildLoadingState();
+        }
+
+        if (creatorSearchProvider.error != null && creatorSearchProvider.nameSearchResults.isEmpty) {
+          return _buildErrorState(creatorSearchProvider.error!);
+        }
+
+        if (creatorSearchProvider.nameSearchResults.isEmpty) {
+          return _buildEmptyState('No creators found');
+        }
+
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(AppTheme.mdPadding),
+            itemCount: creatorSearchProvider.nameSearchResults.length,
+            itemBuilder: (context, index) {
+              final searchResult = creatorSearchProvider.nameSearchResults[index];
+              final creator = creatorSearchProvider.searchResultToCreator(searchResult);
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppTheme.mdSpacing),
+                child: CreatorCard(
+                  creator: creator!,
+                  onTap: () => _navigateToCreatorDetail(creator!),
+                  showServiceBadge: true,
+                  showFansCount: searchResult.fans != null,
+                  experimentalBadge: true, // Show experimental badge for mbaharip API
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// ID Search Content - Direct navigation, no results list
+  Widget _buildIdSearchContent() {
+    return _buildSearchPlaceholder();
+  }
+  /// Post Search Content - REMOVED (no post search mode)
+  Widget _buildPostSearchContent() {
+    return _buildSearchPlaceholder();
+  }
+
+  /// Tag Search Content - REMOVED (no tag search mode)
+  Widget _buildTagSearchContent() {
+    return _buildSearchPlaceholder();
+  }
+
+  /// Search Placeholder
+  Widget _buildSearchPlaceholder() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.lgPadding),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _getSearchIcon(),
+            size: 64,
+            color: AppTheme.secondaryTextColor,
+          ),
+          const SizedBox(height: AppTheme.mdSpacing),
+          Text(
+            'Search ${_searchMode.name}s',
+            style: AppTheme.titleStyle.copyWith(
+              color: AppTheme.primaryTextColor,
+            ),
+          ),
+          const SizedBox(height: AppTheme.smSpacing),
+          Text(
+            _getSearchDescription(),
+            style: AppTheme.bodyStyle.copyWith(
+              color: AppTheme.secondaryTextColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Loading State
+  Widget _buildLoadingState() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.lgPadding),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: AppTheme.primaryColor,
+            ),
+            const SizedBox(height: AppTheme.mdSpacing),
+            Text(
+              'Searching...',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.secondaryTextColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Error State
+  Widget _buildErrorState(String error) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.lgPadding),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppTheme.errorColor,
+            ),
+            const SizedBox(height: AppTheme.mdSpacing),
+            Text(
+              'Search Error',
+              style: AppTheme.titleStyle.copyWith(
+                color: AppTheme.primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: AppTheme.smSpacing),
+            Text(
+              error,
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.secondaryTextColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppTheme.lgSpacing),
+            ElevatedButton.icon(
+              onPressed: () => _performSearch(_searchController.text),
+              icon: Icon(Icons.refresh),
+              label: Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Empty State
+  Widget _buildEmptyState(String message) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.lgPadding),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: AppTheme.secondaryTextColor,
+            ),
+            const SizedBox(height: AppTheme.mdSpacing),
+            Text(
+              message,
+              style: AppTheme.titleStyle.copyWith(
+                color: AppTheme.primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: AppTheme.smSpacing),
+            Text(
+              'Try adjusting your search terms or filters',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.secondaryTextColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Loading Indicator - REMOVED (no infinite scroll)
+  Widget _buildLoadingIndicator() {
+    return Container(); // Empty since no infinite scroll
+  }
+
+  // 🎯 HELPER METHODS
+
+  /// Get search hint based on mode
+  String _getSearchHint() {
+    switch (_searchMode) {
+      case SearchMode.name:
+        return 'Search creators by name...';
+      case SearchMode.id:
+        return 'Enter creator ID to view profile...';
+    }
+  }
+
+  /// Get search icon based on mode
+  IconData _getSearchIcon() {
+    switch (_searchMode) {
+      case SearchMode.name:
+        return Icons.search;
+      case SearchMode.id:
+        return Icons.person_search;
+    }
+  }
+
+  /// Get search description
+  String _getSearchDescription() {
+    switch (_searchMode) {
+      case SearchMode.name:
+        return 'Search creators using community index (mbaharip API)';
+      case SearchMode.id:
+        return 'Enter creator ID to instantly view their profile (official API)';
+    }
+  }
+
+  // 🎯 ACTION METHODS
+
+  /// Perform search based on current mode
+  void _performSearch(String query) {
+    print('🔍 DEBUG: _performSearch called with query: "$query"');
+    print('🔍 DEBUG: Current search mode: $_searchMode');
+    
+    if (query.trim().isEmpty) return;
+
+    setState(() {
+      _isSearching = true;
+      _hasSearched = true;
+      _showHistory = false;
+    });
+
+    // Save to search history
+    _saveSearchHistory(query);
+
+    // Start search animation
+    _searchAnimationController.forward();
+
+    // Route to appropriate search method based on mode
+    switch (_searchMode) {
+      case SearchMode.name:
+        print('🔍 DEBUG: Routing to name search');
+        _searchByName(query);
+        break;
+      case SearchMode.id:
+        print('🔍 DEBUG: Routing to ID search');
+        _searchById(query);
+        break;
+    }
+  }
+
+  /// Search by name using third-party API
+  void _searchByName(String query) {
+    print('🔍 DEBUG: Search by name called with query: "$query"');
+    print('🔍 DEBUG: Current API source: ${_selectedApiSource.name}');
+    print('🔍 DEBUG: Search target: ${_searchTarget.name}');
+    
+    // Use mbaharip API for name search
+    final creatorSearchProvider = Provider.of<CreatorSearchProvider>(context, listen: false);
+    print('🔍 DEBUG: Calling searchCreatorsByName...');
+    creatorSearchProvider.searchCreatorsByName(query, _selectedApiSource);
+    print('🔍 DEBUG: searchCreatorsByName called');
+  }
+
+  /// Search by ID using official API
+  void _searchById(String query) {
+    // Use official API for ID search - instant navigation
+    final creatorId = query.trim();
+    
+    // Create a basic creator object with the ID
+    final creator = Creator(
+      id: creatorId,
+      name: 'Creator $creatorId',
+      service: _selectedService,
+      indexed: 0, // Default value
+      updated: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      favorited: false,
+      avatar: '',
+      bio: '',
+      fans: null,
+      followed: false,
+    );
+    
+    // Navigate directly to creator detail
+    _navigateToCreatorDetail(creator);
+  }
+
+  /// Load more posts - DISABLED (no post search mode)
+  void _loadMorePosts() {
+    // Post search mode removed - no action needed
+  }
+
+  /// Clear search
+  void _clearSearch() {
+    HapticFeedback.lightImpact();
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+    
+    setState(() {
+      _isSearching = false;
+      _hasSearched = false;
+      _showHistory = true;
+    });
+
+    // Reset animations
+    _searchAnimationController.reset();
+    _tabAnimationController.reset();
+  }
+
+  /// Clear search history
+  void _clearSearchHistory() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _searchHistory.clear();
+      _showHistory = false;
+    });
+    // TODO: Clear from local storage
+  }
+
+  /// Navigate to creator detail
+  void _navigateToCreatorDetail(Creator creator) {
+    HapticFeedback.lightImpact();
+    Navigator.of(context).pushNamed(
+      '/creator',
+      arguments: creator,
+    );
+  }
+
+  /// Navigate to specific post - REMOVED (no post search mode)
+  void _navigateToSpecificPost(String creatorId, String postId) {
+    // Post navigation removed - no action needed
+  }
+
+  /// Navigate to post detail
+  void _navigateToPostDetail(Post post) {
+    HapticFeedback.lightImpact();
+    Navigator.of(context).pushNamed(
+      '/post',
+      arguments: post,
+    );
+  }
+}
+
+/// Search Target Enum
+enum SearchTarget {
+  kemono,
+  coomer,
+}
+
+/// Search Mode Enum
+enum SearchMode {
+  name,  // Search by name using third-party API
+  id,    // Search by ID using official API
+}
+
+/// Creator Search Type Enum (for backward compatibility)
+enum CreatorSearchType {
+  name,  // Search by name using mbaharip API
+  id,    // Search by ID using official API
+}

@@ -1,0 +1,351 @@
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+import 'package:kc_gallery_viewer/data/services/api_header_service.dart';
+import 'package:kc_gallery_viewer/utils/logger.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// 🎯 FINAL NativeVideoPlayer - Khusus untuk KEMONO
+///
+/// Cara BENAR untuk video Kemono:
+/// - video_player dengan headers
+/// - Native, hemat resource, UX bagus
+/// - JANGAN dipakai untuk Coomer!
+class NativeVideoPlayerFinal extends StatefulWidget {
+  final String url;
+  final double? width;
+  final double? height;
+  final String? apiSource;
+
+  const NativeVideoPlayerFinal({
+    super.key,
+    required this.url,
+    this.width,
+    this.height,
+    this.apiSource,
+  });
+
+  @override
+  State<NativeVideoPlayerFinal> createState() => _NativeVideoPlayerFinalState();
+}
+
+class _NativeVideoPlayerFinalState extends State<NativeVideoPlayerFinal> {
+  VideoPlayerController? _controller;
+  bool _isInitialized = false;
+  bool _hasError = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    AppLogger.info(
+      '🎥 NativeVideoPlayer: Widget initialized',
+      tag: 'VideoPlayer',
+    );
+    _initializePlayer();
+  }
+
+  @override
+  void dispose() {
+    AppLogger.info(
+      '🎥 NativeVideoPlayer: Disposing controller',
+      tag: 'VideoPlayer',
+    );
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _initializePlayer() async {
+    try {
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: STARTING INITIALIZATION',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: URL = ${widget.url}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: API Source = ${widget.apiSource ?? "not specified"}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Dimensions = ${widget.width}x${widget.height}',
+        tag: 'VideoPlayer',
+      );
+
+      final headers = _getHeaders();
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: HEADERS = ${headers.keys.join(', ')}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: REFERER = ${headers['referer'] ?? 'none'}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: USER-AGENT = ${headers['User-Agent'] ?? 'default'}',
+        tag: 'VideoPlayer',
+      );
+
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Creating VideoPlayerController...',
+        tag: 'VideoPlayer',
+      );
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.url),
+        httpHeaders: headers,
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Controller created successfully',
+        tag: 'VideoPlayer',
+      );
+
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Starting initialization with 30s timeout...',
+        tag: 'VideoPlayer',
+      );
+      final startTime = DateTime.now();
+
+      await _controller!.initialize().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+          AppLogger.error(
+            '🎥 NativeVideoPlayer: TIMEOUT after ${elapsed}ms',
+            tag: 'VideoPlayer',
+          );
+          throw Exception(
+            'Video loading timeout after 30 seconds (elapsed: ${elapsed}ms)',
+          );
+        },
+      );
+
+      final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: INITIALIZATION SUCCESS in ${elapsed}ms',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Video Duration = ${_controller!.value.duration}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Video Size = ${_controller!.value.size}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Video Aspect Ratio = ${_controller!.value.aspectRatio}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Video isInitialized = ${_controller!.value.isInitialized}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.info(
+        '🎥 NativeVideoPlayer: Video isPlaying = ${_controller!.value.isPlaying}',
+        tag: 'VideoPlayer',
+      );
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        AppLogger.info(
+          '🎥 NativeVideoPlayer: UI State updated - Ready to play',
+          tag: 'VideoPlayer',
+        );
+      }
+    } catch (e) {
+      AppLogger.error(
+        '🎥 NativeVideoPlayer: INITIALIZATION FAILED',
+        tag: 'VideoPlayer',
+        error: e,
+      );
+      AppLogger.error(
+        '🎥 NativeVideoPlayer: Error Type = ${e.runtimeType}',
+        tag: 'VideoPlayer',
+      );
+      AppLogger.error(
+        '🎥 NativeVideoPlayer: Error Message = ${e.toString()}',
+        tag: 'VideoPlayer',
+      );
+
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = e.toString();
+        });
+        AppLogger.info(
+          '🎥 NativeVideoPlayer: Error UI State updated',
+          tag: 'VideoPlayer',
+        );
+      }
+    }
+  }
+
+  Map<String, String> _getHeaders() {
+    // Headers yang BENAR untuk video Kemono
+    return ApiHeaderService.getMediaHeaders(referer: 'https://kemono.cr/');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) {
+      return _buildErrorWidget();
+    }
+
+    if (!_isInitialized) {
+      return _buildLoadingWidget();
+    }
+
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: AspectRatio(
+        aspectRatio: _controller!.value.aspectRatio,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [VideoPlayer(_controller!), _buildControls()],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControls() {
+    return GestureDetector(
+      onTap: () {
+        if (_controller!.value.isPlaying) {
+          AppLogger.info(
+            '🎥 NativeVideoPlayer: PAUSING video',
+            tag: 'VideoPlayer',
+          );
+          AppLogger.info(
+            '🎥 NativeVideoPlayer: Current position = ${_controller!.value.position}',
+            tag: 'VideoPlayer',
+          );
+          _controller!.pause();
+        } else {
+          AppLogger.info(
+            '🎥 NativeVideoPlayer: PLAYING video',
+            tag: 'VideoPlayer',
+          );
+          AppLogger.info(
+            '🎥 NativeVideoPlayer: Current position = ${_controller!.value.position}',
+            tag: 'VideoPlayer',
+          );
+          AppLogger.info(
+            '🎥 NativeVideoPlayer: Video duration = ${_controller!.value.duration}',
+            tag: 'VideoPlayer',
+          );
+          _controller!.play();
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          _controller!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+          size: 48,
+          color: Colors.white.withOpacity(0.8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingWidget() {
+    return Container(
+      width: widget.width,
+      height: widget.height ?? 200,
+      color: Colors.black,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Colors.white),
+            SizedBox(height: 16),
+            Text(
+              'Loading video...',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Container(
+      width: widget.width,
+      height: widget.height ?? 200,
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.videocam_off, size: 48, color: Colors.white),
+            const SizedBox(height: 16),
+            const Text(
+              'Video unavailable',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _retry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _openInBrowser,
+                  icon: const Icon(Icons.open_in_browser),
+                  label: const Text('Browser'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _retry() {
+    setState(() {
+      _hasError = false;
+      _errorMessage = null;
+      _isInitialized = false;
+    });
+    _initializePlayer();
+  }
+
+  void _openInBrowser() async {
+    try {
+      final uri = Uri.parse(widget.url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      AppLogger.error(
+        'Failed to open in browser',
+        tag: 'VideoPlayer',
+        error: e,
+      );
+    }
+  }
+}

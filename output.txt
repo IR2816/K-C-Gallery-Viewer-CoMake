@@ -1,0 +1,6 @@
+﻿Analyzing post_detail_screen.dart...
+
+  error - post_detail_screen.dart:1548:23 - Undefined name 'ApiHeaderService'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+  error - post_detail_screen.dart:3564:23 - Undefined name 'ApiHeaderService'. Try correcting the name to one that is defined, or defining the name. - undefined_identifier
+
+2 issues found.

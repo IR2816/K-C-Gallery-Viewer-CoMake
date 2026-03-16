@@ -1,0 +1,2362 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:html/dom.dart' as dom;
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../domain/entities/post.dart';
+import '../../domain/entities/api_source.dart';
+import '../providers/posts_provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/comments_provider.dart';
+import '../providers/tag_filter_provider.dart';
+import '../providers/download_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/media_resolver.dart';
+import 'fullscreen_media_viewer.dart';
+import 'download_manager_screen.dart';
+import '../widgets/comments_bottom_sheet.dart';
+import 'video_player_screen.dart';
+import '../services/custom_tabs_service.dart';
+
+class PostDetailScreen extends StatefulWidget {
+  final Post post;
+  final ApiSource apiSource;
+  final bool isFromSavedPosts;
+
+  const PostDetailScreen({
+    super.key, 
+    required this.post, 
+    required this.apiSource,
+    this.isFromSavedPosts = false,
+  });
+
+  @override
+  State<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> 
+    with TickerProviderStateMixin {
+  
+  // Core Controllers
+  final ScrollController _scrollController = ScrollController();
+  late TabController _tabController;
+  
+  // State Management
+  final bool _showFullText = false;
+  final int _currentMediaIndex = 0;
+  bool _isLoading = false;
+  String? _error;
+  bool _showAllMedia = false; // NEW: State untuk expand/collapse all media
+  
+  // Full post data from single post API
+  Post? _fullPost;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    
+    // Preload comments for immediate preview
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadComments();
+    });
+    
+    // Load full post data only if not from saved posts
+    if (!widget.isFromSavedPosts) {
+      _loadFullPost();
+    } else {
+      // For saved posts, use the post directly as it's already complete
+      setState(() {
+        _fullPost = widget.post;
+        _isLoading = false;
+      });
+    }
+    
+    // DEBUG: Print post information
+    print('=== DEBUG: POST INFORMATION ===');
+    print('Post ID: ${widget.post.id}');
+    print('Post title: ${widget.post.title}');
+    print('Post content length: ${widget.post.content.length}');
+    print('Post content preview: ${widget.post.content.length > 100 ? widget.post.content.substring(0, 100) : widget.post.content}');
+    print('Post tags count: ${widget.post.tags.length}');
+    print('Post tags: ${widget.post.tags}');
+    print('=== END POST DEBUG ===');
+  }
+
+  /// Preload comments for immediate preview
+  void _preloadComments() {
+    print('🔍 DEBUG: Preloading comments for postId: ${widget.post.id}, service: ${widget.post.service}, creatorId: ${widget.post.user}');
+    final commentsProvider = context.read<CommentsProvider>();
+    commentsProvider.loadComments(
+      widget.post.id,
+      widget.post.service,
+      widget.post.user,
+    );
+  }
+
+  /// Load full post data from single post API
+  Future<void> _loadFullPost() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final postsProvider = context.read<PostsProvider>();
+      await postsProvider.loadSinglePost(
+        widget.post.service,
+        widget.post.user,
+        widget.post.id,
+      );
+      
+      // Get the full post from provider
+      final fullPost = postsProvider.posts.firstWhere(
+        (p) => p.id == widget.post.id,
+        orElse: () => widget.post,
+      );
+      
+      setState(() {
+        _fullPost = fullPost;
+        _isLoading = false;
+      });
+      
+      // DEBUG: Print full post information
+      print('=== DEBUG: FULL POST INFORMATION ===');
+      print('Full post content length: ${_fullPost?.content.length}');
+      print('Full post content preview: ${_fullPost?.content.length != null && _fullPost!.content.length > 100 ? _fullPost!.content.substring(0, 100) : _fullPost?.content}');
+      print('Full post tags count: ${_fullPost?.tags.length}');
+      print('Full post tags: ${_fullPost?.tags}');
+      print('=== END FULL POST DEBUG ===');
+      
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+        _fullPost = widget.post; // Fallback to original post
+      });
+      
+      print('=== DEBUG: LOAD FULL POST ERROR ===');
+      print('Error: $e');
+      print('=== END ERROR DEBUG ===');
+    }
+  }
+
+  /// Get current post (full post if available, otherwise original post)
+  Post get _currentPost => _fullPost ?? widget.post;
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // BUILD METHOD
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      appBar: AppBar(
+        title: Text(
+          widget.apiSource == ApiSource.kemono ? 'Kemono' : 'Coomer',
+          style: AppTheme.getTitleStyle(context).copyWith(
+            color: AppTheme.getOnBackgroundColor(context),
+          ),
+        ),
+        backgroundColor: AppTheme.getSurfaceColor(context),
+        foregroundColor: AppTheme.getOnSurfaceColor(context),
+        elevation: 0,
+        actions: [
+          // Download Button
+          IconButton(
+            icon: Icon(
+              Icons.download,
+              color: AppTheme.getOnSurfaceColor(context),
+            ),
+            onPressed: _downloadPost,
+            tooltip: 'Download in Browser',
+          ),
+          
+          // Share Button
+          IconButton(
+            icon: Icon(
+              Icons.share,
+              color: AppTheme.getOnBackgroundColor(context),
+            ),
+            onPressed: _sharePost,
+          ),
+          
+          // More options
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('More options coming soon!')),
+              );
+            },
+            icon: Icon(
+              Icons.more_vert,
+              color: AppTheme.secondaryTextColor,
+            ),
+            tooltip: 'More options',
+          ),
+        ],
+      ),
+      body: _isLoading 
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.primaryColor,
+              ),
+            )
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppTheme.errorColor,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading post',
+                        style: AppTheme.titleStyle.copyWith(
+                          color: AppTheme.errorColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: AppTheme.captionStyle.copyWith(
+                          color: AppTheme.secondaryTextColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadFullPost,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Creator + Title + Meta (HEADER)
+                      _buildCreatorHeader(),
+                      
+                      // MEDIA SECTION (FOCUS)
+                      _buildMediaSection(),
+                      
+                      // DOWNLOAD LINKS SECTION
+                      _buildDownloadLinksSection(),
+                      
+                      // Post Content (Text + Links)
+                      _buildPostContent(),
+                      
+                      // Tags (Navigation)
+                      if (_currentPost.tags.isNotEmpty) _buildTagsSection(),
+                      
+                      // Comments Section
+                      _buildCommentsSection(),
+                      
+                      // Bottom padding
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  // 🎯 WIDGET BUILDERS
+
+  /// Build Creator Header - Minimal & Clean
+  Widget _buildCreatorHeader() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Creator Name + Service Badge
+          Row(
+            children: [
+              // Creator Name (Tappable)
+              GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Creator: ${_currentPost.user}')),
+                  );
+                },
+                child: Text(
+                  _currentPost.user,
+                  style: AppTheme.titleStyle.copyWith(
+                    color: AppTheme.primaryColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Service Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getServiceColor().withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _getServiceColor().withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  _getServiceDisplayName(),
+                  style: TextStyle(
+                    color: _getServiceColor(),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Post Title (2-3 lines max)
+          if (_currentPost.title.isNotEmpty)
+            Text(
+              _currentPost.title,
+              style: AppTheme.titleStyle.copyWith(
+                color: AppTheme.getOnBackgroundColor(context),
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          
+          // Date
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(_currentPost.published),
+            style: AppTheme.bodyStyle.copyWith(
+              color: AppTheme.secondaryTextColor,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build Media Section - Progressive Disclosure dengan Expand/Collapse
+  Widget _buildMediaSection() {
+    // Collect and sort media items
+    final mediaItems = _collectAndSortMedia();
+    
+    if (mediaItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Progressive disclosure logic
+    const maxPreviewItems = 6;
+    final hasManyItems = mediaItems.length > maxPreviewItems;
+    final displayItems = _showAllMedia 
+        ? mediaItems // Show all when expanded
+        : (hasManyItems 
+            ? mediaItems.take(maxPreviewItems).toList()
+            : mediaItems); // Show preview when collapsed
+
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Modern Header with count
+          _buildMediaHeader(mediaItems.length),
+          const SizedBox(height: AppTheme.mdSpacing),
+          
+          // Media Grid (preview or all)
+          _buildMediaGrid(displayItems, mediaItems.length),
+          
+          // Expand/Collapse button untuk post besar
+          if (hasManyItems) ...[
+            const SizedBox(height: AppTheme.mdSpacing),
+            _buildExpandCollapseButton(mediaItems.length),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Build Download Links Section - Show all downloadable files
+  Widget _buildDownloadLinksSection() {
+    final downloadItems = _collectDownloadableItems();
+    
+    if (downloadItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                Icons.download,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Download Links',
+                style: AppTheme.subtitleStyle.copyWith(
+                  color: AppTheme.getOnSurfaceColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${downloadItems.length}',
+                  style: TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Download items list
+          ...downloadItems.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            return _buildDownloadItem(item, index);
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  /// Collect all downloadable items (attachments + files)
+  List<Map<String, dynamic>> _collectDownloadableItems() {
+    final downloadItems = <Map<String, dynamic>>[];
+    
+    // Collect from attachments
+    for (final attachment in _currentPost.attachments) {
+      final fullUrl = _buildFullUrl(attachment.path);
+      downloadItems.add({
+        'name': attachment.name,
+        'url': fullUrl,
+        'type': _getFileType(attachment.name),
+        'size': attachment.size ?? 0,
+        'source': 'attachment',
+      });
+    }
+    
+    // Collect from files
+    for (final file in _currentPost.file) {
+      final fullUrl = _buildFullUrl(file.path);
+      downloadItems.add({
+        'name': file.name,
+        'url': fullUrl,
+        'type': _getFileType(file.name),
+        'size': file.size ?? 0,
+        'source': 'file',
+      });
+    }
+    
+    // Sort by type (images first, then videos, then others)
+    downloadItems.sort((a, b) {
+      final typeOrder = {'image': 0, 'video': 1, 'other': 2};
+      final aType = typeOrder[a['type']] ?? 2;
+      final bType = typeOrder[b['type']] ?? 2;
+      if (aType != bType) return aType.compareTo(bType);
+      return a['name'].compareTo(b['name']);
+    });
+    
+    return downloadItems;
+  }
+
+  /// Build individual download item
+  Widget _buildDownloadItem(Map<String, dynamic> item, int index) {
+    final isImage = item['type'] == 'image';
+    final isVideo = item['type'] == 'video';
+    final fileSize = _formatFileSize(item['size']);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(context),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: isImage 
+                ? Colors.blue.withOpacity(0.1)
+                : isVideo 
+                    ? Colors.red.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            isImage 
+                ? Icons.image
+                : isVideo 
+                    ? Icons.videocam
+                    : Icons.insert_drive_file,
+            color: isImage 
+                ? Colors.blue
+                : isVideo 
+                    ? Colors.red
+                    : Colors.grey,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          item['name'],
+          style: AppTheme.captionStyle.copyWith(
+            color: AppTheme.getOnSurfaceColor(context),
+            fontWeight: FontWeight.w500,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Row(
+          children: [
+            if (fileSize.isNotEmpty) ...[
+              Icon(
+                Icons.storage,
+                size: 12,
+                color: AppTheme.getOnSurfaceColor(context).withOpacity(0.6),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                fileSize,
+                style: AppTheme.captionStyle.copyWith(
+                  color: AppTheme.getOnSurfaceColor(context).withOpacity(0.6),
+                  fontSize: 10,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Icon(
+              Icons.link,
+              size: 12,
+              color: AppTheme.getOnSurfaceColor(context).withOpacity(0.6),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              item['source'],
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context).withOpacity(0.6),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Preview button for images
+            if (isImage)
+              IconButton(
+                onPressed: () => _previewImage(item),
+                icon: Icon(
+                  Icons.visibility,
+                  color: AppTheme.primaryColor,
+                  size: 18,
+                ),
+                tooltip: 'Preview',
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+              ),
+            
+            // Play button for videos
+            if (isVideo)
+              IconButton(
+                onPressed: () => _playVideo(item),
+                icon: Icon(
+                  Icons.play_arrow,
+                  color: AppTheme.primaryColor,
+                  size: 18,
+                ),
+                tooltip: 'Play',
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+              ),
+            
+            // Download button
+            IconButton(
+              onPressed: () => _downloadFile(item),
+              icon: Icon(
+                Icons.download,
+                color: AppTheme.primaryColor,
+                size: 18,
+              ),
+              tooltip: 'Download',
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Get file type from filename
+  String _getFileType(String filename) {
+    final extension = filename.toLowerCase().split('.').last;
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension)) {
+      return 'image';
+    } else if (['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv'].contains(extension)) {
+      return 'video';
+    } else {
+      return 'other';
+    }
+  }
+
+  /// Format file size to human readable format
+  String _formatFileSize(int bytes) {
+    if (bytes == 0) return '';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    int unitIndex = 0;
+    double size = bytes.toDouble();
+    
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    
+    return '${size.toStringAsFixed(unitIndex == 0 ? 0 : 1)} ${units[unitIndex]}';
+  }
+
+  /// Preview image in fullscreen
+  void _previewImage(Map<String, dynamic> item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenMediaViewer(
+          mediaItems: [{
+            'type': 'image',
+            'url': item['url'],
+            'name': item['name'],
+          }],
+          initialIndex: 0,
+          apiSource: widget.apiSource,
+        ),
+      ),
+    );
+  }
+
+  /// Play video
+  void _playVideo(Map<String, dynamic> item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenMediaViewer(
+          mediaItems: [{
+            'type': 'video',
+            'url': item['url'],
+            'name': item['name'],
+          }],
+          initialIndex: 0,
+          apiSource: widget.apiSource,
+        ),
+      ),
+    );
+  }
+
+  /// Open fullscreen media viewer with all media items
+  void _openFullscreenMediaViewer(Map<String, dynamic> mediaItem, int index) {
+    // Get all media items from the post
+    final allMediaItems = _collectAndSortMedia();
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenMediaViewer(
+          mediaItems: allMediaItems,
+          initialIndex: index, // Start from tapped item
+          apiSource: widget.apiSource,
+        ),
+      ),
+    );
+  }
+
+  /// Download all files using Custom Tabs (BATCH PROCESSING)
+  Future<void> _downloadAllFiles() async {
+    try {
+      // Collect all downloadable items
+      final downloadItems = _collectDownloadableItems();
+      
+      if (downloadItems.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No files to download'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Show batch download message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Opening ${downloadItems.length} files in secure browser...',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Each file will open in a new browser tab',
+                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+
+      // Open each file in Custom Tab
+      int successCount = 0;
+      int failCount = 0;
+      
+      for (final item in downloadItems) {
+        try {
+          final success = await CustomTabsService.openUrlForDownload(
+            url: item['url'],
+            context: context,
+            title: 'Download ${item['name']}',
+          );
+          
+          if (success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+          
+          // Small delay between files
+          await Future.delayed(const Duration(milliseconds: 500));
+        } catch (e) {
+          failCount++;
+        }
+      }
+
+      // Show final result
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        
+        String message;
+        Color backgroundColor;
+        
+        if (failCount == 0) {
+          message = 'All $successCount files opened in secure browser';
+          backgroundColor = Colors.green;
+        } else if (successCount == 0) {
+          message = 'Failed to open any files in browser';
+          backgroundColor = Colors.red;
+        } else {
+          message = '$successCount opened, $failCount failed';
+          backgroundColor = Colors.orange;
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(message),
+                const SizedBox(height: 4),
+                const Text(
+                  'Close each browser tab when download completes',
+                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+            backgroundColor: backgroundColor,
+            duration: const Duration(seconds: 6),
+            action: successCount > 0 ? SnackBarAction(
+              label: 'View Downloads',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DownloadManagerScreen(),
+                  ),
+                );
+              },
+            ) : null,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Batch download failed: ${e.toString()}'),
+                const SizedBox(height: 4),
+                const Text(
+                  'Using secure browser for server compatibility',
+                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Download single file with browser-like behavior and retry logic
+  Future<void> _downloadSingleFile(Map<String, dynamic> item) async {
+    // Try to get app documents directory instead of requiring storage permission
+    Directory? directory;
+    
+    if (Platform.isAndroid) {
+      // For Android 11+, use app's external files directory
+      directory = await getExternalStorageDirectory();
+      if (directory != null) {
+        // Create app-specific directory in external storage
+        directory = Directory('${directory.path}/KC_Gallery_Downloads');
+      }
+    } else {
+      // For iOS, use documents directory
+      directory = await getApplicationDocumentsDirectory();
+      if (directory != null) {
+        directory = Directory('${directory.path}/KC_Gallery_Downloads');
+      }
+    }
+
+    if (directory == null) {
+      // Fallback to app documents directory
+      directory = await getApplicationDocumentsDirectory();
+      directory = Directory('${directory.path}/KC_Gallery_Downloads');
+    }
+
+    // Create download directory if it doesn't exist
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+
+    // Download file using browser-like behavior
+    final dio = Dio();
+    final savePath = '${directory.path}/${item['name']}';
+    
+    // Browser-like headers (WAJIB untuk Coomer/Kemono)
+    final browserHeaders = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Referer": "https://coomer.st/",
+      "Accept": "*/*",
+      "Connection": "keep-alive",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+    };
+    
+    // Configure Dio untuk browser-like behavior
+    dio.options = BaseOptions(
+      headers: browserHeaders,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 300), // 5 menit untuk file besar
+      sendTimeout: const Duration(seconds: 30),
+      receiveDataWhenStatusError: true, // Penting untuk error handling
+    );
+    
+    // Download dengan retry logic
+    await _downloadWithRetry(dio, item['url'], savePath);
+  }
+
+  /// Download dengan retry logic dan random delay
+  Future<void> _downloadWithRetry(Dio dio, String url, String savePath) async {
+    int maxRetries = 2;
+    int attempt = 0;
+    
+    while (attempt <= maxRetries) {
+      try {
+        await dio.download(
+          url,
+          savePath,
+          options: Options(
+            headers: dio.options.headers,
+            // TANPA range request untuk menghindari connection reset
+          ),
+          // TANPA resume untuk menghindari Range request issues
+          deleteOnError: true,
+        );
+        
+        // Success → break retry loop
+        break;
+        
+      } on DioException catch (e) {
+        attempt++;
+        
+        // Log error untuk debugging
+        print('Download attempt $attempt failed: ${e.type} - ${e.message}');
+        
+        if (attempt > maxRetries) {
+          // Final attempt failed → throw error
+          throw Exception('Download failed after $maxRetries retries: ${e.message}');
+        }
+        
+        // Random delay sebelum retry (500-1500ms)
+        final delay = Duration(milliseconds: 500 + (900 * (attempt - 1)) + (100 * DateTime.now().millisecond % 500));
+        await Future.delayed(delay);
+        
+        // Update headers untuk retry (sedikit variasi)
+        dio.options.headers = {
+          ...dio.options.headers!,
+          'X-Retry-Count': attempt.toString(),
+          'X-Retry-Timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+        };
+      }
+    }
+  }
+
+  /// Download file using Custom Tabs (MOST STABLE)
+  Future<void> _downloadFile(Map<String, dynamic> item) async {
+    try {
+      // Show loading message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(child: Text('Preparing secure browser...')),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+
+      // Open URL in Custom Tab for download
+      final success = await CustomTabsService.openUrlForDownload(
+        url: item['url'],
+        context: context,
+        title: 'Download ${item['name']}',
+      );
+
+      if (success) {
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.security, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Secure browser opened for download',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Close browser when download completes',
+                    style: TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'View Downloads',
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DownloadManagerScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        // Fallback to external browser
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Opening in external browser...'),
+              backgroundColor: Colors.orange,
+              action: SnackBarAction(
+                label: 'Open',
+                textColor: Colors.white,
+                onPressed: () => _openInBrowser(item['url']),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Download failed: ${item['name']}'),
+                const SizedBox(height: 4),
+                const Text(
+                  'Using secure browser for server compatibility',
+                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'External Browser',
+              textColor: Colors.white,
+              onPressed: () => _openInBrowser(item['url']),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Get download directory helper
+  Future<Directory?> _getDownloadDirectory() async {
+    Directory? directory;
+    
+    if (Platform.isAndroid) {
+      directory = await getExternalStorageDirectory();
+      if (directory != null) {
+        directory = Directory('${directory.path}/KC_Gallery_Downloads');
+      }
+    } else {
+      directory = await getApplicationDocumentsDirectory();
+      if (directory != null) {
+        directory = Directory('${directory.path}/KC_Gallery_Downloads');
+      }
+    }
+
+    if (directory == null) {
+      directory = await getApplicationDocumentsDirectory();
+      directory = Directory('${directory.path}/KC_Gallery_Downloads');
+    }
+
+    return directory;
+  }
+
+  /// Open URL in browser
+  Future<void> _openInBrowser(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open browser: $e')),
+        );
+      }
+    }
+  }
+
+  /// Collect and sort media items with proper thumbnail handling
+  List<Map<String, dynamic>> _collectAndSortMedia() {
+    final List<Map<String, dynamic>> mediaItems = [];
+    
+    // Process images
+    if (widget.post.file != null) {
+      mediaItems.add({
+        'type': 'image',
+        'url': widget.post.file!.url,
+        'name': widget.post.file!.name,
+        'thumbnail_url': _getThumbnailUrl(widget.post.file!.url, widget.apiSource),
+      });
+    }
+    
+    // Process attachments
+    for (final attachment in widget.post.attachments) {
+      if (attachment.path != null) {
+        final isVideo = attachment.name?.toLowerCase().endsWith('.mp4') == true ||
+                       attachment.name?.toLowerCase().endsWith('.webm') == true ||
+                       attachment.name?.toLowerCase().endsWith('.mov') == true;
+        
+        mediaItems.add({
+          'type': isVideo ? 'video' : 'image',
+          'url': attachment.path!,
+          'name': attachment.name ?? 'Unknown',
+          'thumbnail_url': isVideo ? _getThumbnailUrl(attachment.path!, widget.apiSource) : attachment.path!,
+        });
+      }
+    }
+
+    // Sort by name for consistent order
+    mediaItems.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    
+    return mediaItems;
+  }
+
+  /// Get thumbnail URL for Kemono/Coomer
+  String _getThumbnailUrl(String originalUrl, String apiSource) {
+    try {
+      final uri = Uri.parse(originalUrl);
+      
+      // Kemono thumbnail format: //img.kemono.cr/thumbnail/data/XX/XX/filename.jpg
+      if (apiSource == 'kemono' && (uri.host.contains('kemono.party') || uri.host.contains('kemono.cr'))) {
+        final segments = uri.pathSegments;
+        if (segments.length >= 2 && segments[0] == 'data') {
+          // Reconstruct as thumbnail URL
+          final thumbnailPath = 'thumbnail/data/${segments[1]}/${segments.length > 2 ? segments[2] : ''}';
+          return 'https://img.kemono.cr/$thumbnailPath';
+        }
+      }
+      
+      // Coomer thumbnail format: //img.coomer.st/thumbnail/data/XX/XX/filename.jpg
+      if (apiSource == 'coomer' && (uri.host.contains('coomer.party') || uri.host.contains('coomer.st'))) {
+        final segments = uri.pathSegments;
+        if (segments.length >= 2 && segments[0] == 'data') {
+          // Reconstruct as thumbnail URL
+          final thumbnailPath = 'thumbnail/data/${segments[1]}/${segments.length > 2 ? segments[2] : ''}';
+          return 'https://img.coomer.st/$thumbnailPath';
+        }
+      }
+      
+      // Fallback to original URL
+      return originalUrl;
+    } catch (e) {
+      return originalUrl;
+    }
+  }
+    
+    // Prioritize images for preview, keep videos limited
+    final sortedItems = <Map<String, dynamic>>[];
+    sortedItems.addAll(images); // All images first
+    
+    // Add max 2 videos to preview (video berat)
+    if (videos.isNotEmpty) {
+      sortedItems.addAll(videos.take(2));
+      // Remaining videos will be in full gallery
+      sortedItems.addAll(videos.skip(2));
+    }
+    
+    return sortedItems;
+  }
+
+  /// Build modern media header
+  Widget _buildMediaHeader(int totalItems) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryColor.withOpacity(0.1),
+            AppTheme.primaryColor.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.photo_library_outlined,
+            color: AppTheme.primaryColor,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Media ($totalItems)',
+            style: AppTheme.titleStyle.copyWith(
+              color: AppTheme.getOnBackgroundColor(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          if (_isCoomerService())
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Tooltip(
+                message: 'Coomer CDN - May load slower',
+                child: Icon(
+                  Icons.speed,
+                  color: Colors.orange.withOpacity(0.7),
+                  size: 16,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Build media grid with dynamic sizing based on image aspect ratio
+  Widget _buildMediaGrid(List<Map<String, dynamic>> displayItems, int totalItems) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: MasonryGridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2, // Base 2 columns
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          itemCount: displayItems.length,
+          itemBuilder: (context, index) {
+            final mediaItem = displayItems[index];
+            final isVideo = mediaItem['type'] == 'video';
+            
+            return _buildDynamicMediaItem(mediaItem, index, isVideo, totalItems);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Build dynamic media item that adapts to image aspect ratio
+  Widget _buildDynamicMediaItem(
+    Map<String, dynamic> mediaItem, 
+    int index, 
+    bool isVideo, 
+    int totalItems
+  ) {
+    return FutureBuilder<double>(
+      future: _getImageAspectRatio(mediaItem['url']),
+      builder: (context, snapshot) {
+        double aspectRatio = snapshot.data ?? 1.3; // Default slightly tall
+        
+        // Calculate optimal height based on aspect ratio
+        final screenWidth = MediaQuery.of(context).size.width;
+        final columnWidth = (screenWidth - 24) / 2; // 2 columns with spacing
+        double containerHeight = columnWidth / aspectRatio;
+        
+        // Limit minimum and maximum height for better UX
+        containerHeight = containerHeight.clamp(120.0, 500.0);
+        
+        return Container(
+          height: containerHeight,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Media thumbnail with proper aspect ratio
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: isVideo 
+                      ? _buildVideoThumbnail(mediaItem)
+                      : _buildOptimizedImage(mediaItem['url']),
+                ),
+              ),
+              
+              // Video indicator
+              if (isVideo)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.play_circle_outline,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+              
+              // Image number indicator
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              
+              // Aspect ratio indicator for debugging (optional)
+              if (snapshot.hasData)
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${aspectRatio.toStringAsFixed(1)}:1',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                      ),
+                    ),
+                  ),
+                ),
+              
+              // Tap to view overlay
+              Positioned.fill(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => _openFullscreenMediaViewer(mediaItem, index),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Get image aspect ratio by analyzing URL patterns and content type
+  Future<double> _getImageAspectRatio(String imageUrl) async {
+    try {
+      final url = imageUrl.toLowerCase();
+      
+      // Analyze URL patterns for aspect ratio hints
+      if (url.contains('.gif')) {
+        return 1.0; // Square for GIFs
+      } else if (url.contains('thumbnail') || url.contains('thumb')) {
+        return 1.0; // Square for thumbnails
+      } else if (url.contains('banner') || url.contains('header')) {
+        return 3.0; // Very wide for banners
+      } else if (url.contains('portrait') || url.contains('vertical')) {
+        return 0.67; // Tall for portraits (2:3)
+      } else if (url.contains('landscape') || url.contains('horizontal')) {
+        return 1.78; // Wide for landscapes (16:9)
+      } else if (url.contains('manga') || url.contains('comic')) {
+        return 1.41; // Standard manga/A4 ratio (1.414:1)
+      } else if (url.contains('webp')) {
+        return 1.2; // Slightly wide for WebP
+      } else if (url.contains('wide') || url.contains('panorama')) {
+        return 2.5; // Very wide images
+      } else if (url.contains('tall') || url.contains('long')) {
+        return 0.6; // Very tall images
+      } else if (url.contains('instagram') || url.contains('ig')) {
+        return 1.0; // Instagram square
+      } else if (url.contains('twitter') || url.contains('x.com')) {
+        return 1.78; // Twitter landscape
+      } else if (url.contains('pixiv')) {
+        return 1.4; // Pixiv standard
+      } else if (url.contains('patreon')) {
+        return 1.5; // Patreon standard
+      } else if (url.contains('fanbox')) {
+        return 1.6; // Fanbox standard
+      } else if (url.contains('fantia')) {
+        return 1.3; // Fantia standard
+      } else if (url.contains('kemono') || url.contains('coomer')) {
+        return 1.3; // Platform standard
+      } else {
+        // Default aspect ratios based on common patterns
+        if (url.contains('.jpg') || url.contains('.jpeg')) {
+          return 1.33; // Standard photo (4:3)
+        } else if (url.contains('.png')) {
+          return 1.2; // Slightly wide for PNGs
+        } else {
+          return 1.3; // Default slightly tall for general content
+        }
+      }
+
+      /// Build expand/collapse button
+      Widget _buildExpandCollapseButton(int totalItems) {
+        final isExpanded = _showAllMedia;
+        final remainingItems = totalItems - 6; // Items hidden in preview
+        
+        return Container(
+          width: double.infinity,
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryColor.withOpacity(0.1),
+                AppTheme.primaryColor.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _toggleShowAllMedia(),
+              borderRadius: BorderRadius.circular(12),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: AppTheme.primaryColor,
+                      size: 20,
+  Widget _buildExpandCollapseButton(int totalItems) {
+    final isExpanded = _showAllMedia;
+    final remainingItems = totalItems - 6; // Items hidden in preview
+    
+    return Container(
+      width: double.infinity,
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryColor.withOpacity(0.1),
+            AppTheme.primaryColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _toggleShowAllMedia(),
+          borderRadius: BorderRadius.circular(12),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isExpanded 
+                      ? 'Show less media'
+                      : 'Show all media ($totalItems)',
+                  style: AppTheme.titleStyle.copyWith(
+                    color: AppTheme.primaryColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (!isExpanded && remainingItems > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '+$remainingItems',
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Get grid columns based on item count and state
+  int _getGridColumns(int displayCount, int totalCount) {
+    if (_showAllMedia) {
+      // When showing all media, use more columns for better layout
+      if (displayCount <= 4) return 2;
+      if (displayCount <= 9) return 3;
+      return 4; // Max 4 columns untuk many items
+    } else {
+      // Preview mode - max 3 columns
+      if (displayCount <= 2) return 2;
+      if (displayCount <= 4) return 2;
+      return 3;
+    }
+  }
+
+  /// Get media height untuk visual variety
+  double _getMediaHeight(int index, int totalItems) {
+    if (_showAllMedia) {
+      // More variety when showing all items
+      final heights = [100, 120, 110, 130, 115, 125, 105, 135, 140];
+      return heights[index % heights.length].toDouble();
+    } else {
+      // Preview heights
+      final heights = [120, 140, 130, 150, 125, 135];
+      return heights[index % heights.length].toDouble();
+    }
+  }
+
+  /// Build Post Content - Text + Links
+  Widget _buildPostContent() {
+    final hasContent = _currentPost.content.isNotEmpty;
+    
+    if (!hasContent) {
+      return const SizedBox.shrink();
+    }
+
+    // Clean HTML tags from content
+    final cleanContent = _cleanHtmlContent(_currentPost.content);
+
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Content',
+            style: AppTheme.titleStyle.copyWith(
+              color: AppTheme.getOnBackgroundColor(context),
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Use Linkify for clickable links
+          Linkify(
+            text: cleanContent,
+            style: AppTheme.bodyStyle.copyWith(
+              color: AppTheme.getOnBackgroundColor(context),
+              fontSize: 14,
+              height: 1.4,
+            ),
+            linkStyle: TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+            onOpen: (link) async {
+              if (await canLaunchUrl(Uri.parse(link.url))) {
+                await launchUrl(
+                  Uri.parse(link.url),
+                  mode: LaunchMode.externalApplication,
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build Comments Section - Collapsible
+  Widget _buildCommentsSection() {
+    return Consumer<CommentsProvider>(
+      builder: (context, commentsProvider, _) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+          child: Column(
+            children: [
+              // Comments Header (Tappable)
+              GestureDetector(
+                onTap: () {
+                  print('🔍 DEBUG: Opening comments for postId: ${_currentPost.id}, service: ${_currentPost.service}, creatorId: ${_currentPost.user}');
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => CommentsBottomSheet(
+                      postId: _currentPost.id,
+                      service: _currentPost.service,
+                      creatorId: _currentPost.user,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(AppTheme.mdPadding),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.comment_outlined,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Comments',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (commentsProvider.commentCount > 0)
+                              Text(
+                                commentsProvider.getLatestCommentPreview(),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            else
+                              Text(
+                                'No comments yet',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (commentsProvider.commentCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${commentsProvider.commentCount}',
+                            style: TextStyle(
+                              color: AppTheme.primaryColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build Action Area - Minimal & Clear
+  Widget _buildActionArea() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Row(
+        children: [
+          // Bookmark with Consumer for auto-update
+          Consumer<PostsProvider>(
+            builder: (context, postsProvider, _) {
+              final currentPost = _currentPost;
+              final isSaved = postsProvider.posts.firstWhere(
+                (p) => p.id == currentPost.id,
+                orElse: () => currentPost,
+              ).saved;
+              
+              return IconButton(
+                onPressed: _toggleBookmark,
+                icon: Icon(
+                  isSaved ? Icons.bookmark : Icons.bookmark_border,
+                  color: isSaved ? AppTheme.primaryColor : Theme.of(context).colorScheme.onSurface,
+                ),
+                tooltip: isSaved ? 'Remove from saved' : 'Save post',
+              );
+            },
+          ),
+          
+          // Share
+          IconButton(
+            onPressed: _sharePost,
+            icon: Icon(
+              Icons.share,
+              color: AppTheme.secondaryTextColor,
+            ),
+          ),
+          
+          // In-App Download (Fixed)
+          IconButton(
+            onPressed: _downloadAllFiles,
+            icon: Icon(
+              Icons.download,
+              color: Colors.green,
+            ),
+            tooltip: 'Download All Files',
+          ),
+          
+          const Spacer(),
+          
+          // More options
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('More options coming soon!')),
+              );
+            },
+            icon: Icon(
+              Icons.more_vert,
+              color: AppTheme.secondaryTextColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Toggle show all media state
+  void _toggleShowAllMedia() {
+    setState(() {
+      _showAllMedia = !_showAllMedia;
+    });
+    
+    // Scroll to media section when expanding
+    if (_showAllMedia) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      });
+    }
+  }
+
+  /// Clean HTML tags from content
+  String _cleanHtmlContent(String content) {
+    try {
+      // Parse HTML and extract text
+      final document = html_parser.parse(content);
+      String cleanText = document.body?.text ?? content;
+      
+      // Clean up extra whitespace
+      cleanText = cleanText.replaceAll(RegExp(r'\s+'), ' ').trim();
+      
+      return cleanText;
+    } catch (e) {
+      // Fallback to original content if parsing fails
+      print('Error cleaning HTML: $e');
+      return content;
+    }
+  }
+
+  /// Helper Methods
+  bool _isCoomerService() {
+    return _currentPost.service == 'onlyfans' || 
+           _currentPost.service == 'fansly' || 
+           _currentPost.service == 'candfans';
+  }
+
+  String _getServiceDisplayName() {
+    switch (_currentPost.service.toLowerCase()) {
+      case 'patreon':
+        return 'Patreon';
+      case 'fanbox':
+        return 'Fanbox';
+      case 'fantia':
+        return 'Fantia';
+      case 'onlyfans':
+        return 'OnlyFans';
+      case 'fansly':
+        return 'Fansly';
+      case 'candfans':
+        return 'CandFans';
+      default:
+        return _currentPost.service.toUpperCase();
+    }
+  }
+
+  Color _getServiceColor() {
+    switch (_currentPost.service.toLowerCase()) {
+      case 'patreon':
+        return Colors.orange;
+      case 'fanbox':
+        return Colors.blue;
+      case 'fantia':
+        return Colors.purple;
+      case 'onlyfans':
+        return Colors.pink;
+      case 'fansly':
+        return Colors.teal;
+      case 'candfans':
+        return Colors.red;
+      default:
+        return AppTheme.primaryColor;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day} ${_getMonthName(date.month)} ${date.year}';
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
+  }
+
+  int _getCrossAxisCount(int mediaCount) {
+    if (mediaCount == 1) return 1;
+    if (mediaCount <= 3) return 2;
+    if (mediaCount <= 6) return 3;
+    return 4;
+  }
+
+  String _getMediaType(String filename) {
+    final name = filename.toLowerCase();
+    if (name.endsWith('.mp4') || name.endsWith('.webm') || 
+        name.endsWith('.mov') || name.endsWith('.m3u8')) {
+      return 'video';
+    }
+    return 'image';
+  }
+
+  bool _isMediaFile(String filename) {
+    final name = filename.toLowerCase();
+    return name.endsWith('.jpg') ||
+           name.endsWith('.jpeg') ||
+           name.endsWith('.png') ||
+           name.endsWith('.gif') ||
+           name.endsWith('.webp') ||
+           name.endsWith('.mp4') ||
+           name.endsWith('.webm') ||
+           name.endsWith('.mov') ||
+           name.endsWith('.m3u8');
+  }
+
+  String _buildFullUrl(String path) {
+    if (path.startsWith('http')) {
+      return path; // Already full URL
+    }
+    
+    // Determine domain based on service
+    String domain;
+    if (_currentPost.service == 'onlyfans' || 
+        _currentPost.service == 'fansly' || 
+        _currentPost.service == 'candfans') {
+      // Use CDN rotation for Coomer reliability
+      domain = 'https://n2.coomer.st'; // Primary CDN
+    } else {
+      domain = 'https://kemono.cr'; // Kemono services
+    }
+    
+    return '$domain/data$path';
+  }
+
+  /// Build Tags Section
+  Widget _buildTagsSection() {
+    return Consumer<TagFilterProvider>(
+      builder: (context, tagFilter, child) {
+        return Container(
+          padding: const EdgeInsets.all(AppTheme.mdPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section Title
+              Text(
+                'Tags',
+                style: AppTheme.titleStyle.copyWith(
+                  color: AppTheme.getOnBackgroundColor(context),
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              
+              // Tags Wrap
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _currentPost.tags.map((tag) {
+                  final isBlocked = tagFilter.isTagBlocked(tag);
+                  return ActionChip(
+                    label: Text(
+                      '#$tag',
+                      style: AppTheme.captionStyle.copyWith(
+                        color: isBlocked ? Colors.white : AppTheme.primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    backgroundColor: isBlocked ? AppTheme.errorColor : AppTheme.surfaceColor,
+                    onPressed: () {
+                      _handleTagTap(tag);
+                    },
+                    pressElevation: 2,
+                    tooltip: isBlocked ? 'Blocked tag - Tap to search' : 'Tap to search for #$tag',
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Handle tag tap - navigate to tag search
+  void _handleTagTap(String tag) {
+    // TODO: Navigate to tag search screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Search for #$tag (coming soon)'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Download post
+  void _downloadPost() async {
+    try {
+      // Build the post URL for browser
+      final postUrl = _getPostUrl();
+      
+      if (await canLaunchUrl(Uri.parse(postUrl))) {
+        await launchUrl(
+          Uri.parse(postUrl),
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open post: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  /// Get post URL for browser
+  String _getPostUrl() {
+    final domain = widget.apiSource == ApiSource.kemono 
+        ? 'https://kemono.cr' 
+        : 'https://coomer.st';
+    
+    return '$domain/${widget.post.service}/user/${widget.post.user}/post/${widget.post.id}';
+  }
+
+  /// Share post
+  void _sharePost() async {
+    try {
+      final postUrl = _getPostUrl();
+      await Clipboard.setData(ClipboardData(text: postUrl));
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Post link copied to clipboard!'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to share post: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  /// Toggle bookmark
+  void _toggleBookmark() async {
+    try {
+      final postsProvider = context.read<PostsProvider>();
+      final wasSaved = _currentPost.saved;
+      
+      // Show immediate visual feedback
+      HapticFeedback.lightImpact();
+      
+      // Show loading indicator
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      await postsProvider.toggleSavePost(_currentPost);
+      
+      // Show success message with visual indication
+      final message = wasSaved ? 'Post removed from saved' : 'Post saved successfully!';
+      final backgroundColor = wasSaved ? Colors.orange : Colors.green;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                wasSaved ? Icons.bookmark_border : Icons.bookmark,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(message),
+            ],
+          ),
+          backgroundColor: backgroundColor,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      // Force rebuild to update bookmark icon
+      setState(() {});
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text('Failed to save post: $e'),
+            ],
+          ),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Build optimized media thumbnail untuk Post Detail
+  Widget _buildOptimizedMediaThumbnail(Map<String, dynamic> mediaItem, bool isVideo) {
+    // Untuk video, gunakan placeholder dengan optimasi
+    if (isVideo) {
+      return _buildVideoThumbnail(mediaItem);
+    }
+    
+    // Untuk gambar, gunakan optimized cached network image
+    return _buildOptimizedImage(mediaItem['url']);
+  }
+
+  /// Build video thumbnail dengan placeholder
+  Widget _buildVideoThumbnail(Map<String, dynamic> mediaItem) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Stack(
+        children: [
+          // Background gradient
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.surface,
+                  Theme.of(context).colorScheme.surfaceVariant,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          
+          // Video icon
+          Center(
+            child: Icon(
+              Icons.play_circle_outline,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              size: 48,
+            ),
+          ),
+          
+          // Video info
+          Positioned(
+            bottom: 8,
+            left: 8,
+            right: 8,
+            child: Row(
+              children: [
+                // Video badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.shadow.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Video',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                
+                const Spacer(),
+                
+                // File size (jika ada)
+                if (mediaItem['name'] != null)
+                  Expanded(
+                    child: Text(
+                      _getFileName(mediaItem['name']),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        fontSize: 9,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build optimized image with proper aspect ratio
+  Widget _buildOptimizedImage(String imageUrl) {
+    return Image.network(
+      imageUrl,
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.contain, // Use contain to preserve original aspect ratio
+      // Load original resolution image, not thumbnail
+      headers: const {
+        'User-Agent': 'KC-Gallery-Viewer/1.0',
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        
+        // Show placeholder while loading
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          child: Center(
+            child: Icon(
+              Icons.broken_image,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              size: 32,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Get clean file name
+  String _getFileName(String fullFileName) {
+    final parts = fullFileName.split('/');
+    return parts.isNotEmpty ? parts.last : fullFileName;
+  }
+
+  /// Smart media item handler - bedakan video dan image
+  void _openMediaItem(Map<String, dynamic> mediaItem, int index, bool isVideo) {
+    if (isVideo) {
+      _openVideoPlayer(mediaItem);
+    } else {
+      _openFullscreenViewer(index);
+    }
+  }
+
+  /// Open fullscreen viewer untuk individual image
+  void _openFullscreenViewer(int initialIndex) {
+    // Collect all media items for proper indexing
+    final allMediaItems = _collectAndSortMedia();
+    
+    if (allMediaItems.isEmpty) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenMediaViewer(
+          mediaItems: allMediaItems,
+          initialIndex: initialIndex,
+          apiSource: widget.apiSource,
+        ),
+      ),
+    );
+  }
+
+  /// Open video player dengan optimasi
+  void _openVideoPlayer(Map<String, dynamic> mediaItem) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoPlayerScreen(
+          videoUrl: mediaItem['url'],
+          videoName: mediaItem['name'] ?? 'Video',
+          apiSource: widget.apiSource.name,
+        ),
+      ),
+    );
+  }
+}

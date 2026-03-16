@@ -1,0 +1,224 @@
+Analyzing post_detail_screen.dart...                            
+
+   info - The private field _showAllMedia could be 'final' - lib\presentation\screens\post_detail_screen.dart:63:8 - prefer_final_fields
+   info - The private field _isLooping could be 'final' - lib\presentation\screens\post_detail_screen.dart:76:8 - prefer_final_fields
+   info - The private field _isShuffling could be 'final' - lib\presentation\screens\post_detail_screen.dart:77:8 - prefer_final_fields
+   info - The private field _audioPlaylist could be 'final' - lib\presentation\screens\post_detail_screen.dart:78:30 - prefer_final_fields
+   info - The private field _currentAudioIndex could be 'final' - lib\presentation\screens\post_detail_screen.dart:79:7 - prefer_final_fields
+   info - The private field _isRefreshingContent could be 'final' - lib\presentation\screens\post_detail_screen.dart:82:8 - prefer_final_fields
+  error - Undefined name '_launchSourceUrl' - lib\presentation\screens\post_detail_screen.dart:603:20 - undefined_identifier
+warning - The declaration '_buildInfoChip' isn't referenced - lib\presentation\screens\post_detail_screen.dart:810:10 - unused_element
+warning - The declaration '_buildMediaHeader' isn't referenced - lib\presentation\screens\post_detail_screen.dart:1068:10 - unused_element
+  error - Expected to find ';' - lib\presentation\screens\post_detail_screen.dart:1213:11 - expected_token
+  error - Expected an identifier - lib\presentation\screens\post_detail_screen.dart:1213:12 - missing_identifier
+  error - Unexpected text ';' - lib\presentation\screens\post_detail_screen.dart:1213:12 - unexpected_token
+  error - Expected to find '}' - lib\presentation\screens\post_detail_screen.dart:1214:9 - expected_token
+  error - Expected a class member - lib\presentation\screens\post_detail_screen.dart:1215:8 - expected_class_member
+  error - Expected a class member - lib\presentation\screens\post_detail_screen.dart:1216:5 - expected_class_member
+  error - Expected a class member - lib\presentation\screens\post_detail_screen.dart:1216:6 - expected_class_member
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1221:23 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1230:23 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1235:25 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1317:9 - undefined_identifier
+  error - Undefined name '_activeApiSource' - lib\presentation\screens\post_detail_screen.dart:1322:24 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1328:9 - undefined_identifier
+  error - The function '_collectAndSortMedia' isn't defined - lib\presentation\screens\post_detail_screen.dart:1331:25 - undefined_function
+  error - Undefined name '_activeApiSource' - lib\presentation\screens\post_detail_screen.dart:1333:24 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:1344:9 - undefined_function
+  error - Undefined name '_showAllMedia' - lib\presentation\screens\post_detail_screen.dart:1345:11 - undefined_identifier
+  error - Undefined name '_showAllMedia' - lib\presentation\screens\post_detail_screen.dart:1345:28 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1354:24 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1357:24 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1364:29 - undefined_identifier
+  error - Undefined name '_showAllMedia' - lib\presentation\screens\post_detail_screen.dart:1375:17 - undefined_identifier
+  error - Undefined name '_showAllMedia' - lib\presentation\screens\post_detail_screen.dart:1381:17 - undefined_identifier
+  error - The function '_ensureMediaCache' isn't defined - lib\presentation\screens\post_detail_screen.dart:1398:5 - undefined_function
+  error - Undefined name '_cachedVideoItems' - lib\presentation\screens\post_detail_screen.dart:1399:24 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1400:27 - undefined_identifier
+  error - Undefined name '_activeVideoUrl' - lib\presentation\screens\post_detail_screen.dart:1436:33 - undefined_identifier
+  error - Undefined name '_activeVideoUrl' - lib\presentation\screens\post_detail_screen.dart:1440:43 - undefined_identifier
+  error - Undefined name '_activeApiSource' - lib\presentation\screens\post_detail_screen.dart:1441:26 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:1455:16 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:1456:11 - undefined_function
+  error - Undefined name '_activeVideoUrl' - lib\presentation\screens\post_detail_screen.dart:1457:13 - undefined_identifier
+warning - The declaration '_openVideoFullscreen' isn't referenced - lib\presentation\screens\post_detail_screen.dart:1519:8 - unused_element
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1521:7 - undefined_identifier
+  error - Undefined name '_activeApiSource' - lib\presentation\screens\post_detail_screen.dart:1526:22 - undefined_identifier
+warning - The declaration '_downloadSingleFile' isn't referenced - lib\presentation\screens\post_detail_screen.dart:1533:16 - unused_element
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1534:26 - undefined_identifier
+  error - The function '_ensureMediaCache' isn't defined - lib\presentation\screens\post_detail_screen.dart:1541:5 - undefined_function
+  error - Undefined name '_cachedAudioItems' - lib\presentation\screens\post_detail_screen.dart:1542:24 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1558:22 - undefined_identifier
+  error - Undefined name '_currentlyPlayingAudio' - lib\presentation\screens\post_detail_screen.dart:1580:32 - undefined_identifier
+  error - Undefined name '_isPlaying' - lib\presentation\screens\post_detail_screen.dart:1580:70 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1584:25 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1658:43 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1674:43 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1683:42 - undefined_identifier
+  error - Undefined name '_duration' - lib\presentation\screens\post_detail_screen.dart:1735:26 - undefined_identifier
+  error - Undefined name '_position' - lib\presentation\screens\post_detail_screen.dart:1736:25 - undefined_identifier
+  error - Undefined name '_duration' - lib\presentation\screens\post_detail_screen.dart:1736:52 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1739:32 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1743:30 - undefined_identifier
+  error - Undefined name '_position' - lib\presentation\screens\post_detail_screen.dart:1757:37 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1759:39 - undefined_identifier
+  error - Undefined name '_duration' - lib\presentation\screens\post_detail_screen.dart:1766:37 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:1768:39 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1785:32 - undefined_identifier
+  error - Undefined name '_isShuffling' - lib\presentation\screens\post_detail_screen.dart:1805:30 - undefined_identifier
+  error - Undefined name '_isLooping' - lib\presentation\screens\post_detail_screen.dart:1815:30 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1844:32 - undefined_identifier
+  error - Undefined name '_currentlyPlayingAudio' - lib\presentation\screens\post_detail_screen.dart:1940:11 - undefined_identifier
+  error - Undefined name '_isPlaying' - lib\presentation\screens\post_detail_screen.dart:1940:49 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:1941:15 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1944:13 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1945:11 - undefined_identifier
+  error - The function '_collectAudioFiles' isn't defined - lib\presentation\screens\post_detail_screen.dart:1945:28 - undefined_function
+  error - Undefined name '_currentAudioIndex' - lib\presentation\screens\post_detail_screen.dart:1946:11 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1946:32 - undefined_identifier
+  error - Undefined name '_currentlyPlayingAudio' - lib\presentation\screens\post_detail_screen.dart:1951:13 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:1952:17 - undefined_identifier
+  error - Undefined name '_currentlyPlayingAudio' - lib\presentation\screens\post_detail_screen.dart:1953:11 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:1955:17 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1965:9 - undefined_identifier
+  error - Undefined name '_isShuffling' - lib\presentation\screens\post_detail_screen.dart:1968:9 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1970:34 - undefined_identifier
+  error - Undefined name '_currentAudioIndex' - lib\presentation\screens\post_detail_screen.dart:1971:24 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1971:46 - undefined_identifier
+  error - A value of type 'double' can't be assigned to a variable of type 'int' - lib\presentation\screens\post_detail_screen.dart:1972:21 - invalid_assignment
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1972:39 - undefined_identifier
+  error - Undefined name '_currentAudioIndex' - lib\presentation\screens\post_detail_screen.dart:1975:20 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1975:46 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1978:23 - undefined_identifier
+  error - Undefined name '_currentAudioIndex' - lib\presentation\screens\post_detail_screen.dart:1979:5 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1984:9 - undefined_identifier
+  error - Undefined name '_currentAudioIndex' - lib\presentation\screens\post_detail_screen.dart:1987:10 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1987:35 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1988:9 - undefined_identifier
+  error - Undefined name '_audioPlaylist' - lib\presentation\screens\post_detail_screen.dart:1989:23 - undefined_identifier
+  error - Undefined name '_currentAudioIndex' - lib\presentation\screens\post_detail_screen.dart:1990:5 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:1996:13 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:2009:11 - undefined_identifier
+  error - Undefined name '_currentlyPlayingAudio' - lib\presentation\screens\post_detail_screen.dart:2009:35 - undefined_identifier
+  error - Undefined name '_position' - lib\presentation\screens\post_detail_screen.dart:2010:29 - undefined_identifier
+  error - Undefined name '_duration' - lib\presentation\screens\post_detail_screen.dart:2013:44 - undefined_identifier
+  error - Undefined name '_duration' - lib\presentation\screens\post_detail_screen.dart:2013:56 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:2015:15 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:2028:11 - undefined_identifier
+  error - Undefined name '_currentlyPlayingAudio' - lib\presentation\screens\post_detail_screen.dart:2028:35 - undefined_identifier
+  error - Undefined name '_position' - lib\presentation\screens\post_detail_screen.dart:2029:29 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:2036:15 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:2047:5 - undefined_function
+  error - Undefined name '_isLooping' - lib\presentation\screens\post_detail_screen.dart:2047:20 - undefined_identifier
+  error - Undefined name '_isLooping' - lib\presentation\screens\post_detail_screen.dart:2047:34 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:2051:5 - undefined_function
+  error - Undefined name '_isShuffling' - lib\presentation\screens\post_detail_screen.dart:2051:20 - undefined_identifier
+  error - Undefined name '_isShuffling' - lib\presentation\screens\post_detail_screen.dart:2051:36 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2055:26 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2066:26 - undefined_identifier
+  error - Undefined name '_currentlyPlayingAudio' - lib\presentation\screens\post_detail_screen.dart:2078:9 - undefined_identifier
+  error - Undefined name '_duration' - lib\presentation\screens\post_detail_screen.dart:2078:47 - undefined_identifier
+  error - Undefined name '_duration' - lib\presentation\screens\post_detail_screen.dart:2084:46 - undefined_identifier
+  error - Undefined name '_audioPlayer' - lib\presentation\screens\post_detail_screen.dart:2085:13 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2173:29 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2183:28 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2219:43 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2236:26 - undefined_identifier
+  error - Undefined name '_isRefreshingContent' - lib\presentation\screens\post_detail_screen.dart:2241:25 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2317:33 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2322:35 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2335:41 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2395:38 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2397:59 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2439:41 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2461:31 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2479:35 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2498:34 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2525:22 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2528:22 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2535:27 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2552:35 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2561:37 - undefined_identifier
+  error - Undefined name '_isRefreshingContent' - lib\presentation\screens\post_detail_screen.dart:2586:9 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:2588:5 - undefined_function
+  error - Undefined name '_isRefreshingContent' - lib\presentation\screens\post_detail_screen.dart:2589:7 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2598:28 - undefined_identifier
+  error - Undefined name 'widget' - lib\presentation\screens\post_detail_screen.dart:2619:12 - undefined_identifier
+  error - The function '_loadFullPost' isn't defined - lib\presentation\screens\post_detail_screen.dart:2620:15 - undefined_function
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:2624:7 - undefined_function
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:2627:11 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2628:30 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2629:30 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:2639:11 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2640:30 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2641:30 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:2650:11 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:2651:9 - undefined_function
+  error - Undefined name '_isRefreshingContent' - lib\presentation\screens\post_detail_screen.dart:2652:11 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2663:21 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2694:21 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2762:24 - undefined_identifier
+  error - Undefined name '_activeApiSource' - lib\presentation\screens\post_detail_screen.dart:2818:21 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:2831:9 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2833:9 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:2844:11 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2846:11 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2853:44 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2855:33 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2864:15 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2866:15 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2868:53 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2934:44 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:2942:15 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2944:15 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2951:25 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2958:25 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2980:29 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2982:22 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:2988:23 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:2995:35 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3000:37 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3008:37 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3033:22 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3173:37 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3174:38 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3175:40 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3237:28 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3246:27 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3261:35 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3266:37 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3273:35 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3290:41 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3300:41 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3319:47 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3325:53 - undefined_identifier
+warning - The declaration '_getServiceColor' isn't referenced - lib\presentation\screens\post_detail_screen.dart:3363:9 - unused_element
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3364:13 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3377:13 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3385:16 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3410:27 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3412:42 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\presentation\screens\post_detail_screen.dart:3413:7 - undefined_function
+  error - Undefined name '_fullPost' - lib\presentation\screens\post_detail_screen.dart:3414:9 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3414:21 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3414:51 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:3416:11 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3417:30 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3420:15 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3423:30 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3425:50 - undefined_identifier
+  error - Undefined name 'mounted' - lib\presentation\screens\post_detail_screen.dart:3430:11 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3431:30 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3442:26 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3450:26 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3459:11 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3460:13 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3461:16 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3469:7 - undefined_identifier
+  error - Undefined name '_activeApiSource' - lib\presentation\screens\post_detail_screen.dart:3472:62 - undefined_identifier
+  error - Undefined name '_activeApiSource' - lib\presentation\screens\post_detail_screen.dart:3480:18 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3481:16 - undefined_identifier
+  error - Undefined name '_currentPost' - lib\presentation\screens\post_detail_screen.dart:3482:18 - undefined_identifier
+  error - Undefined name 'context' - lib\presentation\screens\post_detail_screen.dart:3487:49 - undefined_identifier
+  error - Expected a method, getter, setter or operator declaration - lib\presentation\screens\post_detail_screen.dart:3512:1 - expected_executable
+

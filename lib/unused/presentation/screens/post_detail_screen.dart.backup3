@@ -1,0 +1,3004 @@
+import 'dart:io';
+import 'dart:async';
+import 'dart:ui' as ui;
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+
+import '../../domain/entities/post.dart';
+import '../../domain/entities/api_source.dart';
+import '../../domain/entities/comment.dart';
+import '../providers/posts_provider.dart';
+import '../providers/comments_provider.dart';
+import '../providers/tag_filter_provider.dart';
+import '../providers/download_provider.dart';
+import '../theme/app_theme.dart';
+import '../utils/media_preview_resolver.dart';
+import 'fullscreen_media_viewer.dart';
+import 'video_player_screen.dart';
+import 'download_manager_screen.dart';
+import '../widgets/comments_bottom_sheet.dart';
+import '../widgets/video_webview.dart';
+import '../services/custom_tabs_service.dart';
+
+/// Post link model for unified link handling
+class PostLink {
+  final String url;
+  final String source; // content | file | attachment
+  final String? label;
+
+  PostLink({
+    required this.url,
+    required this.source,
+    this.label,
+  });
+
+  @override
+  String toString() => 'PostLink(url: $url, source: $source, label: $label)';
+}
+
+class PostDetailScreen extends StatefulWidget {
+  final Post post;
+  final ApiSource apiSource;
+  final bool isFromSavedPosts;
+
+  const PostDetailScreen({
+    super.key, 
+    required this.post, 
+    required this.apiSource,
+    this.isFromSavedPosts = false,
+  });
+
+  @override
+  State<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> 
+    with TickerProviderStateMixin {
+  
+  final ScrollController _scrollController = ScrollController();
+  late TabController _tabController;
+  
+  bool _showFullText = false;
+  int _currentMediaIndex = 0;
+  bool _isLoading = false;
+  String? _error;
+  bool _showAllMedia = false;
+  
+  // Audio player state with enhanced controls
+  AudioPlayer? _audioPlayer;
+  String? _currentlyPlayingAudio;
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+  double _playbackSpeed = 1.0; // Playback speed control
+  bool _isLooping = false; // Loop control
+  bool _isShuffling = false; // Shuffle control
+  List<Map<String, dynamic>> _audioPlaylist = []; // Playlist management
+  int _currentAudioIndex = 0;
+
+  Post? _fullPost;
+  bool _isRefreshingContent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    
+    // Initialize audio player
+    _audioPlayer = AudioPlayer();
+    
+    // Set up audio player listeners with lifecycle guards and enhanced features
+    _audioPlayer!.onDurationChanged.listen((duration) {
+      if (!mounted) return;
+      setState(() => _duration = duration);
+    });
+    
+    _audioPlayer!.onPositionChanged.listen((position) {
+      if (!mounted) return;
+      setState(() => _position = position);
+    });
+    
+    _audioPlayer!.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      setState(() => _isPlaying = state == PlayerState.playing);
+    });
+    
+    _audioPlayer!.onPlayerComplete.listen((_) {
+      if (!mounted) return;
+      if (_isLooping) {
+        _audioPlayer!.seek(Duration.zero);
+        _audioPlayer!.resume();
+      } else if (_isShuffling || _currentAudioIndex < _audioPlaylist.length - 1) {
+        _playNextAudio();
+      } else {
+        setState(() {
+          _isPlaying = false;
+          _position = Duration.zero;
+        });
+      }
+    });
+    
+    // Preload comments for immediate preview
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadComments();
+    });
+    
+    // Load full post data only if not from saved posts
+    if (!widget.isFromSavedPosts) {
+      _loadFullPost();
+    } else {
+      // For saved posts, use the post directly as it's already complete
+      setState(() {
+        _fullPost = widget.post;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _audioPlayer?.dispose();
+    super.dispose();
+  }
+
+  /// Preload comments for immediate preview
+  void _preloadComments() {
+    final commentsProvider = context.read<CommentsProvider>();
+    commentsProvider.loadComments(
+      widget.post.id,
+      widget.post.service,
+      widget.post.user,
+    );
+  }
+
+  /// Load full post data from single post API
+  Future<void> _loadFullPost() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final postsProvider = context.read<PostsProvider>();
+      await postsProvider.loadSinglePost(
+        widget.post.service, // service FIRST
+        widget.post.user,    // creatorId SECOND  
+        widget.post.id,      // postId THIRD
+      );
+      
+      setState(() {
+        _fullPost = widget.post;
+        _isLoading = false;
+      });
+      
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _fullPost = widget.post;
+      });
+    }
+  }
+
+  /// Get current post (full post if available, otherwise original post)
+  Post get _currentPost => _fullPost ?? widget.post;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      appBar: AppBar(
+        title: Text(
+          widget.apiSource == ApiSource.kemono ? 'Kemono' : 'Coomer',
+          style: AppTheme.getTitleStyle(context).copyWith(
+            color: AppTheme.getOnBackgroundColor(context),
+          ),
+        ),
+        backgroundColor: AppTheme.getSurfaceColor(context),
+        foregroundColor: AppTheme.getOnSurfaceColor(context),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.download,
+              color: AppTheme.getOnSurfaceColor(context),
+            ),
+            onPressed: _downloadAllFiles,
+            tooltip: 'Download All',
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.share,
+              color: AppTheme.getOnBackgroundColor(context),
+            ),
+            onPressed: _sharePost,
+          ),
+        ],
+      ),
+      body: _isLoading 
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.primaryColor,
+              ),
+            )
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppTheme.errorColor,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading post',
+                        style: AppTheme.titleStyle.copyWith(
+                          color: AppTheme.errorColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: AppTheme.captionStyle.copyWith(
+                          color: AppTheme.secondaryTextColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadFullPost,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCreatorHeader(),
+                      _buildMediaSection(),
+                      _buildVideoSection(),
+                      _buildAudioSection(),
+                      _buildDownloadLinksSection(),
+                      _buildPostContent(),
+                      if (_currentPost.tags.isNotEmpty) _buildTagsSection(),
+                      _buildCommentsSection(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildCreatorHeader() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Creator: ${_currentPost.user}')),
+                  );
+                },
+                child: Text(
+                  _currentPost.user,
+                  style: AppTheme.titleStyle.copyWith(
+                    color: AppTheme.primaryColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getServiceColor().withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _getServiceColor().withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  _getServiceDisplayName(),
+                  style: TextStyle(
+                    color: _getServiceColor(),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_currentPost.title.isNotEmpty)
+            Text(
+              _currentPost.title,
+              style: AppTheme.titleStyle.copyWith(
+                color: AppTheme.getOnBackgroundColor(context),
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(_currentPost.published.toString()),
+            style: AppTheme.bodyStyle.copyWith(
+              color: AppTheme.secondaryTextColor,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaSection() {
+    final mediaItems = _collectAndSortMedia();
+    
+    if (mediaItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    const maxPreviewItems = 6;
+    final hasManyItems = mediaItems.length > maxPreviewItems;
+    final displayItems = _showAllMedia 
+        ? mediaItems 
+        : (hasManyItems 
+            ? mediaItems.take(maxPreviewItems).toList()
+            : mediaItems);
+
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMediaHeader(mediaItems.length),
+          const SizedBox(height: AppTheme.mdSpacing),
+          _buildMediaGrid(displayItems),
+          if (hasManyItems) ...[
+            const SizedBox(height: AppTheme.mdSpacing),
+            _buildExpandCollapseButton(mediaItems.length),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _collectAndSortMedia() {
+    final List<Map<String, dynamic>> mediaItems = [];
+    
+    for (final file in _currentPost.file) {
+      if (_isMediaFile(file.name)) {
+        final rawPath = file.path;
+        final fullUrl = _buildFullUrl(rawPath);
+        final thumbnailUrl = buildThumbnailFromRawPath(rawPath, _currentPost.service);
+        
+        // Skip audio files - they go to audio section
+        if (_isAudioFile(file.name)) continue;
+        
+        // Skip video files - they go to video section
+        if (_isVideoFile(file.name)) continue;
+        
+        mediaItems.add({
+          'type': 'image',
+          'url': fullUrl,
+          'name': file.name,
+          'thumbnail_url': thumbnailUrl,
+        });
+      }
+    }
+    
+    for (final attachment in _currentPost.attachments) {
+      if (attachment.path != null && _isMediaFile(attachment.name)) {
+        final rawPath = attachment.path!;
+        final fullUrl = _buildFullUrl(rawPath);
+        final thumbnailUrl = buildThumbnailFromRawPath(rawPath, _currentPost.service);
+        
+        // Skip audio files - they go to audio section
+        if (_isAudioFile(attachment.name)) continue;
+        
+        // Skip video files - they go to video section
+        if (_isVideoFile(attachment.name)) continue;
+        
+        mediaItems.add({
+          'type': 'image',
+          'url': fullUrl,
+          'name': attachment.name ?? 'Unknown',
+          'thumbnail_url': thumbnailUrl,
+        });
+      }
+    }
+
+    mediaItems.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    return mediaItems;
+  }
+
+  /// Check if file is a video file
+  bool _isVideoFile(String? filename) {
+    if (filename == null) return false;
+    final name = filename.toLowerCase();
+    return name.endsWith('.mp4') ||
+           name.endsWith('.webm') ||
+           name.endsWith('.mov') ||
+           name.endsWith('.avi') ||
+           name.endsWith('.mkv') ||
+           name.endsWith('.m4v');
+  }
+
+  /// Collect video files separately
+  List<Map<String, dynamic>> _collectVideoFiles() {
+    final List<Map<String, dynamic>> videoFiles = [];
+    
+    // Check files
+    for (final file in _currentPost.file) {
+      if (_isVideoFile(file.name)) {
+        final rawPath = file.path;
+        final fullUrl = _buildFullUrl(rawPath);
+        
+        videoFiles.add({
+          'type': 'video',
+          'url': fullUrl,
+          'name': file.name,
+        });
+      }
+    }
+    
+    // Check attachments
+    for (final attachment in _currentPost.attachments) {
+      if (attachment.path != null && _isVideoFile(attachment.name)) {
+        final rawPath = attachment.path!;
+        final fullUrl = _buildFullUrl(rawPath);
+        
+        videoFiles.add({
+          'type': 'video',
+          'url': fullUrl,
+          'name': attachment.name ?? 'Unknown',
+        });
+      }
+    }
+
+    videoFiles.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    return videoFiles;
+  }
+
+  /// Check if file is an audio file
+  bool _isAudioFile(String? filename) {
+    if (filename == null) return false;
+    final name = filename.toLowerCase();
+    return name.endsWith('.mp3') ||
+           name.endsWith('.wav') ||
+           name.endsWith('.flac') ||
+           name.endsWith('.aac') ||
+           name.endsWith('.ogg') ||
+           name.endsWith('.m4a');
+  }
+
+  /// Collect audio files separately
+  List<Map<String, dynamic>> _collectAudioFiles() {
+    final List<Map<String, dynamic>> audioFiles = [];
+    
+    // Check files
+    for (final file in _currentPost.file) {
+      if (_isAudioFile(file.name)) {
+        final rawPath = file.path;
+        final fullUrl = _buildFullUrl(rawPath);
+        
+        audioFiles.add({
+          'type': 'audio',
+          'url': fullUrl,
+          'name': file.name,
+        });
+      }
+    }
+    
+    // Check attachments
+    for (final attachment in _currentPost.attachments) {
+      if (attachment.path != null && _isAudioFile(attachment.name)) {
+        final rawPath = attachment.path!;
+        final fullUrl = _buildFullUrl(rawPath);
+        
+        audioFiles.add({
+          'type': 'audio',
+          'url': fullUrl,
+          'name': attachment.name ?? 'Unknown',
+        });
+      }
+    }
+
+    audioFiles.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    return audioFiles;
+  }
+
+  bool _isMediaFile(String? filename) {
+    if (filename == null) return false;
+    final name = filename.toLowerCase();
+    return name.endsWith('.jpg') ||
+           name.endsWith('.jpeg') ||
+           name.endsWith('.png') ||
+           name.endsWith('.gif') ||
+           name.endsWith('.webp') ||
+           name.endsWith('.mp4') ||
+           name.endsWith('.webm') ||
+           name.endsWith('.mov') ||
+           name.endsWith('.avi') ||
+           name.endsWith('.mkv');
+  }
+
+  String _buildFullUrl_OLD(String path) {
+    if (path.startsWith('http')) {
+      return path;
+    }
+    
+    String domain;
+    if (_currentPost.service == 'onlyfans' || 
+        _currentPost.service == 'fansly' || 
+        _currentPost.service == 'candfans') {
+      domain = 'https://n2.coomer.st';
+    } else {
+      domain = 'https://kemono.cr';
+    }
+    
+    return '$domain/data$path';
+  }
+
+  String buildThumbnailFromRawPath(String rawPath, String service) {
+    if (rawPath.isEmpty) return '';
+    final clean = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+    final thumbnailPath = 'thumbnail/data$clean';
+    final thumbnailUrl = service == 'onlyfans' || service == 'fansly' || service == 'candfans'
+        ? 'https://img.coomer.st/$thumbnailPath'
+        : 'https://img.kemono.cr/$thumbnailPath';
+    
+    print('🖼️ DEBUG: Building thumbnail URL: $thumbnailUrl for path: $rawPath');
+    return thumbnailUrl;
+  }
+
+  Widget _buildMediaHeader(int totalItems) {
+    return _buildSectionHeader(
+      icon: Icons.photo_library_outlined,
+      title: 'Media ($totalItems)',
+      color: AppTheme.primaryColor,
+      context: context,
+    );
+  }
+
+  Widget _buildMediaGrid(List<Map<String, dynamic>> displayItems) {
+    return MasonryGridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      itemCount: displayItems.length,
+      itemBuilder: (context, index) {
+        final mediaItem = displayItems[index];
+        final mediaType = mediaItem['type'] as String;
+        
+        // ✅ DYNAMIC: Calculate aspect ratio based on filename and type
+        double aspectRatio = _calculateAspectRatio(mediaItem['name'] as String, mediaType);
+        
+        // Calculate dynamic height based on aspect ratio
+        double dynamicHeight = _calculateDynamicHeight(aspectRatio);
+        
+        return GestureDetector(
+          onTap: () => _openMediaFullscreen(mediaItem, index),
+          child: Container(
+            height: dynamicHeight,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                children: [
+                  // ✅ DYNAMIC: Image with proper aspect ratio
+                  CachedNetworkImage(
+                    imageUrl: mediaItem['thumbnail_url'] ?? mediaItem['url'],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    placeholder: (context, url) => Container(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.grey[800]
+                          : Colors.grey[300],
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.grey[800]
+                          : Colors.grey[300],
+                      child: Icon(
+                        Icons.broken_image, 
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey
+                            : Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                  
+                  // ✅ ENHANCED: Hover effect for better UX - Light Mode Support
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.black.withOpacity(0.1)
+                                : Colors.black.withOpacity(0.05),
+                          ],
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => _openMediaFullscreen(mediaItem, index),
+                          child: Stack(
+                            children: [
+                              // Center icon for interaction
+                              Center(
+                                child: Icon(
+                                  mediaType == 'video' ? Icons.play_circle : Icons.fullscreen,
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white70
+                                      : Colors.black54,
+                                  size: 32,
+                                ),
+                              ),
+                              // ✅ NEW: Media type indicator
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                child: _buildMediaTypeIndicator(mediaType),
+                              ),
+                              // ✅ NEW: Aspect ratio indicator
+                              Positioned(
+                                bottom: 8,
+                                right: 8,
+                                child: _buildAspectRatioIndicator(aspectRatio),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // ✅ NEW: Image index indicator - Light Mode Support
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black.withOpacity(0.6)
+                            : Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Calculate aspect ratio based on filename and media type
+  double _calculateAspectRatio(String filename, String mediaType) {
+    final name = filename.toLowerCase();
+    
+    // Check for explicit aspect ratio keywords
+    if (name.contains('portrait') || name.contains('vertical') || name.contains('tall')) {
+      return 0.7; // Taller images
+    } else if (name.contains('landscape') || name.contains('wide') || name.contains('horizontal')) {
+      return 1.5; // Wider images
+    } else if (name.contains('panorama') || name.contains('ultrawide')) {
+      return 2.0; // Very wide images
+    } else if (name.contains('square') || name.contains('1:1')) {
+      return 1.0; // Square
+    } else if (name.contains('16:9') || name.contains('widescreen')) {
+      return 16.0 / 9.0; // Standard widescreen
+    } else if (name.contains('4:3')) {
+      return 4.0 / 3.0; // Standard TV
+    } else if (name.contains('3:2')) {
+      return 3.0 / 2.0; // Classic photo
+    } else if (name.contains('9:16')) {
+      return 9.0 / 16.0; // Mobile vertical
+    }
+    
+    // Default aspect ratios by media type
+    switch (mediaType) {
+      case 'video':
+        return 16.0 / 9.0; // Standard video aspect ratio
+      case 'image':
+        return 1.2; // Slightly wider than square for photos
+      default:
+        return 1.0; // Square default
+    }
+  }
+
+  /// Calculate dynamic height based on aspect ratio
+  double _calculateDynamicHeight(double aspectRatio) {
+    const baseWidth = 200.0; // Base width for Masonry grid
+    final calculatedHeight = baseWidth / aspectRatio;
+    
+    // Clamp to reasonable bounds
+    if (calculatedHeight < 120) return 120; // Minimum height
+    if (calculatedHeight > 400) return 400; // Maximum height
+    
+    return calculatedHeight;
+  }
+
+  /// Build media type indicator
+  Widget _buildMediaTypeIndicator(String mediaType) {
+    Color indicatorColor;
+    IconData indicatorIcon;
+    
+    switch (mediaType) {
+      case 'video':
+        indicatorColor = Colors.red;
+        indicatorIcon = Icons.videocam;
+        break;
+      case 'image':
+        indicatorColor = Colors.blue;
+        indicatorIcon = Icons.image;
+        break;
+      default:
+        indicatorColor = Colors.grey;
+        indicatorIcon = Icons.insert_drive_file;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: indicatorColor.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        indicatorIcon,
+        color: Colors.white,
+        size: 12,
+      ),
+    );
+  }
+
+  /// Build aspect ratio indicator
+  Widget _buildAspectRatioIndicator(double aspectRatio) {
+    String ratioText;
+    Color indicatorColor;
+    
+    if (aspectRatio < 0.8) {
+      ratioText = 'Tall';
+      indicatorColor = Colors.green;
+    } else if (aspectRatio > 1.4) {
+      ratioText = 'Wide';
+      indicatorColor = Colors.orange;
+    } else if ((aspectRatio - 1.0).abs() < 0.1) {
+      ratioText = 'Square';
+      indicatorColor = Colors.blue;
+    } else {
+      ratioText = aspectRatio.toStringAsFixed(1);
+      indicatorColor = Colors.purple;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.black.withOpacity(0.6)
+            : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: indicatorColor.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        ratioText,
+        style: TextStyle(
+          color: indicatorColor,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _openMediaFullscreen(Map<String, dynamic> mediaItem, int index) {
+    final mediaType = mediaItem['type'] as String;
+    
+    if (mediaType == 'video') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoPlayerScreen(
+            videoUrl: mediaItem['url'],
+            videoName: mediaItem['name'] ?? 'Video',
+            apiSource: widget.apiSource.name,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FullscreenMediaViewer(
+            mediaItems: _collectAndSortMedia(),
+            initialIndex: index,
+            apiSource: widget.apiSource,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Build expand/collapse button with enhanced light mode support
+  Widget _buildExpandCollapseButton(int totalItems) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showAllMedia = !_showAllMedia;
+        });
+      },
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.primaryColor.withOpacity(0.1)
+                  : AppTheme.primaryColor.withOpacity(0.05), // Light mode
+              Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.primaryColor.withOpacity(0.05)
+                  : AppTheme.primaryColor.withOpacity(0.02), // Light mode
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.primaryColor.withOpacity(0.2)
+                : AppTheme.primaryColor.withOpacity(0.1), // Light mode
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _showAllMedia ? Icons.expand_less : Icons.expand_more,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _showAllMedia ? 'Show Less' : 'Show All ($totalItems)',
+                style: AppTheme.titleStyle.copyWith(
+                  color: AppTheme.primaryColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build download links section with clean architecture
+  /// Build Video Section with WebView integration
+  Widget _buildVideoSection() {
+    final videoFiles = _collectVideoFiles();
+    
+    if (videoFiles.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Video section header
+          _buildSectionHeader(
+            icon: Icons.videocam,
+            title: 'Videos (${videoFiles.length})',
+            color: Colors.red,
+            context: context,
+          ),
+          const SizedBox(height: 16),
+          
+          // Video list
+          ...videoFiles.asMap().entries.map((entry) {
+            final index = entry.key;
+            final videoFile = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildVideoPlayer(videoFile, index),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual video player widget
+  Widget _buildVideoPlayer(Map<String, dynamic> videoFile, int index) {
+    final videoUrl = videoFile['url'] as String;
+    final fileName = videoFile['name'] as String;
+    final fileExtension = _getFileExtension(fileName);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Video player with WebView
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.black,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: VideoWebView(
+                url: videoUrl,
+                height: 200,
+              ),
+            ),
+          ),
+          
+          // Video info and controls
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Video icon with format indicator
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red[700]!,
+                        Colors.red[500]!,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      const Icon(
+                        Icons.videocam,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      // Format badge
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            fileExtension.toUpperCase(),
+                            style: TextStyle(
+                              color: Colors.red[700],
+                              fontSize: 6,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Video info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // File name - Light Mode Support
+                      Text(
+                        fileName,
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.grey.shade800,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      
+                      const SizedBox(height: 4),
+                      
+                      // Video quality indicator - Light Mode Support
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.red.withOpacity(0.2)
+                              : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Video',
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.red
+                                : _getLightModeColor(Colors.red),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Action buttons
+                Row(
+                  children: [
+                    // Fullscreen button
+                    GestureDetector(
+                      onTap: () => _openVideoFullscreen(videoFile),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.red.withOpacity(0.5),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.fullscreen,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    // Download button
+                    GestureDetector(
+                      onTap: () => _downloadSingleFile(videoFile),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.5),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.download,
+                          color: Colors.white70,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Open video in fullscreen
+  void _openVideoFullscreen(Map<String, dynamic> videoFile) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoPlayerScreen(
+          videoUrl: videoFile['url'],
+          videoName: videoFile['name'] ?? 'Video',
+          apiSource: widget.apiSource.name,
+        ),
+      ),
+    );
+  }
+
+  /// Download single file
+  Future<void> _downloadSingleFile(Map<String, dynamic> file) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Download ${file['name']} - not implemented yet')),
+    );
+  }
+
+  /// Build Audio Section with proper state management
+  Widget _buildAudioSection() {
+    final audioFiles = _collectAudioFiles();
+    
+    if (audioFiles.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Audio section header
+          _buildSectionHeader(
+            icon: Icons.audiotrack,
+            title: 'Audio (${audioFiles.length})',
+            color: Colors.purple,
+            context: context,
+          ),
+          const SizedBox(height: 16),
+          
+          // Audio list
+          ...audioFiles.asMap().entries.map((entry) {
+            final index = entry.key;
+            final audioFile = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildAudioPlayer(audioFile, index),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual audio player widget
+  Widget _buildAudioPlayer(Map<String, dynamic> audioFile, int index) {
+    final audioUrl = audioFile['url'] as String;
+    final fileName = audioFile['name'] as String;
+    final isCurrentlyPlaying = _currentlyPlayingAudio == audioUrl && _isPlaying;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main audio controls row
+            Row(
+              children: [
+                // Audio icon with format indicator
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _getAudioColor(fileName),
+                        _getAudioColor(fileName).withOpacity(0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        isCurrentlyPlaying ? Icons.graphic_eq : Icons.audiotrack,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      // Format badge
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _getFileExtension(fileName).toUpperCase(),
+                            style: TextStyle(
+                              color: _getAudioColor(fileName),
+                              fontSize: 6,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Audio info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fileName,
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.grey.shade800,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.purple.withOpacity(0.2)
+                              : Colors.purple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _getAudioQuality(fileName),
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.purple
+                                : _getLightModeColor(Colors.purple),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Play/Pause button
+                GestureDetector(
+                  onTap: () => _toggleAudioPlayback(audioUrl),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isCurrentlyPlaying
+                            ? [Colors.purple.shade400, Colors.purple.shade600]
+                            : [Colors.grey.shade400, Colors.grey.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isCurrentlyPlaying ? Colors.purple.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            // Enhanced controls section (only show when playing)
+            if (isCurrentlyPlaying) ...[
+              const SizedBox(height: 16),
+              
+              // Progress bar with seek
+              GestureDetector(
+                onTap: () => _seekAudioPosition(audioUrl),
+                child: LinearProgressIndicator(
+                  value: _duration.inMilliseconds > 0 
+                      ? _position.inMilliseconds / _duration.inMilliseconds 
+                      : 0.0,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.black.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.purple
+                        : _getLightModeColor(Colors.purple),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Time display
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(_position),
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white70
+                          : Colors.black54,
+                      fontSize: 10,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(_duration),
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white70
+                          : Colors.black54,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Playback controls row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Previous button
+                  IconButton(
+                    onPressed: _audioPlaylist.length > 1 ? _playPreviousAudio : null,
+                    icon: Icon(Icons.skip_previous, color: Colors.purple),
+                    iconSize: 20,
+                  ),
+                  
+                  // Shuffle button
+                  IconButton(
+                    onPressed: _toggleShuffle,
+                    icon: Icon(
+                      Icons.shuffle,
+                      color: _isShuffling ? Colors.purple : Colors.grey,
+                    ),
+                    iconSize: 20,
+                  ),
+                  
+                  // Loop button
+                  IconButton(
+                    onPressed: _toggleLoop,
+                    icon: Icon(
+                      Icons.repeat,
+                      color: _isLooping ? Colors.purple : Colors.grey,
+                    ),
+                    iconSize: 20,
+                  ),
+                  
+                  // Speed control
+                  PopupMenuButton<double>(
+                    icon: Icon(Icons.speed, color: Colors.purple),
+                    onSelected: _setPlaybackSpeed,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 0.5, child: Text('0.5x')),
+                      PopupMenuItem(value: 0.75, child: Text('0.75x')),
+                      PopupMenuItem(value: 1.0, child: Text('1.0x')),
+                      PopupMenuItem(value: 1.25, child: Text('1.25x')),
+                      PopupMenuItem(value: 1.5, child: Text('1.5x')),
+                      PopupMenuItem(value: 2.0, child: Text('2.0x')),
+                    ],
+                  ),
+                  
+                  // Next button
+                  IconButton(
+                    onPressed: _audioPlaylist.length > 1 ? _playNextAudio : null,
+                    icon: Icon(Icons.skip_next, color: Colors.purple),
+                    iconSize: 20,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Get actual image size from URL
+  Future<Size> getImageSize(String imageUrl) async {
+    final completer = Completer<Size>();
+    final image = Image.network(imageUrl);
+    
+    image.image.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener((info, _) {
+        if (!completer.isCompleted) {
+          completer.complete(
+            Size(
+              info.image.width.toDouble(),
+              info.image.height.toDouble(),
+            ),
+          );
+        }
+      }, onError: (error, stackTrace) {
+        if (!completer.isCompleted) {
+          // Fallback to 16:9 ratio if error
+          completer.complete(const Size(16.0, 9.0));
+        }
+      }),
+    );
+    
+    return completer.future;
+  }
+
+  /// Get audio color based on format
+  Color _getAudioColor(String filename) {
+    final extension = _getFileExtension(filename).toLowerCase();
+    switch (extension) {
+      case 'mp3':
+        return Colors.orange;
+      case 'wav':
+        return Colors.blue;
+      case 'flac':
+        return Colors.green;
+      case 'aac':
+        return Colors.red;
+      case 'ogg':
+        return Colors.purple;
+      case 'm4a':
+        return Colors.indigo;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Get audio quality based on format
+  String _getAudioQuality(String filename) {
+    final extension = _getFileExtension(filename).toLowerCase();
+    switch (extension) {
+      case 'flac':
+        return 'Lossless';
+      case 'wav':
+        return 'Lossless';
+      case 'mp3':
+        return 'Compressed';
+      case 'aac':
+        return 'High Quality';
+      case 'm4a':
+        return 'Apple Lossless';
+      case 'ogg':
+        return 'Open Source';
+      default:
+        return 'Audio';
+    }
+  }
+
+  /// Enhanced audio toggle with playlist support
+  Future<void> _toggleAudioPlayback(String audioUrl) async {
+    try {
+      if (_currentlyPlayingAudio == audioUrl && _isPlaying) {
+        await _audioPlayer!.pause();
+      } else {
+        // Initialize playlist if not already done
+        if (_audioPlaylist.isEmpty) {
+          _audioPlaylist = _collectAudioFiles();
+          _currentAudioIndex = _audioPlaylist.indexWhere((audio) => audio['url'] == audioUrl);
+        }
+        
+        if (_currentlyPlayingAudio != audioUrl) {
+          await _audioPlayer!.play(UrlSource(audioUrl));
+          _currentlyPlayingAudio = audioUrl;
+        } else {
+          await _audioPlayer!.resume();
+        }
+      }
+    } catch (e) {
+      print('❌ Audio playback error: $e');
+      _showErrorSnackBar('Failed to play audio: $e');
+    }
+  }
+
+  /// Enhanced audio control methods
+  Future<void> _playNextAudio() async {
+    if (_audioPlaylist.isEmpty) return;
+    
+    int nextIndex;
+    if (_isShuffling) {
+      final random = Random();
+      nextIndex = random.nextInt(_audioPlaylist.length);
+      if (nextIndex == _currentAudioIndex && _audioPlaylist.length > 1) {
+        nextIndex = (nextIndex + 1) % _audioPlaylist.length;
+      }
+    } else {
+      nextIndex = (_currentAudioIndex + 1) % _audioPlaylist.length;
+    }
+    
+    final nextAudio = _audioPlaylist[nextIndex];
+    _currentAudioIndex = nextIndex;
+    await _toggleAudioPlayback(nextAudio['url']);
+  }
+
+  Future<void> _playPreviousAudio() async {
+    if (_audioPlaylist.isEmpty) return;
+    
+    int prevIndex = (_currentAudioIndex - 1 + _audioPlaylist.length) % _audioPlaylist.length;
+    final prevAudio = _audioPlaylist[prevIndex];
+    _currentAudioIndex = prevIndex;
+    await _toggleAudioPlayback(prevAudio['url']);
+  }
+
+  Future<void> _setPlaybackSpeed(double speed) async {
+    try {
+      await _audioPlayer!.setPlaybackRate(speed);
+      setState(() => _playbackSpeed = speed);
+    } catch (e) {
+      print('❌ Failed to set playback speed: $e');
+    }
+  }
+
+  Future<void> _toggleLoop() async {
+    setState(() => _isLooping = !_isLooping);
+  }
+
+  Future<void> _toggleShuffle() async {
+    setState(() => _isShuffling = !_isShuffling);
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// Seek audio position
+  Future<void> _seekAudioPosition(String audioUrl) async {
+    if (_currentlyPlayingAudio != audioUrl || _duration.inMilliseconds == 0) return;
+    
+    try {
+      // Calculate seek position based on tap (simplified - seeks to middle for demo)
+      final seekPosition = Duration(seconds: _duration.inSeconds ~/ 2);
+      await _audioPlayer?.seek(seekPosition);
+      print('🎵 DEBUG: Seeked to position: ${seekPosition.inSeconds}s');
+    } catch (e) {
+      print('🎵 DEBUG: Seek error: $e');
+    }
+  }
+
+  /// Format duration for display
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+    
+    if (hours > 0) {
+      return '$hours:${twoDigits(minutes)}:${twoDigits(seconds)}';
+    } else {
+      return '${twoDigits(minutes)}:${twoDigits(seconds)}';
+    }
+  }
+
+  /// Build section header with consistent styling
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required BuildContext context,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).brightness == Brightness.dark
+                ? color.withOpacity(0.1)
+                : color.withOpacity(0.05),
+            Theme.of(context).brightness == Brightness.dark
+                ? color.withOpacity(0.05)
+                : color.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? color.withOpacity(0.2)
+              : color.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? color
+                : _getLightModeColor(color),
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.grey.shade800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Helper method to get light mode color variant
+  Color _getLightModeColor(Color color) {
+    if (color is MaterialColor) {
+      return color.shade700;
+    }
+    return color;
+  }
+
+  /// Build download links section with unified link handling and refresh button
+  Widget _buildDownloadLinksSection() {
+    final allLinks = collectAllLinks();
+    final contentStable = isContentStable(_currentPost.content);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Links section header with refresh button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeader(
+                icon: Icons.link,
+                title: contentStable 
+                    ? 'Links & Downloads (${allLinks.length})'
+                    : 'Links & Downloads (Content Loading...)',
+                color: contentStable ? Colors.green : Colors.orange,
+                context: context,
+              ),
+              if (!contentStable)
+                Row(
+                  children: [
+                    if (_isRefreshingContent)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Loading...',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      TextButton.icon(
+                        onPressed: _refreshContent,
+                        icon: Icon(
+                          Icons.refresh,
+                          color: Colors.orange,
+                          size: 16,
+                        ),
+                        label: Text(
+                          'Refresh',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          backgroundColor: Colors.orange.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.orange.withOpacity(0.3)),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+          
+          if (!contentStable)
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.orange.withOpacity(0.1)
+                    : Colors.orange.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.orange.withOpacity(0.3)
+                      : Colors.orange.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.orange,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Content is still loading. Links will appear once the post content is fully loaded.',
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.orange.shade200
+                            : Colors.orange.shade800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          if (allLinks.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            
+            // Links list with source-specific styling
+            ...allLinks.asMap().entries.map((entry) {
+              final index = entry.key;
+              final link = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildLinkItem(link, index),
+              );
+            }).toList(),
+            
+            // Download all button
+            const SizedBox(height: AppTheme.mdSpacing),
+            _buildDownloadAllButton(allLinks),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Build individual link item with source-specific styling
+  Widget _buildLinkItem(PostLink link, int index) {
+    // Determine icon and color based on source
+    IconData icon;
+    Color color;
+    String sourceLabel;
+    
+    switch (link.source) {
+      case 'file':
+        icon = Icons.file_download;
+        color = Colors.blue;
+        sourceLabel = 'File';
+        break;
+      case 'content':
+        icon = Icons.link;
+        color = Colors.green;
+        sourceLabel = 'Content';
+        break;
+      default:
+        icon = Icons.insert_link;
+        color = Colors.grey;
+        sourceLabel = 'Unknown';
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Link header with source indicator
+          Row(
+            children: [
+              // Source icon
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 16,
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Link info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Source label
+                    Text(
+                      sourceLabel,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    
+                    // Link label (filename or URL)
+                    Text(
+                      link.label ?? link.url,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[300]
+                            : Colors.grey[700],
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Link URL (selectable)
+          SelectableText(
+            link.url,
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[400]
+                  : Colors.grey[600],
+              fontFamily: 'monospace',
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Action buttons
+          Row(
+            children: [
+              // Copy link button
+              IconButton(
+                onPressed: () => _copyLinkToClipboard(link.url),
+                icon: Icon(
+                  Icons.copy,
+                  size: 16,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? color
+                      : _getLightModeColor(color),
+                ),
+                tooltip: 'Copy Link',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              // Open in browser button
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _openLinkInBrowser(link.url),
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('Open', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? color
+                        : _getLightModeColor(color),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: const Size(0, 32),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build download all button
+  Widget _buildDownloadAllButton(List<PostLink> links) {
+    return Container(
+      width: double.infinity,
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).brightness == Brightness.dark
+                ? Colors.green.withOpacity(0.1)
+                : Colors.green.withOpacity(0.05),
+            Theme.of(context).brightness == Brightness.dark
+                ? Colors.green.withOpacity(0.05)
+                : Colors.green.withOpacity(0.02),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.green.withOpacity(0.3)
+              : Colors.green.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _downloadAllFiles,
+          borderRadius: BorderRadius.circular(12),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.download_for_offline,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.green
+                      : _getLightModeColor(Colors.green),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Download All Files',
+                  style: AppTheme.titleStyle.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.green
+                        : _getLightModeColor(Colors.green),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Check if content is stable enough for parsing
+  bool isContentStable(String content) {
+    if (content.trim().isEmpty) return false;
+    if (content.length < 80) return false;
+    if (content.contains('<a') && !content.contains('</a>')) return false;
+    return true;
+  }
+
+  /// Manual refresh content method
+  Future<void> _refreshContent() async {
+    if (_isRefreshingContent) return;
+    
+    setState(() {
+      _isRefreshingContent = true;
+    });
+    
+    try {
+      print('🔄 DEBUG: Manual refresh triggered');
+      
+      // Clear cache to force fresh extraction
+      _cachedLinks = null;
+      _cachedContentHash = null;
+      
+      // Reload full post data
+      if (!widget.isFromSavedPosts) {
+        await _loadFullPost();
+      }
+      
+      // Trigger UI update
+      setState(() {});
+      
+      print('✅ DEBUG: Manual refresh completed');
+    } catch (e) {
+      print('❌ DEBUG: Manual refresh failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshingContent = false;
+        });
+      }
+    }
+  }
+
+  /// Collect all links from different sources with caching and stability check
+  List<PostLink>? _cachedLinks;
+  String? _cachedContentHash;
+  
+  List<PostLink> collectAllLinks() {
+    final content = _currentPost.content;
+    final hash = content.hashCode.toString();
+
+    // Return cached result if content hasn't changed
+    if (_cachedLinks != null && _cachedContentHash == hash) {
+      print('🔗 DEBUG: Using cached links (${_cachedLinks!.length} links)');
+      return _cachedLinks!;
+    }
+
+    // Skip parsing if content is not stable
+    if (!isContentStable(content)) {
+      print('⏳ DEBUG: Content not stable, skip link extraction (length: ${content.length})');
+      return [];
+    }
+
+    final links = <PostLink>[];
+    
+    print('🔗 DEBUG: Collecting all links...');
+    
+    // Collect from content
+    links.addAll(extractLinksFromContent());
+    
+    // Collect from files
+    links.addAll(extractFileLinks());
+    
+    // Cache the result
+    _cachedLinks = links;
+    _cachedContentHash = hash;
+    
+    print('🔗 DEBUG: Total links from all sources: ${links.length}');
+    for (int i = 0; i < links.length; i++) {
+      print('🔗 DEBUG: Link $i: ${links[i]}');
+    }
+    
+    return links;
+  }
+
+  /// Extract links from content with clean, defensive parsing
+  List<PostLink> extractLinksFromContent() {
+    final content = _currentPost.content;
+    final links = <PostLink>[];
+    
+    print('🔗 DEBUG: Extracting links from stable content...');
+    print('🔗 DEBUG: Content length: ${content.length}');
+    
+    if (content.trim().isEmpty) {
+      print('🔗 DEBUG: Content is empty, skipping content link extraction');
+      return links;
+    }
+    
+    // Extract from HTML href attributes using HTML parser
+    try {
+      final document = html_parser.parse(content);
+      final anchorElements = document.getElementsByTagName('a');
+      
+      for (final element in anchorElements) {
+        final href = element.attributes['href'];
+        if (href != null && href.isNotEmpty) {
+          // Skip relative URLs and anchors
+          if (href.startsWith('#') || href.startsWith('/') || href.startsWith('mailto:') || href.startsWith('javascript:')) {
+            continue;
+          }
+          
+          // Normalize URL
+          final url = normalizeUrl(href);
+          
+          // Only add if valid and not already in the list
+          if (_isValidUrl(url) && !links.any((link) => link.url == url)) {
+            links.add(PostLink(
+              url: url,
+              source: 'content',
+              label: url,
+            ));
+            print('🔗 DEBUG: Found HTML href link: $url');
+          }
+        }
+      }
+    } catch (e) {
+      print('🔗 DEBUG: HTML parsing failed: $e');
+    }
+    
+    // Simple regex fallback for plain text URLs only
+    final urlRegex = RegExp(
+      r'https?:\/\/[^\s<>"\)]+',
+      caseSensitive: false,
+    );
+    
+    final matches = urlRegex.allMatches(content);
+    
+    for (final match in matches) {
+      String url = match.group(0)!;
+      
+      // Clean trailing punctuation
+      url = url.replaceAll(RegExp(r'[.,;:!?)\]\}]+$'), '');
+      
+      // Normalize URL
+      url = normalizeUrl(url);
+      
+      // Only add if valid and not already in the list
+      if (_isValidUrl(url) && !links.any((link) => link.url == url)) {
+        links.add(PostLink(
+          url: url,
+          source: 'content',
+          label: url,
+        ));
+        print('🔗 DEBUG: Found plain text link: $url');
+      }
+    }
+    
+    print('🔗 DEBUG: Total content links found: ${links.length}');
+    for (int i = 0; i < links.length; i++) {
+      print('🔗 DEBUG: Content Link $i: ${links[i].url}');
+    }
+    
+    return links;
+  }
+
+  /// Extract file links from post files
+  List<PostLink> extractFileLinks() {
+    final links = <PostLink>[];
+    
+    print('📦 DEBUG: Extracting file links...');
+    print('📦 DEBUG: Total files: ${_currentPost.file.length}');
+    
+    for (final file in _currentPost.file) {
+      try {
+        // Build full URL from file path
+        final url = _buildFullUrl(file.path);
+        
+        // Only add if valid and not already in the list
+        if (_isValidUrl(url) && !links.any((link) => link.url == url)) {
+          links.add(PostLink(
+            url: url,
+            source: 'file',
+            label: file.name, // Use filename as label
+          ));
+          print('� DEBUG: Found file link: ${file.name} -> $url');
+        }
+      } catch (e) {
+        print('📦 DEBUG: Error processing file ${file.name}: $e');
+      }
+    }
+    
+    print('📦 DEBUG: Total file links found: ${links.length}');
+    return links;
+  }
+
+  /// Normalize URL (add https if missing)
+  String normalizeUrl(String url) {
+    if (url.startsWith('www.')) {
+      return 'https://$url';
+    }
+    return url;
+  }
+
+  /// Validate URL
+  bool _isValidUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Build full URL from file path - FIXED with proper CDN domains
+  String _buildFullUrl(String? path) {
+    if (path == null || path.isEmpty) {
+      throw Exception('File path is empty');
+    }
+    
+    // If path is already a full URL, return as is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    // Build URL with proper CDN domains
+    String baseUrl;
+    if (_currentPost.service == 'onlyfans' ||
+        _currentPost.service == 'fansly' ||
+        _currentPost.service == 'candfans') {
+      baseUrl = 'https://n2.coomer.st/data';
+    } else {
+      baseUrl = 'https://n1.kemono.cr/data';
+    }
+    
+    // Remove leading slash if present to avoid double slashes
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    
+    return '$baseUrl/$cleanPath';
+  }
+
+  /// Clean extracted URL
+  String _cleanExtractedUrl(String url) {
+    // Remove trailing punctuation
+    url = url.replaceAll(RegExp(r'[.,;:!?)\]]+$'), '');
+    
+    // Remove leading/trailing whitespace
+    url = url.trim();
+    
+    return url;
+  }
+
+  /// Validate extracted URL
+  bool _isValidExtractedUrl(String url) {
+    // Skip empty strings
+    if (url.isEmpty) return false;
+    
+    // Skip common non-URL patterns
+    final invalidPatterns = [
+      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'), // Email
+      RegExp(r'^\d+$'), // Numbers only
+      RegExp(r'^[a-zA-Z]{1,3}$'), // Short words
+    ];
+    
+    for (final pattern in invalidPatterns) {
+      if (pattern.hasMatch(url)) {
+        return false;
+      }
+    }
+    
+    // Must contain at least one dot and have reasonable length
+    if (!url.contains('.') || url.length < 4) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /// Copy link to clipboard
+  void _copyLinkToClipboard(String link) async {
+    await Clipboard.setData(ClipboardData(text: link));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link copied to clipboard')),
+      );
+    }
+  }
+
+  /// Open link in browser
+  Future<void> _openLinkInBrowser(String link) async {
+    final uri = Uri.parse(link);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open $link')),
+        );
+      }
+    }
+  }
+
+  Widget _buildPostContent() {
+    final cleanContent = _cleanHtmlContent(_currentPost.content);
+    
+    // 🚨 IMPORTANT: Jangan render Content section kalau kosong
+    if (cleanContent.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(AppTheme.mdPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(
+              icon: Icons.article,
+              title: 'Content',
+              color: Colors.indigo,
+              context: context,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey.withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey
+                        : Colors.grey.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'This post does not contain textual content.',
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey
+                            : Colors.grey.shade600,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Normal content rendering
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            icon: Icons.article,
+            title: 'Content',
+            color: Colors.indigo,
+            context: context,
+          ),
+          const SizedBox(height: 16),
+          
+          // Content text with Linkify
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.indigo.withOpacity(0.05)
+                  : Colors.indigo.withOpacity(0.02), // Light mode
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.indigo.withOpacity(0.2)
+                    : Colors.indigo.withOpacity(0.1), // Light mode
+              ),
+            ),
+            child: _buildLinkifiedContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Clean HTML content and extract text
+  String _cleanHtmlContent(String htmlContent) {
+    // DEBUG: Print original content
+    print('🔍 DEBUG: Original content length: ${htmlContent.length}');
+    print('🔍 DEBUG: Original content preview: ${htmlContent.length > 200 ? htmlContent.substring(0, 200) : htmlContent}');
+    
+    // Early return for completely empty content
+    if (htmlContent.trim().isEmpty) {
+      print('🔍 DEBUG: Content is completely empty');
+      return '';
+    }
+    
+    // Parse HTML and extract text
+    final document = html_parser.parse(htmlContent);
+    
+    // Remove script and style tags
+    final scripts = document.getElementsByTagName('script');
+    for (final script in scripts) {
+      script.remove();
+    }
+    
+    final styles = document.getElementsByTagName('style');
+    for (final style in styles) {
+      style.remove();
+    }
+    
+    // Get clean text content
+    String cleanText = document.body?.text ?? document.text ?? '';
+    
+    // Clean up extra whitespace and HTML artifacts
+    cleanText = cleanText
+        .replaceAll(RegExp(r'\s+'), ' ')  // Multiple whitespace to single space
+        .replaceAll(RegExp(r'&nbsp;'), ' ')  // HTML non-breaking space
+        .replaceAll(RegExp(r'&amp;'), '&')   // HTML ampersand
+        .replaceAll(RegExp(r'&lt;'), '<')    // HTML less than
+        .replaceAll(RegExp(r'&gt;'), '>')    // HTML greater than
+        .trim();
+    
+    // Check if content is meaningful (not just empty HTML tags)
+    if (cleanText.isEmpty || 
+        cleanText.length < 3 ||  // Very short content is likely just artifacts
+        RegExp(r'^[\s\W]*$').hasMatch(cleanText)) {  // Only whitespace/special chars
+      print('🔍 DEBUG: Content is not meaningful after cleaning');
+      return '';
+    }
+    
+    // DEBUG: Print cleaned content
+    print('🔍 DEBUG: Cleaned content length: ${cleanText.length}');
+    print('🔍 DEBUG: Cleaned content preview: ${cleanText.length > 200 ? cleanText.substring(0, 200) : cleanText}');
+    
+    return cleanText;
+  }
+
+  /// Build linkified content - always show full content
+  Widget _buildLinkifiedContent() {
+    // Clean HTML content first
+    final cleanContent = _cleanHtmlContent(_currentPost.content);
+    
+    return Linkify(
+      onOpen: (link) async {
+        final uri = Uri.parse(link.url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not open $link')),
+            );
+          }
+        }
+      },
+      text: cleanContent,
+      style: TextStyle(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.grey.shade800, // Light mode
+        fontSize: 14,
+        height: 1.4,
+      ),
+      linkStyle: TextStyle(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.lightBlue
+            : _getLightModeColor(Colors.blue), // Light mode
+        decoration: TextDecoration.underline,
+      ),
+      options: const LinkifyOptions(
+        looseUrl: true,
+        removeWww: false,
+        defaultToHttps: true,
+        humanize: false,
+      ),
+    );
+  }
+
+  Widget _buildTagsSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            icon: Icons.tag,
+            title: 'Tags (${_currentPost.tags.length})',
+            color: Colors.orange,
+            context: context,
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _currentPost.tags.map((tag) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.orange.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.05), // Light mode
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.orange.withOpacity(0.3)
+                        : Colors.orange.withOpacity(0.2), // Light mode
+                  ),
+                ),
+                child: Text(
+                  tag,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.orange
+                        : _getLightModeColor(Colors.orange), // Light mode
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentsSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            icon: Icons.chat_bubble_outline,
+            title: 'Comments',
+            color: Colors.blue,
+            context: context,
+          ),
+          const SizedBox(height: 16),
+          Consumer<CommentsProvider>(
+            builder: (context, commentsProvider, _) {
+              final comments = commentsProvider.comments;
+              
+              // DEBUG: Print comments state
+              print('🔍 DEBUG: Comments count: ${comments.length}');
+              print('🔍 DEBUG: Comments loading: ${commentsProvider.isLoading}');
+              print('🔍 DEBUG: Post ID: ${_currentPost.id}');
+              print('🔍 DEBUG: Service: ${_currentPost.service}');
+              print('🔍 DEBUG: Creator: ${_currentPost.user}');
+              
+              if (commentsProvider.isLoading) {
+                return Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.blue.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.05), // Light mode
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.blue.withOpacity(0.3)
+                          : Colors.blue.withOpacity(0.2), // Light mode
+                    ),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Colors.blue,
+                          strokeWidth: 2,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Loading comments...',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              if (comments.isEmpty) {
+                return Container(
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.blue.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.05), // Light mode
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.blue.withOpacity(0.3)
+                          : Colors.blue.withOpacity(0.2), // Light mode
+                    ),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.blue
+                              : _getLightModeColor(Colors.blue), // Light mode
+                          size: 20,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No comments yet',
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.blue
+                                : _getLightModeColor(Colors.blue), // Light mode
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Be the first to comment!',
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[400]
+                                : Colors.grey[600], // Light mode
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return Column(
+                children: [
+                  // Comments preview with error handling
+                  ...comments.take(3).map((comment) {
+                    try {
+                      return _buildCommentItem(comment);
+                    } catch (e) {
+                      print('🔍 DEBUG: Error building comment item: $e');
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.red.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.red.withOpacity(0.3)
+                                : Colors.red.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Text(
+                          'Error loading comment',
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.red
+                                : Colors.red.shade700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    }
+                  }).toList(),
+                  
+                  // View all button
+                  if (comments.length > 3)
+                    TextButton(
+                      onPressed: () {
+                        print('🔍 DEBUG: Opening comments bottom sheet');
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => CommentsBottomSheet(
+                            postId: _currentPost.id,
+                            service: _currentPost.service,
+                            creatorId: _currentPost.user,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.blue.withOpacity(0.1)
+                                  : Colors.blue.withOpacity(0.05), // Light mode
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.blue.withOpacity(0.05)
+                                  : Colors.blue.withOpacity(0.02), // Light mode
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.blue.withOpacity(0.3)
+                                : Colors.blue.withOpacity(0.2), // Light mode
+                          ),
+                        ),
+                        child: Text(
+                          'View All Comments (${comments.length})',
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.blue
+                                : _getLightModeColor(Colors.blue), // Light mode
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentItem(Comment comment) {
+    // DEBUG: Print comment data
+    print('🔍 DEBUG: Building comment item: ${comment.toString()}');
+    print('🔍 DEBUG: Comment author: ${comment.username}');
+    print('🔍 DEBUG: Comment body: ${comment.content}');
+    print('🔍 DEBUG: Comment timestamp: ${comment.timestamp}');
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.blue.withOpacity(0.05)
+            : Colors.blue.withOpacity(0.02), // Light mode
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.blue.withOpacity(0.2)
+              : Colors.blue.withOpacity(0.1), // Light mode
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Author avatar placeholder
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.blue.withOpacity(0.2)
+                      : Colors.blue.withOpacity(0.1), // Light mode
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.blue.withOpacity(0.4)
+                        : Colors.blue.withOpacity(0.3), // Light mode
+                  ),
+                ),
+                child: Icon(
+                  Icons.person,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.blue
+                      : _getLightModeColor(Colors.blue), // Light mode
+                  size: 16,
+                ),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              // Author name and date
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      comment.username,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.blue
+                            : _getLightModeColor(Colors.blue), // Light mode
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      _formatCommentDate(comment.timestamp.toIso8601String()),
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[400]
+                            : Colors.grey[600], // Light mode
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Comment body with better text handling
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.transparent
+                  : Colors.white.withOpacity(0.5), // Light mode
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              comment.content,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.grey.shade800, // Light mode
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Format comment date with better handling
+  String _formatCommentDate(String dateString) {
+    try {
+      if (dateString.isEmpty) return 'Unknown date';
+      
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inDays > 365) {
+        return '${(difference.inDays / 365).floor()}y ago';
+      } else if (difference.inDays > 30) {
+        return '${(difference.inDays / 30).floor()}mo ago';
+      } else if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'just now';
+      }
+    } catch (e) {
+      print('🔍 DEBUG: Date parsing error: $e for date: $dateString');
+      return dateString.length > 10 ? dateString.substring(0, 10) : dateString;
+    }
+  }
+
+  Color _getServiceColor() {
+    switch (_currentPost.service) {
+      case 'onlyfans':
+        return Colors.blue;
+      case 'fansly':
+        return Colors.purple;
+      case 'candfans':
+        return Colors.pink;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  String _getServiceDisplayName() {
+    switch (_currentPost.service) {
+      case 'onlyfans':
+        return 'OnlyFans';
+      case 'fansly':
+        return 'Fansly';
+      case 'candfans':
+        return 'CandFans';
+      default:
+        return _currentPost.service.toUpperCase();
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'just now';
+      }
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  Future<void> _downloadAllFiles() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Download functionality not implemented yet')),
+    );
+  }
+
+  Future<void> _sharePost() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Share functionality not implemented yet')),
+    );
+  }
+}

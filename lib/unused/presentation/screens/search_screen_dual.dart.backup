@@ -1,0 +1,1390 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+
+// Domain
+import '../../domain/entities/api_source.dart';
+import '../../domain/entities/creator.dart';
+
+// Providers
+import '../providers/creator_search_provider.dart';
+import '../providers/creators_provider.dart';
+import '../providers/posts_provider.dart';
+import '../providers/settings_provider.dart';
+
+// Services
+import '../services/creator_index_manager.dart';
+import '../../data/services/creator_search_service.dart';
+
+// Data
+import '../../data/datasources/creator_index_datasource_impl.dart';
+import '../../data/models/creator_index_item.dart';
+import '../../data/models/creator_search_result.dart';
+
+// Theme
+import '../theme/app_theme.dart';
+
+// Screens
+import 'creator_detail_screen.dart';
+import 'post_detail_screen.dart';
+
+// Utils
+import '../../utils/logger.dart';
+
+/// 🎯 DUAL SearchScreen - Name Search + ID Search
+/// 
+/// Features:
+/// - ✅ Tab 1: Search by Name (Creator Index - fast)
+/// - ✅ Tab 2: Search by ID (API search - original)
+/// - ✅ Seamless switching between modes
+/// - ✅ Modern UI with animations
+/// - ✅ Error handling for both modes
+class SearchScreenDual extends StatefulWidget {
+  const SearchScreenDual({super.key});
+
+  @override
+  State<SearchScreenDual> createState() => _SearchScreenDualState();
+}
+
+class _SearchScreenDualState extends State<SearchScreenDual> 
+    with TickerProviderStateMixin {
+  
+  // Controllers
+  final TextEditingController _nameSearchController = TextEditingController();
+  final TextEditingController _idSearchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _idFocusNode = FocusNode();
+  
+  // Animation Controllers
+  late TabController _tabController;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  
+  // State
+  ApiSource _selectedApiSource = ApiSource.kemono;
+  String _selectedService = 'patreon'; // Default service
+  bool _showPopular = true;
+
+  // Service lists
+  static const List<Map<String, dynamic>> _kemonoServices = [
+    {'id': 'patreon', 'name': 'Patreon', 'icon': Icons.favorite, 'color': Colors.orange},
+    {'id': 'pixiv_fanbox', 'name': 'Pixiv Fanbox', 'icon': Icons.palette, 'color': Colors.blue},
+    {'id': 'discord', 'name': 'Discord', 'icon': Icons.discord, 'color': Colors.indigo},
+    {'id': 'fantia', 'name': 'Fantia', 'icon': Icons.star, 'color': Colors.purple},
+    {'id': 'afdian', 'name': 'Afdian', 'icon': Icons.payment, 'color': Colors.green},
+    {'id': 'boosty', 'name': 'Boosty', 'icon': Icons.rocket_launch, 'color': Colors.red},
+    {'id': 'gumroad', 'name': 'Gumroad', 'icon': Icons.shopping_cart, 'color': Colors.brown},
+    {'id': 'subscribestar', 'name': 'SubscribeStar', 'icon': Icons.star_border, 'color': Colors.teal},
+    {'id': 'dlsite', 'name': 'DLsite', 'icon': Icons.shop, 'color': Colors.pink},
+  ];
+
+  static const List<Map<String, dynamic>> _coomerServices = [
+    {'id': 'onlyfans', 'name': 'OnlyFans', 'icon': Icons.lock, 'color': Colors.black},
+    {'id': 'fansly', 'name': 'Fansly', 'icon': Icons.person, 'color': Colors.blue},
+    {'id': 'candfans', 'name': 'CandFans', 'icon': Icons.cake, 'color': Colors.pink},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.index = 1; // Default to "Search by ID" (index 1)
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    
+    // Initialize provider and prepare index
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSearch();
+    });
+    
+    // Search listeners
+    _nameSearchController.addListener(_onNameSearchChanged);
+    _idSearchController.addListener(_onIdSearchChanged);
+    
+    // Tab listener
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        HapticFeedback.lightImpact();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _fadeController.dispose();
+    _nameSearchController.dispose();
+    _idSearchController.dispose();
+    _scrollController.dispose();
+    _nameFocusNode.dispose();
+    _idFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _initializeSearch() {
+    final settingsProvider = context.read<SettingsProvider>();
+    _selectedApiSource = settingsProvider.defaultApiSource;
+    
+    // Reset service to default for the API source
+    _selectedService = _selectedApiSource == ApiSource.coomer ? 'onlyfans' : 'patreon';
+    
+    // Prepare index for current API source
+    context.read<CreatorSearchProvider>().prepareIndex(_selectedApiSource);
+    
+    // Start animation
+    _fadeController.forward();
+  }
+
+  void _onNameSearchChanged() {
+    final query = _nameSearchController.text.trim();
+    final provider = context.read<CreatorSearchProvider>();
+    
+    print('🔍 DEBUG: _onNameSearchChanged called with query: "$query"');
+    
+    if (query.isEmpty) {
+      setState(() {
+        _showPopular = true;
+      });
+      provider.clearSearch();
+    } else {
+      setState(() {
+        _showPopular = false;
+      });
+      // Use mbaharip API for name search
+      print('🔍 DEBUG: Calling searchCreatorsByName with query: "$query"');
+      provider.searchCreatorsByName(query, _selectedApiSource);
+      print('🔍 DEBUG: searchCreatorsByName called');
+    }
+  }
+
+  void _onIdSearchChanged() {
+    final query = _idSearchController.text.trim();
+    if (query.isEmpty) return;
+    
+    // Add to search history when user stops typing
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (_idSearchController.text.trim() == query && query.isNotEmpty) {
+        context.read<SettingsProvider>().addToSearchHistory(query);
+      }
+    });
+    if (query.isEmpty) {
+      // Reset search state
+      final creatorsProvider = context.read<CreatorsProvider>();
+      creatorsProvider.creators.clear();
+      creatorsProvider.notifyListeners();
+    } else if (query.length >= 3) {
+      _searchCreatorsById(query);
+    }
+  }
+
+  Future<void> _searchCreatorsById(String query) async {
+    final creatorsProvider = context.read<CreatorsProvider>();
+    
+    try {
+      await creatorsProvider.searchCreators(
+        query,
+        service: _selectedService, // Use selected service
+        apiSource: _selectedApiSource,
+      );
+    } catch (e) {
+      AppLogger.error('ID search failed', tag: 'SearchScreenDual', error: e);
+    }
+  }
+
+  Future<void> _switchApiSource(ApiSource apiSource) async {
+    if (_selectedApiSource == apiSource) return;
+    
+    setState(() {
+      _selectedApiSource = apiSource;
+      _nameSearchController.clear();
+      _idSearchController.clear();
+      _showPopular = true;
+      // Reset service to default for the new API source
+      _selectedService = apiSource == ApiSource.coomer ? 'onlyfans' : 'patreon';
+    });
+    
+    HapticFeedback.lightImpact();
+    
+    // Prepare index for new API source
+    await context.read<CreatorSearchProvider>().switchApiSource(apiSource);
+    
+    // Update settings
+    context.read<SettingsProvider>().setDefaultApiSource(apiSource);
+  }
+
+  void _navigateToCreatorDetail(Creator creator, {ApiSource? apiSource}) {
+    HapticFeedback.lightImpact();
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreatorDetailScreen(
+          creator: creator,
+          apiSource: apiSource ?? _selectedApiSource,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToCreatorDetailFromIndex(CreatorIndexItem creator) {
+    HapticFeedback.lightImpact();
+    
+    // Create Creator object from index item
+    final creatorObj = Creator(
+      id: creator.userId,
+      service: creator.service,
+      name: creator.name,
+      indexed: 0,
+      updated: 0,
+    );
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreatorDetailScreen(
+          creator: creatorObj,
+          apiSource: _selectedApiSource,
+        ),
+      ),
+    );
+  }
+
+  /// Get current service list based on API source
+  List<Map<String, dynamic>> _getCurrentServices() {
+    return _selectedApiSource == ApiSource.coomer ? _coomerServices : _kemonoServices;
+  }
+
+  /// Get service display name with fallback
+  String _getServiceDisplayName() {
+    final services = _getCurrentServices();
+    final service = services.firstWhere(
+      (s) => s['id'] == _selectedService,
+      orElse: () => services.first,
+    );
+    return service['name'] ?? 'Unknown Service';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => CreatorSearchProvider(
+        CreatorIndexManager(CreatorIndexDatasourceImpl()),
+      ),
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: AppTheme.surfaceColor,
+          foregroundColor: AppTheme.primaryTextColor,
+          elevation: 0,
+          title: Text(
+            'Creator Search',
+            style: AppTheme.titleStyle.copyWith(
+              color: AppTheme.primaryTextColor,
+              fontSize: 20,
+            ),
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: AppTheme.primaryColor,
+            labelColor: AppTheme.primaryTextColor,
+            unselectedLabelColor: AppTheme.secondaryTextColor,
+            tabs: const [
+              Tab(
+                icon: Icon(Icons.person_search),
+                text: 'Search by Name',
+              ),
+              Tab(
+                icon: Icon(Icons.tag),
+                text: 'Search by ID',
+              ),
+            ],
+          ),
+        ),
+        body: Column(
+          children: [
+            _buildApiSourceSelector(),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildNameSearchTab(),
+                  _buildIdSearchTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApiSourceSelector() {
+    return Container(
+      margin: const EdgeInsets.all(AppTheme.mdPadding),
+      child: Row(
+        children: [
+          Text(
+            'API Source:',
+            style: AppTheme.captionStyle.copyWith(
+              color: AppTheme.secondaryTextColor,
+            ),
+          ),
+          const SizedBox(width: AppTheme.smSpacing),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(AppTheme.smRadius),
+              ),
+              child: Row(
+                children: [
+                  _buildApiSourceButton(ApiSource.kemono),
+                  _buildApiSourceButton(ApiSource.coomer),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApiSourceButton(ApiSource apiSource) {
+    final isSelected = _selectedApiSource == apiSource;
+    final isPreparing = context.select<CreatorSearchProvider, bool>(
+      (provider) => provider.preparing && provider.currentApiSource == apiSource,
+    );
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: isPreparing ? null : () => _switchApiSource(apiSource),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.smRadius),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isPreparing)
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isSelected ? Colors.white : AppTheme.primaryColor,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  apiSource == ApiSource.kemono ? Icons.star : Icons.favorite,
+                  size: 16,
+                  color: isSelected ? Colors.white : AppTheme.primaryTextColor,
+                ),
+              const SizedBox(width: 6),
+              Text(
+                apiSource.name.toUpperCase(),
+                style: AppTheme.captionStyle.copyWith(
+                  color: isSelected ? Colors.white : AppTheme.primaryTextColor,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNameSearchTab() {
+    return Consumer<CreatorSearchProvider>(
+      builder: (context, provider, _) {
+        return Column(
+          children: [
+            // Search Bar
+            Container(
+              margin: const EdgeInsets.all(AppTheme.mdPadding),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+                border: Border.all(color: AppTheme.cardColor),
+              ),
+              child: TextField(
+                controller: _nameSearchController,
+                focusNode: _nameFocusNode,
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.primaryTextColor,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search creator by name...',
+                  hintStyle: AppTheme.bodyStyle.copyWith(
+                    color: AppTheme.secondaryTextColor,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: AppTheme.secondaryTextColor,
+                  ),
+                  suffixIcon: _nameSearchController.text.isNotEmpty
+                      ? IconButton(
+                          onPressed: () {
+                            _nameSearchController.clear();
+                            _onNameSearchChanged();
+                          },
+                          icon: Icon(
+                            Icons.clear,
+                            color: AppTheme.secondaryTextColor,
+                          ),
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(AppTheme.mdPadding),
+                ),
+              ),
+            ),
+            
+            // Content
+            Expanded(
+              child: _buildNameSearchContent(provider),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildIdSearchTab() {
+    return Consumer<CreatorsProvider>(
+      builder: (context, provider, _) {
+        return Column(
+          children: [
+            // API Source Selector for ID Search
+            Container(
+              margin: const EdgeInsets.all(AppTheme.mdPadding),
+              child: Row(
+                children: [
+                  Text(
+                    'Service:',
+                    style: AppTheme.captionStyle.copyWith(
+                      color: AppTheme.secondaryTextColor,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.smSpacing),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.smPadding),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(AppTheme.smRadius),
+                        border: Border.all(color: AppTheme.cardColor),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedService,
+                          isExpanded: true,
+                          style: AppTheme.bodyStyle.copyWith(
+                            color: AppTheme.primaryTextColor,
+                          ),
+                          dropdownColor: AppTheme.surfaceColor,
+                          items: _getCurrentServices().map((service) {
+                            return DropdownMenuItem<String>(
+                              value: service['id'],
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    service['icon'],
+                                    color: service['color'],
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(service['name']),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedService = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Search Bar
+            Container(
+              margin: const EdgeInsets.all(AppTheme.mdPadding),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+                border: Border.all(color: AppTheme.cardColor),
+              ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _idSearchController,
+                    focusNode: _idFocusNode,
+                    style: AppTheme.bodyStyle.copyWith(
+                      color: AppTheme.primaryTextColor,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search creator by ID (min 3 chars)...',
+                      hintStyle: AppTheme.bodyStyle.copyWith(
+                        color: AppTheme.secondaryTextColor,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.tag,
+                        color: AppTheme.secondaryTextColor,
+                      ),
+                      suffixIcon: _idSearchController.text.isNotEmpty
+                          ? IconButton(
+                              onPressed: () {
+                                _idSearchController.clear();
+                                _onIdSearchChanged();
+                              },
+                              icon: Icon(
+                                Icons.clear,
+                                color: AppTheme.secondaryTextColor,
+                              ),
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(AppTheme.mdPadding),
+                    ),
+                  ),
+                  // Search History
+                  Consumer<SettingsProvider>(
+                    builder: (context, settingsProvider, _) {
+                      final history = settingsProvider.searchHistory;
+                      if (history.isEmpty) return const SizedBox.shrink();
+                      
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Recent Searches',
+                                  style: AppTheme.captionStyle.copyWith(
+                                    color: AppTheme.secondaryTextColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => settingsProvider.clearSearchHistory(),
+                                  child: Text(
+                                    'Clear',
+                                    style: AppTheme.captionStyle.copyWith(
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: history.take(5).map((query) {
+                                return InputChip(
+                                  label: Text(
+                                    query,
+                                    style: AppTheme.captionStyle.copyWith(
+                                      color: AppTheme.primaryTextColor,
+                                    ),
+                                  ),
+                                  backgroundColor: AppTheme.cardColor,
+                                  onPressed: () {
+                                    _idSearchController.text = query;
+                                    _onIdSearchChanged();
+                                    _idFocusNode.unfocus();
+                                  },
+                                  deleteIcon: Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: AppTheme.secondaryTextColor,
+                                  ),
+                                  onDeleted: () => settingsProvider.removeFromSearchHistory(query),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            
+            // Content
+            Expanded(
+              child: _buildIdSearchContent(provider),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNameSearchContent(CreatorSearchProvider provider) {
+    print('🔍 DEBUG: _buildNameSearchContent called');
+    print('🔍 DEBUG: provider.loading: ${provider.loading}');
+    print('🔍 DEBUG: provider.error: ${provider.error}');
+    print('🔍 DEBUG: provider.nameSearchResults.length: ${provider.nameSearchResults.length}');
+    print('🔍 DEBUG: _showPopular: $_showPopular');
+    
+    // Show loading state
+    if (provider.loading) {
+      print('🔍 DEBUG: Showing loading state');
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppTheme.primaryColor,
+        ),
+      );
+    }
+
+    // Show error state
+    if (provider.error != null) {
+      print('🔍 DEBUG: Showing error state: ${provider.error}');
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.xlPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: AppTheme.errorColor,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              Text(
+                'Search Error',
+                style: AppTheme.titleStyle.copyWith(
+                  color: AppTheme.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: AppTheme.smSpacing),
+              Text(
+                provider.error!,
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.secondaryTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTheme.lgSpacing),
+              ElevatedButton.icon(
+                onPressed: () => _onNameSearchChanged(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try Again'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show popular creators if no search query
+    if (_showPopular) {
+      print('🔍 DEBUG: Showing popular creators');
+      return _buildPopularCreators(provider);
+    }
+
+    // Show search results from mbaharip API
+    if (provider.nameSearchResults.isEmpty) {
+      print('🔍 DEBUG: No search results found');
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.xlPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off,
+                size: 64,
+                color: AppTheme.secondaryTextColor,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              Text(
+                'No creators found',
+                style: AppTheme.titleStyle.copyWith(
+                  color: AppTheme.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: AppTheme.smSpacing),
+              Text(
+                'Try different keywords or check spelling',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.secondaryTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    print('🔍 DEBUG: Showing ${provider.nameSearchResults.length} search results');
+    return _buildNameSearchResults(provider);
+  }
+
+  Widget _buildIdSearchContent(CreatorsProvider provider) {
+    if (provider.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppTheme.primaryColor,
+        ),
+      );
+    }
+
+    if (provider.error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.xlPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: AppTheme.errorColor,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              Text(
+                'Search Error',
+                style: AppTheme.titleStyle.copyWith(
+                  color: AppTheme.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: AppTheme.smSpacing),
+              Text(
+                provider.error!,
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.secondaryTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              ElevatedButton.icon(
+                onPressed: () => _searchCreatorsById(_idSearchController.text),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (provider.creators.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.xlPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off,
+                size: 64,
+                color: AppTheme.secondaryTextColor,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              Text(
+                'No creators found',
+                style: AppTheme.titleStyle.copyWith(
+                  color: AppTheme.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: AppTheme.smSpacing),
+              Text(
+                'Try different creator ID or check spelling',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.secondaryTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+      itemCount: provider.creators.length,
+      itemBuilder: (context, index) {
+        final creator = provider.creators[index];
+        return _buildCreatorTile(creator, index);
+      },
+    );
+  }
+
+  Widget _buildPreparationScreen(CreatorSearchProvider provider) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.xlPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.download,
+                size: 64,
+                color: AppTheme.primaryColor,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              Text(
+                'Prepare Creator Index',
+                style: AppTheme.titleStyle.copyWith(
+                  color: AppTheme.primaryTextColor,
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(height: AppTheme.smSpacing),
+              Text(
+                'Download creator database for fast local search',
+                style: AppTheme.bodyStyle.copyWith(
+                  color: AppTheme.secondaryTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTheme.mdSpacing),
+              if (provider.preparing) ...[
+                CircularProgressIndicator(
+                  color: AppTheme.primaryColor,
+                ),
+                const SizedBox(height: AppTheme.smSpacing),
+                Text(
+                  'Downloading creator index...',
+                  style: AppTheme.captionStyle.copyWith(
+                    color: AppTheme.secondaryTextColor,
+                  ),
+                ),
+              ] else ...[
+                ElevatedButton.icon(
+                  onPressed: provider.preparing ? null : () => provider.retry(),
+                  icon: const Icon(Icons.download),
+                  label: const Text('Download Index'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                if (provider.error != null) ...[
+                  const SizedBox(height: AppTheme.smSpacing),
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.mdPadding),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppTheme.smRadius),
+                    ),
+                    child: Text(
+                      provider.error!,
+                      style: AppTheme.captionStyle.copyWith(
+                        color: AppTheme.errorColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPopularCreators(CreatorSearchProvider provider) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppTheme.mdPadding),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
+                const SizedBox(width: AppTheme.smSpacing),
+                Text(
+                  'Popular Creators',
+                  style: AppTheme.titleStyle.copyWith(
+                    color: AppTheme.primaryTextColor,
+                    fontSize: 16,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${provider.indexSize} total',
+                  style: AppTheme.captionStyle.copyWith(
+                    color: AppTheme.secondaryTextColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+              itemCount: provider.popularCreators.length,
+              itemBuilder: (context, index) {
+                final creator = provider.popularCreators[index];
+                return _buildCreatorIndexTile(creator, index);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNameSearchResults(CreatorSearchProvider provider) {
+    print('🔍 DEBUG: _buildNameSearchResults called');
+    print('🔍 DEBUG: provider.nameSearchResults.length: ${provider.nameSearchResults.length}');
+    print('🔍 DEBUG: provider.currentQuery: "${provider.currentQuery}"');
+    
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          if (provider.currentQuery.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(AppTheme.mdPadding),
+              child: Row(
+                children: [
+                  Text(
+                    'Results for "${provider.currentQuery}"',
+                    style: AppTheme.titleStyle.copyWith(
+                      color: AppTheme.primaryTextColor,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${provider.nameSearchResults.length} found',
+                    style: AppTheme.captionStyle.copyWith(
+                      color: AppTheme.secondaryTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: provider.nameSearchResults.isEmpty
+                ? _buildEmptySearch()
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.mdPadding),
+                    itemCount: provider.nameSearchResults.length,
+                    itemBuilder: (context, index) {
+                      final searchResult = provider.nameSearchResults[index];
+                      final creator = provider.searchResultToCreator(searchResult);
+                      print('🔍 DEBUG: Building creator tile for: ${creator?.name}');
+                      return _buildCreatorSearchResultTile(searchResult, creator, index);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreatorSearchResultTile(CreatorSearchResult searchResult, Creator? creator, int index) {
+    print('🔍 DEBUG: Building tile for search result: ${searchResult.name}');
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.mdSpacing),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).cardColor,
+            Theme.of(context).cardColor.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.3),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            if (creator != null) {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pushNamed(
+                '/creator',
+                arguments: creator,
+              );
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.mdPadding),
+            child: Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.primaryColor.withOpacity(0.1),
+                        AppTheme.primaryColor.withOpacity(0.05),
+                      ],
+                    ),
+                  ),
+                  child: searchResult.avatar != null && searchResult.avatar!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            searchResult.avatar!,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.person,
+                                size: 30,
+                                color: AppTheme.primaryColor.withOpacity(0.5),
+                              );
+                            },
+                          ),
+                        )
+                      : Icon(
+                          Icons.person,
+                          size: 30,
+                          color: AppTheme.primaryColor.withOpacity(0.5),
+                        ),
+                ),
+                
+                const SizedBox(width: AppTheme.mdPadding),
+                
+                // Creator Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        searchResult.name,
+                        style: AppTheme.titleStyle.copyWith(
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _getServiceColor(searchResult.service).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              searchResult.service.toUpperCase(),
+                              style: AppTheme.captionStyle.copyWith(
+                                color: _getServiceColor(searchResult.service),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (searchResult.fans != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                'EXPERIMENTAL',
+                                style: AppTheme.captionStyle.copyWith(
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'ID: ${searchResult.id}',
+                        style: AppTheme.captionStyle.copyWith(
+                          color: Theme.of(context).disabledColor,
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Arrow
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Theme.of(context).disabledColor,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getServiceColor(String service) {
+    switch (service.toLowerCase()) {
+      case 'patreon':
+        return Colors.orange;
+      case 'fanbox':
+        return Colors.purple;
+      case 'discord':
+        return Colors.blueGrey;
+      case 'fantia':
+        return Colors.pink;
+      case 'afdian':
+        return Colors.teal;
+      case 'boosty':
+        return Colors.red;
+      case 'gumroad':
+        return Colors.green;
+      case 'subscribestar':
+        return Colors.amber;
+      case 'dlsite':
+        return Colors.indigo;
+      case 'onlyfans':
+        return Colors.deepPurple;
+      case 'fansly':
+        return Colors.pink;
+      case 'candfans':
+        return Colors.orange;
+      default:
+        return Colors.blue;
+    }
+  }
+      margin: const EdgeInsets.only(bottom: AppTheme.smSpacing),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+        border: Border.all(color: AppTheme.cardColor),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(AppTheme.mdPadding),
+        leading: CircleAvatar(
+          radius: 20,
+          backgroundColor: _getServiceColor(creator.service),
+          child: Text(
+            creator.name.isNotEmpty ? creator.name[0].toUpperCase() : '?',
+            style: AppTheme.captionStyle.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(
+          creator.name,
+          style: AppTheme.titleStyle.copyWith(
+            color: AppTheme.primaryTextColor,
+            fontSize: 14,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 2),
+            Text(
+              creator.service.toUpperCase(),
+              style: AppTheme.captionStyle.copyWith(
+                color: _getServiceColor(creator.service),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'ID: ${creator.userId}',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.secondaryTextColor,
+              ),
+            ),
+          ],
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: AppTheme.secondaryTextColor,
+        ),
+        onTap: () => _navigateToCreatorDetailFromIndex(creator),
+      ),
+    );
+  }
+
+  Widget _buildCreatorTile(Creator creator, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.smSpacing),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+        border: Border.all(color: AppTheme.cardColor),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(AppTheme.mdPadding),
+        leading: CircleAvatar(
+          radius: 20,
+          backgroundColor: _getServiceColor(creator.service),
+          child: Text(
+            creator.name.isNotEmpty ? creator.name[0].toUpperCase() : '?',
+            style: AppTheme.captionStyle.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(
+          creator.name,
+          style: AppTheme.titleStyle.copyWith(
+            color: AppTheme.primaryTextColor,
+            fontSize: 14,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 2),
+            Text(
+              creator.service.toUpperCase(),
+              style: AppTheme.captionStyle.copyWith(
+                color: _getServiceColor(creator.service),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'ID: ${creator.id}',
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.secondaryTextColor,
+              ),
+            ),
+          ],
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: AppTheme.secondaryTextColor,
+        ),
+        onTap: () => _navigateToCreatorDetail(creator),
+      ),
+    );
+  }
+
+  Widget _buildEmptySearch() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.xlPadding),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: AppTheme.secondaryTextColor,
+            ),
+            const SizedBox(height: AppTheme.mdSpacing),
+            Text(
+              'No creators found',
+              style: AppTheme.titleStyle.copyWith(
+                color: AppTheme.primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: AppTheme.smSpacing),
+            Text(
+              'Try different keywords or check spelling',
+              style: AppTheme.bodyStyle.copyWith(
+                color: AppTheme.secondaryTextColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getServiceColor(String service) {
+    switch (service.toLowerCase()) {
+      case 'fanbox':
+        return Colors.blue[600]!;
+      case 'patreon':
+        return Colors.orange[600]!;
+      case 'fantia':
+        return Colors.purple[600]!;
+      case 'afdian':
+        return Colors.green[600]!;
+      case 'boosty':
+        return Colors.red[600]!;
+      case 'onlyfans':
+        return Colors.pink[600]!;
+      case 'fansly':
+        return Colors.cyan[600]!;
+      case 'candfans':
+        return Colors.indigo[600]!;
+      default:
+        return Colors.grey[600]!;
+    }
+  }
+}
