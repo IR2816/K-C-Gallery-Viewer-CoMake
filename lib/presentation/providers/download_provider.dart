@@ -56,6 +56,8 @@ class DownloadItem {
 enum DownloadStatus { pending, downloading, completed, failed, cancelled }
 
 class DownloadProvider extends ChangeNotifier {
+  // Kemono is used as the default because it is the more common source; callers
+  // should always pass an explicit referer when downloading Coomer content.
   static const String _defaultReferer = 'https://kemono.cr/';
 
   final List<DownloadItem> _downloads = [];

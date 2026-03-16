@@ -180,34 +180,15 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
           // Videos - play inline and fill the screen
           return _buildVideoPlayer(mediaItem);
         } else {
-          // 🔥 STRATEGI IDEAL: Fullscreen Viewer - Original quality tanpa downscale
           final imageUrl = mediaItem['url'];
           AppLogger.debug(
             '🔍 DEBUG: FullscreenMediaViewer loading image: $imageUrl',
           );
 
-          // 🚀 FIX: Add HTTP headers for Coomer CDN anti-hotlink protection
-          final isCoomerDomain =
-              imageUrl.contains('coomer.st') ||
-              imageUrl.contains('n2.coomer.st');
-          final httpHeaders = isCoomerDomain
-              ? const {
-                  'User-Agent':
-                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                  'Accept': 'image/avif,image/webp,image/*,*/*;q=0.8',
-                  'Referer': 'https://coomer.st/',
-                  'Origin': 'https://coomer.st',
-                  'Accept-Language': 'en-US,en;q=0.9',
-                  'Accept-Encoding': 'gzip, deflate, br',
-                  'Connection': 'keep-alive',
-                  'Upgrade-Insecure-Requests': '1',
-                }
-              : null;
-
           return PhotoView(
             imageProvider: CachedNetworkImageProvider(
               imageUrl,
-              headers: httpHeaders,
+              headers: _buildImageHeaders(imageUrl),
             ),
             initialScale: PhotoViewComputedScale.contained,
             minScale: PhotoViewComputedScale.contained,
@@ -263,6 +244,37 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
         }
       },
     );
+  }
+
+  /// Returns CDN-appropriate HTTP headers for [url] so both Coomer and Kemono
+  /// media load correctly (both CDNs require a matching Referer/Origin).
+  static Map<String, String>? _buildImageHeaders(String url) {
+    if (url.contains('coomer.st')) {
+      return const {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/*,*/*;q=0.8',
+        'Referer': 'https://coomer.st/',
+        'Origin': 'https://coomer.st',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+      };
+    }
+    if (url.contains('kemono.cr') || url.contains('kemono.su')) {
+      // kemono.cr is the current domain; kemono.su is the legacy domain.
+      return const {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/*,*/*;q=0.8',
+        'Referer': 'https://kemono.cr/',
+        'Origin': 'https://kemono.cr',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+      };
+    }
+    return null;
   }
 
   /// Build video placeholder untuk gallery
@@ -613,12 +625,19 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
 
       final savePath = '${downloadsDirectory.path}/$fileName';
 
+      // Use the correct CDN referer so the download provider sends the right
+      // anti-hotlink header (fixes Kemono downloads that previously got 403).
+      final referer = widget.apiSource == ApiSource.coomer
+          ? 'https://coomer.st/'
+          : 'https://kemono.cr/';
+
       if (!mounted) return;
       // Route through DownloadProvider so progress shows in Download Manager
       context.read<DownloadProvider>().addDownload(
         name: fileName,
         url: url,
         savePath: savePath,
+        referer: referer,
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

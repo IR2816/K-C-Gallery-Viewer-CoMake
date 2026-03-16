@@ -1475,26 +1475,41 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     return dotIndex != -1 ? filename.substring(dotIndex + 1) : 'unknown';
   }
 
-  /// 🚀 FIX: Get HTTP headers for Coomer CDN anti-hotlink protection
+  /// Get HTTP headers for Coomer/Kemono CDN anti-hotlink protection.
+  ///
+  /// Both CDNs require a matching Referer/Origin header or they return 403.
+  /// Kemono media is served from kemono.cr / img.kemono.cr / n*.kemono.cr.
+  /// Coomer media is served from coomer.st / img.coomer.st / n*.coomer.st.
   Map<String, String>? _getCoomerHeaders(String imageUrl) {
-    final isCoomerDomain =
-        imageUrl.contains('coomer.st') || imageUrl.contains('n2.coomer.st');
-
-    if (isCoomerDomain) {
+    if (imageUrl.contains('coomer.st')) {
       return const {
         'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'image/avif,image/webp,image/*,*/*;q=0.8',
         'Referer': 'https://coomer.st/',
         'Origin': 'https://coomer.st',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
       };
     }
 
-    return null; // No headers needed for non-Coomer domains
+    // kemono.cr is the current domain; kemono.su is the legacy domain that
+    // still serves some older content and redirects.
+    if (imageUrl.contains('kemono.cr') || imageUrl.contains('kemono.su')) {
+      return const {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/*,*/*;q=0.8',
+        'Referer': 'https://kemono.cr/',
+        'Origin': 'https://kemono.cr',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+      };
+    }
+
+    return null;
   }
 
   void _openMediaFullscreen(Map<String, dynamic> mediaItem, int index) {
@@ -1651,6 +1666,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
               CachedNetworkImage(
                 imageUrl: thumbnailUrl,
+                httpHeaders: _getCoomerHeaders(thumbnailUrl),
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: Colors.black,
