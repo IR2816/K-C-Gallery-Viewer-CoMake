@@ -31,10 +31,13 @@ class KemonoRepositoryImpl implements KemonoRepository {
     );
     final favorites = await localDataSource.getFavoriteCreators();
 
+    // Build a Set of composite keys for O(1) lookup instead of O(n) per creator
+    final favoriteKeys = favorites
+        .map((fav) => '${fav.id}:${fav.service}')
+        .toSet();
+
     return creators.map((creator) {
-      final isFavorited = favorites.any(
-        (fav) => fav.id == creator.id && fav.service == creator.service,
-      );
+      final isFavorited = favoriteKeys.contains('${creator.id}:${creator.service}');
       return creator.copyWith(favorited: isFavorited);
     }).toList();
   }
@@ -80,8 +83,11 @@ class KemonoRepositoryImpl implements KemonoRepository {
     );
     final savedPosts = await localDataSource.getSavedPosts();
 
+    // Build a Set of saved post IDs for O(1) lookup instead of O(n) per post
+    final savedPostIds = savedPosts.map((p) => p.id).toSet();
+
     return postModels.map((postModel) {
-      final isSaved = savedPosts.any((saved) => saved.id == postModel.id);
+      final isSaved = savedPostIds.contains(postModel.id);
       return Post(
         id: postModel.id,
         user: postModel.user,
@@ -150,8 +156,11 @@ class KemonoRepositoryImpl implements KemonoRepository {
     );
     final savedPosts = await localDataSource.getSavedPosts();
 
+    // Build a Set of saved post IDs for O(1) lookup instead of O(n) per post
+    final savedPostIds = savedPosts.map((p) => p.id).toSet();
+
     return postModels.map((postModel) {
-      final isSaved = savedPosts.any((saved) => saved.id == postModel.id);
+      final isSaved = savedPostIds.contains(postModel.id);
       return Post(
         id: postModel.id,
         user: postModel.user,

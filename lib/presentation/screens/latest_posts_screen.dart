@@ -193,9 +193,13 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     final filteredPosts = posts.where((post) {
       if (hideNsfw && _isNsfwPost(post)) return false;
       if (!shouldFilterTags) return true;
+      // Lowercase each post tag once per post rather than once per
+      // (post, blocked-tag) pair. Blocked tags are already stored in
+      // lowercase by TagFilterProvider, so no extra transform is needed.
+      final lowerPostTags = post.tags.map((t) => t.toLowerCase()).toList();
       return !_blockedTags.any(
-        (blockedTag) => post.tags.any(
-          (postTag) => postTag.toLowerCase().contains(blockedTag.toLowerCase()),
+        (blockedTag) => lowerPostTags.any(
+          (postTag) => postTag.contains(blockedTag),
         ),
       );
     }).toList();
@@ -205,47 +209,14 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
   bool _isNsfwPost(Post post) {
     if (post.tags.isEmpty) return false;
-    final tags = post.tags.map((t) => t.toLowerCase()).toList();
-    return tags.any(
-      (tag) =>
-          tag.contains('nsfw') ||
-          tag.contains('r18') ||
-          tag.contains('adult') ||
-          tag.contains('explicit') ||
-          tag.contains('18+'),
-    );
-  }
-
-  // ignore: unused_element
-  bool _hasBlockedTags(Post post) {
-    final tagFilterProvider = context.read<TagFilterProvider>();
-    final blockedTags = tagFilterProvider.blacklist;
-
-    if (blockedTags.isEmpty) return false;
-
-    for (final blockedTag in blockedTags) {
-      if (post.title.toLowerCase().contains(blockedTag.toLowerCase())) {
-        return true;
-      }
-    }
-
-    for (final blockedTag in blockedTags) {
-      if (post.content.toLowerCase().contains(blockedTag.toLowerCase())) {
-        return true;
-      }
-    }
-
-    if (post.tags.isNotEmpty) {
-      for (final postTag in post.tags) {
-        for (final blockedTag in blockedTags) {
-          if (postTag.toLowerCase().contains(blockedTag.toLowerCase())) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
+    return post.tags.any((tag) {
+      final lower = tag.toLowerCase();
+      return lower.contains('nsfw') ||
+          lower.contains('r18') ||
+          lower.contains('adult') ||
+          lower.contains('explicit') ||
+          lower.contains('18+');
+    });
   }
 
   ApiSource get _currentApiSource =>

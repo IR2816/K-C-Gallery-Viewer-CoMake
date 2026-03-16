@@ -485,8 +485,10 @@ class PostsProvider with ChangeNotifier {
 
   Future<void> toggleSavePost(Post post) async {
     try {
-      // Check actual state from saved posts list instead of post.saved
-      final isCurrentlySaved = _savedPosts.any((p) => p.id == post.id);
+      // Use a single indexWhere instead of any() + indexWhere() to halve the
+      // number of linear scans on the saved-posts list.
+      final savedIndex = _savedPosts.indexWhere((p) => p.id == post.id);
+      final isCurrentlySaved = savedIndex != -1;
 
       if (isCurrentlySaved) {
         // Remove from saved
@@ -503,17 +505,12 @@ class PostsProvider with ChangeNotifier {
       }
 
       // Update saved posts list
-      final savedIndex = _savedPosts.indexWhere((p) => p.id == post.id);
       if (isCurrentlySaved) {
         // Post was saved, now unsaved - remove from saved posts
-        if (savedIndex != -1) {
-          _savedPosts.removeAt(savedIndex);
-        }
+        _savedPosts.removeAt(savedIndex);
       } else {
         // Post was unsaved, now saved - add to saved posts
-        if (savedIndex == -1) {
-          _savedPosts.insert(0, post.copyWith(saved: true)); // Add to beginning
-        }
+        _savedPosts.insert(0, post.copyWith(saved: true)); // Add to beginning
       }
 
       notifyListeners();

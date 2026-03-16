@@ -398,9 +398,12 @@ class SmartHistoryProvider extends ChangeNotifier {
             .map((json) => HistoryItem.fromJson(json))
             .toList();
 
-        // Merge with existing (avoid duplicates by itemId)
+        // Merge with existing (avoid duplicates by itemId) using a Set for
+        // O(1) membership checks instead of scanning the growing list each time.
+        final existingItemIds = _history.map((h) => h.itemId).toSet();
         for (var newHistoryItem in newHistory) {
-          if (!_history.any((h) => h.itemId == newHistoryItem.itemId)) {
+          if (existingItemIds.add(newHistoryItem.itemId)) {
+            // Set.add returns true only when the element was not yet present.
             _history.add(newHistoryItem);
           }
         }

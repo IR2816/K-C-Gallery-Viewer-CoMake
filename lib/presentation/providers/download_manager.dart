@@ -17,11 +17,13 @@ class DownloadManager with ChangeNotifier {
   Future<void> _loadDownloads() async {
     final downloadsJson = _prefs?.getStringList(_downloadsKey) ?? [];
     _downloads = downloadsJson
-        .map((json) {
+        .map((jsonString) {
           try {
-            return DownloadedFile.fromJson(json as Map<String, dynamic>);
+            return DownloadedFile.fromJson(
+              jsonDecode(jsonString) as Map<String, dynamic>,
+            );
           } catch (e) {
-            debugPrint('Error parsing download: $e');
+            debugPrint('Error parsing download entry "$jsonString": $e');
             return null;
           }
         })
@@ -32,9 +34,9 @@ class DownloadManager with ChangeNotifier {
 
   Future<void> _saveDownloads() async {
     final downloadsJson = _downloads
-        .map((download) => download.toJson())
+        .map((download) => jsonEncode(download.toJson()))
         .toList();
-    await _prefs?.setString(_downloadsKey, jsonEncode(downloadsJson));
+    await _prefs?.setStringList(_downloadsKey, downloadsJson);
   }
 
   Future<bool> addToDownloads(DownloadedFile download) async {

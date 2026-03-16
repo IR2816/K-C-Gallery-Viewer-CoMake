@@ -14,13 +14,13 @@ class CreatorsProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _selectedService;
-  List<String> _favoriteCreators = [];
+  Set<String> _favoriteCreators = {};
 
   List<Creator> get creators => _creators;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get selectedService => _selectedService;
-  List<String> get favoriteCreators => _favoriteCreators;
+  List<String> get favoriteCreators => _favoriteCreators.toList();
 
   Future<void> loadCreators({String? service}) async {
     _isLoading = true;
@@ -89,12 +89,12 @@ class CreatorsProvider with ChangeNotifier {
 
     try {
       _creators = await repository.getFavoriteCreators();
-      _favoriteCreators = _creators.map((c) => c.id).toList();
+      _favoriteCreators = _creators.map((c) => c.id).toSet();
       _error = null;
     } catch (e) {
       _error = e.toString();
       _creators = [];
-      _favoriteCreators = [];
+      _favoriteCreators = {};
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -121,14 +121,12 @@ class CreatorsProvider with ChangeNotifier {
         _favoriteCreators.add(creator.id);
 
         // Add to creators list if it's currently loaded and not already present
-        if (!_creators.any((c) => c.id == creator.id)) {
+        final index = _creators.indexWhere((c) => c.id == creator.id);
+        if (index == -1) {
           _creators.insert(0, creator.copyWith(favorited: true));
         } else {
           // Update existing creator in the list
-          final index = _creators.indexWhere((c) => c.id == creator.id);
-          if (index != -1) {
-            _creators[index] = _creators[index].copyWith(favorited: true);
-          }
+          _creators[index] = _creators[index].copyWith(favorited: true);
         }
       }
       notifyListeners();
