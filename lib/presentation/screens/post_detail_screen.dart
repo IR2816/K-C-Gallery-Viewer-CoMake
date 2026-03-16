@@ -13,6 +13,7 @@ import 'package:html/parser.dart' as html_parser;
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../data/services/api_header_service.dart';
 import '../../domain/entities/post.dart';
@@ -887,6 +888,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         AppTheme.primaryColor;
   }
 
+  /// Returns the correct CDN referer URL for the currently active API source.
+  String _getRefererUrl() {
+    return _activeApiSource == ApiSource.coomer
+        ? 'https://coomer.st/'
+        : 'https://kemono.cr/';
+  }
+
   /// More-options icon button that opens a bottom sheet
   Widget _buildMoreOptionsButton() {
     return IconButton(
@@ -1706,7 +1714,66 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   /// Download single file to Downloads/KC Download
+  /// Request the appropriate storage permission before downloading.
+  ///
+  /// On Android 11+ (API 30+) writing to the public Downloads directory
+  /// requires MANAGE_EXTERNAL_STORAGE.  On Android ≤10 the legacy
+  /// WRITE_EXTERNAL_STORAGE (Permission.storage) is sufficient.
+  /// On non-Android platforms, returns true immediately.
+  Future<bool> _requestStoragePermission() async {
+    if (!Platform.isAndroid) return true;
+
+    // Try MANAGE_EXTERNAL_STORAGE (Android 11+)
+    PermissionStatus manageStatus =
+        await Permission.manageExternalStorage.status;
+    if (manageStatus.isGranted) return true;
+
+    // Also check legacy storage permission (Android ≤10)
+    PermissionStatus storageStatus = await Permission.storage.status;
+    if (storageStatus.isGranted) return true;
+
+    // Request MANAGE_EXTERNAL_STORAGE; on Android 11+ this opens Settings.
+    manageStatus = await Permission.manageExternalStorage.request();
+    if (manageStatus.isGranted) return true;
+
+    // Fallback to legacy storage permission
+    storageStatus = await Permission.storage.request();
+    if (storageStatus.isGranted) return true;
+
+    if (!mounted) return false;
+
+    // Guide the user to grant permission manually.
+    final isPermanentlyDenied =
+        manageStatus.isPermanentlyDenied || storageStatus.isPermanentlyDenied;
+    if (isPermanentlyDenied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Storage permission denied. Please enable it in App Settings to download files.',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'Settings',
+            textColor: Colors.white,
+            onPressed: openAppSettings,
+          ),
+        ),
+      );
+    } else {
+      _showSnackBar(
+        'Storage permission is required to download files.',
+        Colors.orange,
+      );
+    }
+    return false;
+  }
+
   Future<void> _downloadSingleFile(PostLink link) async {
+    // Check / request storage permission first.
+    final hasPermission = await _requestStoragePermission();
+    if (!hasPermission) return;
+
     final url = link.url;
     // Extract a reasonable filename from the URL or label
     String fileName =
@@ -1744,6 +1811,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
       final savePath = '${downloadsDirectory.path}/$fileName';
 
+      // Determine the correct referer for CDN anti-hotlink headers.
+      final referer = _getRefererUrl();
+
       // Route through DownloadProvider so progress shows in Download Manager
       if (!mounted) return;
       final downloadProvider = context.read<DownloadProvider>();
@@ -1751,6 +1821,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         name: fileName,
         url: url,
         savePath: savePath,
+        referer: referer,
       );
       _showSnackBar(
         'Download started: $fileName — check Download Manager',
@@ -3757,6 +3828,10 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   Future<void> _downloadAllFiles() async {
+    // Check / request storage permission before doing anything.
+    final hasPermission = await _requestStoragePermission();
+    if (!hasPermission) return;
+
     final links = collectAllLinks();
     if (links.isEmpty) {
       _showSnackBar('No files found to download.', Colors.orange);
@@ -3794,9 +3869,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       }
 
       final dio = Dio();
-      final referer = _activeApiSource == ApiSource.coomer
-          ? 'https://coomer.st/'
-          : 'https://kemono.cr/';
+      final referer = _getRefererUrl();
       final headers = ApiHeaderService.getMediaHeaders(referer: referer);
 
       for (final link in links) {

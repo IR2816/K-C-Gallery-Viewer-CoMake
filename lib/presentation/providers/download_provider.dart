@@ -11,6 +11,7 @@ class DownloadItem {
   final DateTime startTime;
   final String? errorMessage;
   final String? savePath;
+  final String? referer;
 
   DownloadItem({
     required this.id,
@@ -22,6 +23,7 @@ class DownloadItem {
     required this.startTime,
     this.errorMessage,
     this.savePath,
+    this.referer,
   });
 
   DownloadItem copyWith({
@@ -32,6 +34,7 @@ class DownloadItem {
     DateTime? startTime,
     String? errorMessage,
     String? savePath,
+    String? referer,
   }) {
     return DownloadItem(
       id: id,
@@ -43,6 +46,7 @@ class DownloadItem {
       startTime: startTime ?? this.startTime,
       errorMessage: errorMessage ?? this.errorMessage,
       savePath: savePath ?? this.savePath,
+      referer: referer ?? this.referer,
     );
   }
 
@@ -52,6 +56,8 @@ class DownloadItem {
 enum DownloadStatus { pending, downloading, completed, failed, cancelled }
 
 class DownloadProvider extends ChangeNotifier {
+  static const String _defaultReferer = 'https://kemono.cr/';
+
   final List<DownloadItem> _downloads = [];
   final Map<String, CancelToken> _cancelTokens = {};
 
@@ -74,6 +80,7 @@ class DownloadProvider extends ChangeNotifier {
     required String url,
     required String savePath,
     int totalBytes = 0,
+    String? referer,
   }) {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final download = DownloadItem(
@@ -83,6 +90,7 @@ class DownloadProvider extends ChangeNotifier {
       totalBytes: totalBytes,
       startTime: DateTime.now(),
       savePath: savePath,
+      referer: referer,
     );
 
     _downloads.add(download);
@@ -105,11 +113,16 @@ class DownloadProvider extends ChangeNotifier {
     try {
       final dio = Dio();
 
-      // Browser-like headers
+      // Browser-like headers; use the referer provided at queue time so that
+      // both Kemono (kemono.cr) and Coomer (coomer.st) CDN anti-hotlink checks
+      // pass correctly.
+      final effectiveReferer =
+          download.referer ?? _defaultReferer;
       final browserHeaders = {
         "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://coomer.st/",
+        "Referer": effectiveReferer,
+        "Origin": Uri.parse(effectiveReferer).origin,
         "Accept": "*/*",
         "Connection": "keep-alive",
         "Accept-Encoding": "gzip, deflate, br",
