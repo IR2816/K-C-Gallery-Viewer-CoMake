@@ -898,6 +898,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         showModalBottomSheet(
           context: context,
           backgroundColor: Colors.transparent,
+          isDismissible: true,
+          enableDrag: true,
           builder: (context) => _buildMoreOptionsSheet(),
         );
       },
@@ -3248,19 +3250,19 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     );
   }
 
-  Widget _buildTagsSection() {
-    // Palette of accent colors to cycle through for visual variety
-    const tagPalette = [
-      Color(0xFFFF6B35), // orange
-      Color(0xFF6366F1), // indigo (primary)
-      Color(0xFFF43F5E), // rose (accent)
-      Color(0xFF06B6D4), // cyan
-      Color(0xFF8B5CF6), // violet
-      Color(0xFF10B981), // emerald
-      Color(0xFFF59E0B), // amber
-      Color(0xFF3B82F6), // blue
-    ];
+  // Palette of accent colors for colorful tags
+  static const List<Color> _tagColorPalette = [
+    Color(0xFFFF6B35), // orange
+    Color(0xFF6366F1), // indigo
+    Color(0xFFF43F5E), // rose
+    Color(0xFF06B6D4), // cyan
+    Color(0xFF8B5CF6), // violet
+    Color(0xFF10B981), // emerald
+    Color(0xFFF59E0B), // amber
+    Color(0xFF3B82F6), // blue
+  ];
 
+  Widget _buildTagsSection() {
     return _buildSectionShell(
       accentColor: const Color(0xFFFF6B35),
       child: Column(
@@ -3276,9 +3278,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: _currentPost.tags.asMap().entries.map((entry) {
-              final tag = entry.value;
-              final tagColor = tagPalette[tag.hashCode.abs() % tagPalette.length];
+            children: _currentPost.tags.map((tag) {
+              final tagColor =
+                  _tagColorPalette[tag.hashCode.abs() % _tagColorPalette.length];
               final accent = Theme.of(context).brightness == Brightness.dark
                   ? tagColor
                   : _getLightModeColor(tagColor);
