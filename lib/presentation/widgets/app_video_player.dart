@@ -205,7 +205,8 @@ class _AppVideoPlayerState extends State<AppVideoPlayer> {
 
     final hosts = <String>[];
     if (isCoomer) {
-      // Only real Coomer CDN nodes; n2 is the primary used for media URLs.
+      // n2 is the primary Coomer CDN node used when building media URLs;
+      // n1/n3/n4/base are tried as fallbacks.
       hosts.addAll([
         'n2.coomer.st',
         'n1.coomer.st',
@@ -215,10 +216,11 @@ class _AppVideoPlayerState extends State<AppVideoPlayer> {
       ]);
     }
     if (isKemono) {
-      // n1 is the primary Kemono CDN node (used by _buildFullUrl).
+      // n2 is also used for Kemono media URLs in this app; n1/n3/n4/base
+      // are tried as fallbacks.
       hosts.addAll([
-        'n1.kemono.cr',
         'n2.kemono.cr',
+        'n1.kemono.cr',
         'n3.kemono.cr',
         'n4.kemono.cr',
         'kemono.cr',

@@ -1246,13 +1246,20 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
   String buildThumbnailFromRawPath(String rawPath) {
     if (rawPath.isEmpty) return '';
-    final clean = rawPath.startsWith('/') ? rawPath : '/$rawPath';
-    final thumbnailPath = 'thumbnail/data$clean';
+    // Strip query/fragment, then locate the /data/ segment so we never
+    // produce a double /data/data/ path when the API returns /data/xx/yy/...
+    final cleanPath = rawPath.split('?').first.split('#').first;
     final base = _activeApiSource == ApiSource.coomer
         ? 'https://img.coomer.st'
         : 'https://img.kemono.cr';
-    final thumbnailUrl = '$base/$thumbnailPath';
-    return thumbnailUrl;
+    final dataIndex = cleanPath.indexOf('/data/');
+    if (dataIndex != -1) {
+      // Grab everything from /data/ onward (e.g. "data/56/0b/abc.jpg")
+      return '$base/thumbnail/${cleanPath.substring(dataIndex + 1)}';
+    }
+    // Path doesn't contain /data/ – treat it as relative to the data root.
+    final clean = cleanPath.startsWith('/') ? cleanPath : '/$cleanPath';
+    return '$base/thumbnail/data$clean';
   }
 
   // ignore: unused_element

@@ -1457,10 +1457,10 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   // ignore: unused_element
   String _buildFullUrl(String path, String service) {
     if (path.startsWith('http')) return path;
-    String domain =
+    final domain =
         (service == 'onlyfans' || service == 'fansly' || service == 'candfans')
-        ? 'n2.coomer.st'
-        : 'n2.kemono.cr';
+        ? 'https://n2.coomer.st'
+        : 'https://n2.kemono.cr';
     return '$domain/data$path';
   }
 

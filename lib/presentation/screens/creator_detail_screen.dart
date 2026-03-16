@@ -327,7 +327,6 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     });
   }
 
-  // FIXED - Use ApiSource instead of service string
   String _buildFullUrl(String path) {
     if (path.startsWith('http')) {
       return path;
@@ -335,16 +334,23 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
 
     final domain = _activeApiSource == ApiSource.coomer
         ? 'https://n2.coomer.st'
-        : 'https://kemono.cr';
+        : 'https://n2.kemono.cr';
 
     return '$domain/data$path';
   }
 
   String _buildThumbnailUrl(String path) {
-    final clean = path.startsWith('/') ? path : '/$path';
+    // Avoid double /data/ when the API returns paths like /data/xx/yy/file.jpg.
+    final cleanPath = path.split('?').first.split('#').first;
+    final dataIndex = cleanPath.indexOf('/data/');
     final base = _activeApiSource == ApiSource.coomer
         ? 'https://img.coomer.st'
         : 'https://img.kemono.cr';
+    if (dataIndex != -1) {
+      final dataPath = cleanPath.substring(dataIndex + 1);
+      return '$base/thumbnail/$dataPath';
+    }
+    final clean = cleanPath.startsWith('/') ? cleanPath : '/$cleanPath';
     return '$base/thumbnail/data$clean';
   }
 

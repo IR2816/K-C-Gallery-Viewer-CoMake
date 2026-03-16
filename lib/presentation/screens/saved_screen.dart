@@ -482,7 +482,7 @@ class _SavedPostsTabState extends State<SavedPostsTab>
     if (service == 'onlyfans' || service == 'fansly' || service == 'candfans') {
       domain = 'https://n2.coomer.st';
     } else {
-      domain = 'https://kemono.cr';
+      domain = 'https://n2.kemono.cr';
     }
 
     return '$domain/data$path';
