@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -34,8 +35,17 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
   late PageController _pageController;
   int _currentIndex = 0;
   bool _showUI = true;
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
+
+  // Animation for showing/hiding the overlay UI
+  late AnimationController _uiController;
+  late Animation<double> _uiAnimation;
+
+  // Drag-to-dismiss tracking
+  double _dragOffsetY = 0;
+
+  // Dot indicator sizing constants
+  static const double _activeDotWidth = 18.0;
+  static const double _inactiveDotSize = 7.0;
 
   @override
   void initState() {
@@ -43,57 +53,65 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
 
-    // Fade animation for UI
-    _fadeController = AnimationController(
+    _uiController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 220),
+      value: 1.0, // start visible
     );
-    _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    _uiAnimation = CurvedAnimation(
+      parent: _uiController,
+      curve: Curves.easeInOut,
     );
 
-    // Auto-hide UI after 3 seconds
-    _autoHideUI();
+    _scheduleAutoHide();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _fadeController.dispose();
+    _uiController.dispose();
     super.dispose();
   }
 
-  void _autoHideUI() {
-    if (_showUI) {
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted && _showUI) {
-          _toggleUI();
-        }
-      });
+  // ─── UI visibility ────────────────────────────────────────────────────────
+
+  void _scheduleAutoHide() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _showUI) _hideUI();
+    });
+  }
+
+  void _showUIWithAutoHide() {
+    if (!_showUI) {
+      setState(() => _showUI = true);
+      _uiController.forward();
     }
+    _scheduleAutoHide();
+  }
+
+  void _hideUI() {
+    if (!mounted) return;
+    setState(() => _showUI = false);
+    _uiController.reverse();
   }
 
   void _toggleUI() {
-    setState(() {
-      _showUI = !_showUI;
-    });
     if (_showUI) {
-      _fadeController.reverse();
-      _autoHideUI();
+      _hideUI();
     } else {
-      _fadeController.forward();
+      _showUIWithAutoHide();
     }
   }
 
+  // ─── Navigation ───────────────────────────────────────────────────────────
+
   void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    setState(() => _currentIndex = index);
   }
 
-  void _close() {
-    Navigator.pop(context);
-  }
+  void _close() => Navigator.pop(context);
+
+  // ─── Actions ──────────────────────────────────────────────────────────────
 
   Future<void> _shareMedia(Map<String, dynamic> mediaItem) async {
     final url = (mediaItem['url'] ?? '').toString();
@@ -108,84 +126,109 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     );
   }
 
+  // ─── Build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Media Area
-          _buildMediaArea(),
-
-          // Subtle scrim for readability (social-style UI)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 120,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.5),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
+      body: GestureDetector(
+        // Vertical drag to dismiss (swipe down)
+        onVerticalDragUpdate: (details) {
+          setState(() => _dragOffsetY += details.delta.dy);
+        },
+        onVerticalDragEnd: (details) {
+          // Only dismiss on a clear downward swipe (positive Y = downward).
+          final vel = details.primaryVelocity ?? 0;
+          if (_dragOffsetY > 80 || (vel > 600)) {
+            Navigator.pop(context);
+          } else {
+            setState(() => _dragOffsetY = 0);
+          }
+        },
+        onTap: _toggleUI,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          transform: Matrix4.translationValues(0, _dragOffsetY, 0),
+          child: Stack(
+            children: [
+              _buildMediaArea(),
+              _buildTopScrim(),
+              _buildBottomScrim(),
+              _buildOverlay(),
+            ],
           ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 120,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.6),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // UI Overlay
-          _buildUIOverlay(),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildMediaArea() {
-    return PageView.builder(
-      controller: _pageController,
-      onPageChanged: _onPageChanged,
-      itemCount: widget.mediaItems.length,
-      physics: const BouncingScrollPhysics(),
-      itemBuilder: (context, index) {
-        final mediaItem = widget.mediaItems[index];
-        final isVideo = mediaItem['type'] == 'video';
+  // Top gradient scrim for readability
+  Widget _buildTopScrim() => Positioned(
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 130,
+    child: IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withValues(alpha: 0.55),
+              Colors.transparent,
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 
-        if (isVideo) {
-          // Videos - play inline and fill the screen
-          return _buildVideoPlayer(mediaItem);
-        } else {
-          final imageUrl = mediaItem['url'];
+  // Bottom gradient scrim for readability
+  Widget _buildBottomScrim() => Positioned(
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 130,
+    child: IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [
+              Colors.black.withValues(alpha: 0.6),
+              Colors.transparent,
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  // ─── Media area ───────────────────────────────────────────────────────────
+
+  Widget _buildMediaArea() {
+    final imageItems = widget.mediaItems
+        .where((m) => m['type'] != 'video')
+        .toList();
+
+    // If all items are images, use the optimised PhotoViewGallery
+    if (imageItems.length == widget.mediaItems.length) {
+      return PhotoViewGallery.builder(
+        pageController: _pageController,
+        itemCount: widget.mediaItems.length,
+        onPageChanged: _onPageChanged,
+        scrollPhysics: const BouncingScrollPhysics(),
+        backgroundDecoration: const BoxDecoration(color: Colors.black),
+        builder: (context, index) {
+          final item = widget.mediaItems[index];
+          final imageUrl = (item['url'] ?? '').toString();
           AppLogger.debug(
             '🔍 DEBUG: FullscreenMediaViewer loading image: $imageUrl',
           );
-
-          return PhotoView(
+          return PhotoViewGalleryPageOptions(
             imageProvider: CachedNetworkImageProvider(
               imageUrl,
               headers: _buildImageHeaders(imageUrl),
@@ -194,55 +237,101 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 4.0,
             heroAttributes: PhotoViewHeroAttributes(tag: imageUrl),
-            loadingBuilder: (context, event) => Center(
-              child: SizedBox(
-                width: 40.0,
-                height: 40.0,
-                child: CircularProgressIndicator(
-                  value: event == null
-                      ? 0
-                      : event.cumulativeBytesLoaded /
-                            (event.expectedTotalBytes ?? 1),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-            ),
             errorBuilder: (context, error, stackTrace) {
               AppLogger.debug(
                 '🔍 DEBUG: FullscreenMediaViewer image load error: $error',
               );
               AppLogger.debug('🔍 DEBUG: Failed URL was: $imageUrl');
-
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Failed to load image',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'URL: $imageUrl',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
+              return _buildImageError(imageUrl);
             },
           );
-        }
+        },
+        loadingBuilder: (context, event) => Center(
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: CircularProgressIndicator(
+              value: (event == null || event.expectedTotalBytes == null)
+                  ? null
+                  : event.cumulativeBytesLoaded /
+                        event.expectedTotalBytes!,
+              strokeWidth: 3,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Mixed images + videos — fall back to PageView
+    return PageView.builder(
+      controller: _pageController,
+      onPageChanged: _onPageChanged,
+      itemCount: widget.mediaItems.length,
+      physics: const BouncingScrollPhysics(),
+      itemBuilder: (context, index) {
+        final item = widget.mediaItems[index];
+        if (item['type'] == 'video') return _buildVideoPlayer(item);
+
+        final imageUrl = (item['url'] ?? '').toString();
+        return PhotoView(
+          imageProvider: CachedNetworkImageProvider(
+            imageUrl,
+            headers: _buildImageHeaders(imageUrl),
+          ),
+          initialScale: PhotoViewComputedScale.contained,
+          minScale: PhotoViewComputedScale.contained,
+          maxScale: PhotoViewComputedScale.covered * 4.0,
+          heroAttributes: PhotoViewHeroAttributes(tag: imageUrl),
+          loadingBuilder: (context, event) => Center(
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: CircularProgressIndicator(
+                value: (event == null || event.expectedTotalBytes == null)
+                    ? null
+                    : event.cumulativeBytesLoaded /
+                          event.expectedTotalBytes!,
+                strokeWidth: 3,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildImageError(imageUrl),
+        );
       },
+    );
+  }
+
+  Widget _buildImageError(String imageUrl) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.broken_image_rounded, color: Colors.white54, size: 56),
+          const SizedBox(height: 12),
+          const Text(
+            'Failed to load image',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              imageUrl,
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -262,7 +351,6 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
       };
     }
     if (url.contains('kemono.cr') || url.contains('kemono.su')) {
-      // kemono.cr is the current domain; kemono.su is the legacy domain.
       return const {
         'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -277,7 +365,6 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     return null;
   }
 
-  /// Build video placeholder untuk gallery
   Widget _buildVideoPlayer(Map<String, dynamic> mediaItem) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -308,7 +395,213 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     );
   }
 
-  /// Get clean file name
+  // ─── Overlay ──────────────────────────────────────────────────────────────
+
+  Widget _buildOverlay() {
+    final currentMedia = widget.mediaItems[_currentIndex];
+    final isVideo = currentMedia['type'] == 'video';
+    final isCoomerVideo = isVideo && widget.apiSource == ApiSource.coomer;
+
+    if (isCoomerVideo) return const SizedBox.shrink();
+
+    return FadeTransition(
+      opacity: _uiAnimation,
+      child: Stack(
+        children: [
+          _buildTopBar(currentMedia),
+          _buildBottomBar(currentMedia),
+        ],
+      ),
+    );
+  }
+
+  // ─── Top bar ──────────────────────────────────────────────────────────────
+
+  Widget _buildTopBar(Map<String, dynamic> mediaItem) {
+    final isVideo = mediaItem['type'] == 'video';
+    final rawName = mediaItem['name'];
+    final title = rawName != null
+        ? _getFileName(rawName.toString())
+        : (isVideo ? 'Video' : 'Image');
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+          child: Row(
+            children: [
+              // Close
+              _glassButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                onTap: _close,
+              ),
+              const SizedBox(width: 10),
+              // Title
+              Expanded(
+                child: _glassPill(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Download
+              _glassButton(
+                icon: Icons.download_rounded,
+                onTap: () => _downloadMedia(mediaItem),
+              ),
+              const SizedBox(width: 8),
+              // Share / copy link
+              _glassButton(
+                icon: Icons.link_rounded,
+                onTap: () => _shareMedia(mediaItem),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Bottom bar ───────────────────────────────────────────────────────────
+
+  Widget _buildBottomBar(Map<String, dynamic> mediaItem) {
+    final isVideo = mediaItem['type'] == 'video';
+    final total = widget.mediaItems.length;
+
+    if (isVideo || total <= 1) return const SizedBox.shrink();
+
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Dot indicators (max 20 dots; beyond that show text counter)
+              if (total <= 20) _buildDotIndicators(total),
+              // Numeric counter
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: _glassPill(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    '${_currentIndex + 1} / $total',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDotIndicators(int total) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(total, (i) {
+        final active = i == _currentIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: active ? _activeDotWidth : _inactiveDotSize,
+          height: _inactiveDotSize,
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.white.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        );
+      }),
+    );
+  }
+
+  // ─── Reusable glass widgets ───────────────────────────────────────────────
+
+  Widget _glassButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool enabled = true,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.55),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(
+                alpha: enabled ? 0.18 : 0.06,
+              ),
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: enabled ? Colors.white : Colors.white38,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _glassPill({
+    required Widget child,
+    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
+      horizontal: 14,
+      vertical: 10,
+    ),
+  }) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  // ─── Utilities ────────────────────────────────────────────────────────────
+
   String _getFileName(String fullFileName) {
     final parts = fullFileName.split('/');
     return parts.isNotEmpty ? parts.last : fullFileName;
@@ -329,268 +622,19 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     );
   }
 
-  Widget _buildUIOverlay() {
-    final currentMedia = widget.mediaItems[_currentIndex];
-    final isVideo = currentMedia['type'] == 'video';
-    final isCoomerVideo = isVideo && widget.apiSource == ApiSource.coomer;
-
-    return GestureDetector(
-      onTap: _toggleUI,
-      child: AnimatedBuilder(
-        animation: _fadeAnimation,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _fadeAnimation.value,
-            child: Stack(
-              children: [
-                // Top UI
-                if (_showUI && !isCoomerVideo) _buildTopUI(),
-
-                // Bottom UI
-                if (_showUI && !isCoomerVideo) _buildBottomUI(),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTopUI() {
-    final currentMedia = widget.mediaItems[_currentIndex];
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: _buildTopBarRow(currentMedia),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomUI() {
-    final currentMedia = widget.mediaItems[_currentIndex];
-    final isVideo = currentMedia['type'] == 'video';
-
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Left Nav
-              if (!isVideo && widget.mediaItems.length > 1)
-                _buildNavButton(
-                  icon: Icons.chevron_left_rounded,
-                  enabled: _currentIndex > 0,
-                  onTap: _currentIndex > 0
-                      ? () => _pageController.previousPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.fastOutSlowIn,
-                        )
-                      : null,
-                )
-              else
-                const SizedBox(width: 52), // Placeholder to maintain center
-              // Page Indicator
-              if (!isVideo && widget.mediaItems.length > 1)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    '${_currentIndex + 1} / ${widget.mediaItems.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-
-              // Right Nav
-              if (!isVideo && widget.mediaItems.length > 1)
-                _buildNavButton(
-                  icon: Icons.chevron_right_rounded,
-                  enabled: _currentIndex < widget.mediaItems.length - 1,
-                  onTap: _currentIndex < widget.mediaItems.length - 1
-                      ? () => _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.fastOutSlowIn,
-                        )
-                      : null,
-                )
-              else
-                const SizedBox(width: 52), // Placeholder to maintain center
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBarRow(Map<String, dynamic> mediaItem) {
-    final isVideo = mediaItem['type'] == 'video';
-    final title = mediaItem['name'] != null
-        ? _getFileName(mediaItem['name'])
-        : (isVideo ? 'Video' : 'Image');
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Pill styled back button
-        _buildIconGlassy(icon: Icons.close_rounded, onTap: _close),
-
-        // Title Pill
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        // Action Buttons Row
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildIconGlassy(
-              icon: Icons.download_rounded,
-              onTap: () => _downloadMedia(mediaItem),
-            ),
-            const SizedBox(width: 10),
-            _buildIconGlassy(
-              icon: Icons.share_rounded,
-              onTap: () => _shareMedia(mediaItem),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIconGlassy({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.65),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 22),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavButton({
-    required IconData icon,
-    required bool enabled,
-    required VoidCallback? onTap,
-  }) {
-    final iconColor = enabled
-        ? Colors.white
-        : Colors.white.withValues(alpha: 0.2);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        customBorder: const CircleBorder(),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.65),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: enabled
-                  ? Colors.white.withValues(alpha: 0.3)
-                  : Colors.white.withValues(alpha: 0.05),
-            ),
-            boxShadow: [
-              if (enabled)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                ),
-            ],
-          ),
-          child: Icon(icon, color: iconColor, size: 28),
-        ),
-      ),
-    );
-  }
-
   Future<void> _downloadMedia(Map<String, dynamic> mediaItem) async {
     final url = (mediaItem['url'] ?? '').toString();
     if (url.isEmpty) return;
 
-    final fileName = _getFileName(mediaItem['name'] ?? url);
+    final fileName = _getFileName(
+      (mediaItem['name'] ?? url).toString(),
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Starting download for $fileName...'),
-        backgroundColor: Colors.blue,
+        content: Text('Starting download: $fileName…'),
+        backgroundColor: const Color(0xFF1565C0),
+        behavior: SnackBarBehavior.floating,
       ),
     );
 
@@ -613,6 +657,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
             const SnackBar(
               content: Text('Could not access Downloads directory'),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -641,8 +686,9 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Download started: $fileName — check Download Manager'),
-          backgroundColor: Colors.blue,
+          content: Text('Download queued: $fileName — check Download Manager'),
+          backgroundColor: const Color(0xFF1565C0),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
@@ -651,6 +697,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
           SnackBar(
             content: Text('Download failed: $e'),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
