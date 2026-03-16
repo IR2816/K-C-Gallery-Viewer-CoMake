@@ -214,7 +214,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
         .where((m) => m['type'] != 'video')
         .toList();
 
-    // If all items are images, use the optimised PhotoViewGallery
+    // If all items are images, use the optimized PhotoViewGallery
     if (imageItems.length == widget.mediaItems.length) {
       return PhotoViewGallery.builder(
         pageController: _pageController,
