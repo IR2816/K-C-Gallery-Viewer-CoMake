@@ -342,10 +342,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final sourceAccent = _activeApiSource == ApiSource.kemono
+        ? AppTheme.primaryColor
+        : AppTheme.accentColor;
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        toolbarHeight: 84,
+        toolbarHeight: 60,
         backgroundColor: Colors.transparent,
         foregroundColor: AppTheme.getOnSurfaceColor(context),
         elevation: 0,
@@ -356,51 +359,90 @@ class _PostDetailScreenState extends State<PostDetailScreen>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                (_activeApiSource == ApiSource.kemono
-                        ? AppTheme.primaryColor
-                        : AppTheme.accentColor)
-                    .withValues(
-                      alpha: Theme.of(context).brightness == Brightness.dark
-                          ? 0.16
-                          : 0.08,
-                    ),
+                sourceAccent.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.18
+                      : 0.10,
+                ),
                 Colors.transparent,
               ],
             ),
           ),
         ),
         titleSpacing: 16,
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            ShaderMask(
-              shaderCallback: (bounds) =>
-                  AppTheme.primaryGradient.createShader(bounds),
-              child: Text(
-                'Post Detail',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 28,
-                  color: AppTheme.getPrimaryTextColor(context),
-                  letterSpacing: -0.9,
-                  height: 1,
-                ),
+            // Animated source dot
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: sourceAccent,
+                boxShadow: [
+                  BoxShadow(
+                    color: sourceAccent.withValues(alpha: 0.55),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
-            Text(
-              _activeApiSource == ApiSource.kemono
-                  ? 'Viewing from Kemono'
-                  : 'Viewing from Coomer',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getSecondaryTextColor(context, opacity: 0.85),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                _currentPost.title.isNotEmpty
+                    ? _currentPost.title
+                    : 'Post',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                  color: AppTheme.getPrimaryTextColor(context),
+                  letterSpacing: -0.4,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        actions: [],
+        actions: [
+          // Source switcher in app bar
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AppTheme.getElevatedSurfaceColorContext(
+                  context,
+                ).withValues(alpha: 0.82),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.16)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildApiSourceChip(
+                    source: ApiSource.kemono,
+                    label: 'K',
+                    color: AppTheme.primaryColor,
+                  ),
+                  const SizedBox(width: 3),
+                  _buildApiSourceChip(
+                    source: ApiSource.coomer,
+                    label: 'C',
+                    color: AppTheme.accentColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       // Removing Bottom Action Bar for social media inline layout
       body: _isLoading
@@ -511,6 +553,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                       children: [
                         const SizedBox(height: 10),
                         _buildCreatorHeader(), // Updated: No margin/padding, clean row
+                        const SizedBox(height: 10),
                         _buildMediaSection(), // Updated: Edge-to-edge
                         _buildVideoSection(), // Updated: Edge-to-edge
                         _buildSocialActionBar(), // NEW: Inline action bar
@@ -529,51 +572,80 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     );
   }
 
-  // New modern inline action bar mimicking Instagram/Twitter
+  // Modern inline action bar with icon + label buttons
   Widget _buildSocialActionBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Row(
+            children: [
+              _buildActionButton(
+                icon: _currentPost.saved
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                label: _currentPost.saved ? 'Saved' : 'Save',
+                color: _currentPost.saved
+                    ? Colors.red
+                    : AppTheme.getPrimaryTextColor(context),
+                onTap: _toggleSave,
+              ),
+              const SizedBox(width: 20),
+              _buildActionButton(
+                icon: Icons.send_rounded,
+                label: 'Share',
+                color: AppTheme.getPrimaryTextColor(context),
+                onTap: _sharePost,
+              ),
+              const SizedBox(width: 20),
+              _buildActionButton(
+                icon: Icons.download_rounded,
+                label: 'Download',
+                color: AppTheme.getPrimaryTextColor(context),
+                onTap: _downloadAllFiles,
+              ),
+              const Spacer(),
+              _buildActionButton(
+                icon: Icons.open_in_browser_rounded,
+                label: 'Browser',
+                color: AppTheme.getPrimaryTextColor(context),
+                onTap: _launchSourceUrl,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Divider(
+            color: AppTheme.getBorderColor(context).withValues(alpha: 0.5),
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Action button: stacked icon + label
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Like / Save
-          GestureDetector(
-            onTap: _toggleSave,
-            child: Icon(
-              _currentPost.saved ? Icons.favorite : Icons.favorite_border,
-              color: _currentPost.saved
-                  ? Colors.red
-                  : AppTheme.getPrimaryTextColor(context),
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Share
-          GestureDetector(
-            onTap: _sharePost,
-            child: Icon(
-              Icons.send_rounded, // or Icons.share_rounded
-              color: AppTheme.getPrimaryTextColor(context),
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Download All
-          GestureDetector(
-            onTap: _downloadAllFiles,
-            child: Icon(
-              Icons.download_rounded,
-              color: AppTheme.getPrimaryTextColor(context),
-              size: 28,
-            ),
-          ),
-          const Spacer(),
-          // Source link
-          GestureDetector(
-            onTap: _launchSourceUrl,
-            child: Icon(
-              Icons.open_in_browser_rounded,
-              color: AppTheme.getPrimaryTextColor(context),
-              size: 28,
+          Icon(icon, color: color, size: 26),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -702,31 +774,35 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   Widget _buildCreatorHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    final serviceAccent = _getServiceAccentColor();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Creator Avatar
+          // Creator avatar with gradient ring
           GestureDetector(
             onTap: _navigateToCreatorDetail,
             child: Container(
-              width: 44,
-              height: 44,
+              width: 54,
+              height: 54,
+              padding: const EdgeInsets.all(2.5),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppTheme.getBorderColor(
-                    context,
-                  ).withValues(alpha: 0.5),
-                  width: 1,
-                ),
+                gradient: AppTheme.storyRingGradient,
               ),
-              child: ClipOval(child: _buildCreatorAvatar()),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.getBackgroundColor(context),
+                ),
+                padding: const EdgeInsets.all(1.5),
+                child: ClipOval(child: _buildCreatorAvatar()),
+              ),
             ),
           ),
           const SizedBox(width: 12),
-          // Creator Name & Info
+          // Creator name & service badge
           Expanded(
             child: GestureDetector(
               onTap: _navigateToCreatorDetail,
@@ -740,8 +816,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                           _currentPost.user,
                           style: TextStyle(
                             color: AppTheme.getPrimaryTextColor(context),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
                           ),
                           maxLines: 1,
@@ -750,39 +826,163 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                       ),
                       const SizedBox(width: 4),
                       Icon(
-                        Icons.verified,
+                        Icons.verified_rounded,
                         size: 14,
                         color: AppTheme.primaryColor,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_getServiceDisplayName()} • ${_formatDate(_currentPost.published.toString())}',
-                    style: TextStyle(
-                      color: AppTheme.getSecondaryTextColor(context),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      // Service badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: serviceAccent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: serviceAccent.withValues(alpha: 0.4),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _getServiceDisplayName(),
+                          style: TextStyle(
+                            color: serviceAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '· ${_formatDate(_currentPost.published.toString())}',
+                        style: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          // More Options Placeholder
-          IconButton(
-            icon: Icon(
-              Icons.more_vert,
-              color: AppTheme.getPrimaryTextColor(context),
+          // More options button → bottom sheet
+          _buildMoreOptionsButton(),
+        ],
+      ),
+    );
+  }
+
+  /// Returns the accent color for the post's service
+  Color _getServiceAccentColor() {
+    return AppTheme.serviceColors[_currentPost.service] ??
+        AppTheme.primaryColor;
+  }
+
+  /// More-options icon button that opens a bottom sheet
+  Widget _buildMoreOptionsButton() {
+    return IconButton(
+      icon: Icon(
+        Icons.more_vert_rounded,
+        color: AppTheme.getPrimaryTextColor(context),
+      ),
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (context) => _buildMoreOptionsSheet(),
+        );
+      },
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+    );
+  }
+
+  /// Bottom sheet for additional post actions
+  Widget _buildMoreOptionsSheet() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.getBorderColor(context),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            onPressed: () {
-              // Placeholder for more actions like report, unfollow, copy link natively
+          ),
+          const SizedBox(height: 20),
+          _buildBottomSheetOption(
+            icon: Icons.open_in_browser_rounded,
+            label: 'Open in Browser',
+            onTap: () {
+              Navigator.pop(context);
+              _launchSourceUrl();
             },
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
+          ),
+          _buildBottomSheetOption(
+            icon: Icons.person_outline_rounded,
+            label: 'View Creator',
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToCreatorDetail();
+            },
+          ),
+          _buildBottomSheetOption(
+            icon: Icons.share_outlined,
+            label: 'Share Post',
+            onTap: () {
+              Navigator.pop(context);
+              _sharePost();
+            },
+          ),
+          _buildBottomSheetOption(
+            icon: Icons.download_outlined,
+            label: 'Download All Files',
+            onTap: () {
+              Navigator.pop(context);
+              _downloadAllFiles();
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBottomSheetOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: AppTheme.getPrimaryTextColor(context)),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: AppTheme.getPrimaryTextColor(context),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
@@ -2936,7 +3136,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2945,12 +3145,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
               _currentPost.title,
               style: TextStyle(
                 color: AppTheme.getPrimaryTextColor(context),
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                height: 1.25,
               ),
             ),
-            if (cleanContent.isNotEmpty) const SizedBox(height: 6),
+            if (cleanContent.isNotEmpty) const SizedBox(height: 8),
           ],
           if (cleanContent.isNotEmpty) _buildLinkifiedContent(),
         ],
@@ -3048,47 +3249,77 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   Widget _buildTagsSection() {
+    // Palette of accent colors to cycle through for visual variety
+    const tagPalette = [
+      Color(0xFFFF6B35), // orange
+      Color(0xFF6366F1), // indigo (primary)
+      Color(0xFFF43F5E), // rose (accent)
+      Color(0xFF06B6D4), // cyan
+      Color(0xFF8B5CF6), // violet
+      Color(0xFF10B981), // emerald
+      Color(0xFFF59E0B), // amber
+      Color(0xFF3B82F6), // blue
+    ];
+
     return _buildSectionShell(
-      accentColor: Colors.orange,
+      accentColor: const Color(0xFFFF6B35),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
-            icon: Icons.tag,
+            icon: Icons.tag_rounded,
             title: 'Tags (${_currentPost.tags.length})',
-            color: Colors.orange,
+            color: const Color(0xFFFF6B35),
             context: context,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _currentPost.tags.map((tag) {
+            spacing: 6,
+            runSpacing: 6,
+            children: _currentPost.tags.asMap().entries.map((entry) {
+              final tag = entry.value;
+              final tagColor = tagPalette[tag.hashCode.abs() % tagPalette.length];
+              final accent = Theme.of(context).brightness == Brightness.dark
+                  ? tagColor
+                  : _getLightModeColor(tagColor);
               return Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 10,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.orange.withValues(alpha: 0.1)
-                      : Colors.orange.withValues(alpha: 0.05), // Light mode
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: [
+                      accent.withValues(alpha: 0.15),
+                      accent.withValues(alpha: 0.07),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.orange.withValues(alpha: 0.3)
-                        : Colors.orange.withValues(alpha: 0.2), // Light mode
+                    color: accent.withValues(alpha: 0.45),
+                    width: 1,
                   ),
                 ),
-                child: Text(
-                  tag,
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.orange
-                        : _getLightModeColor(Colors.orange), // Light mode
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '#',
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      tag,
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               );
             }).toList(),
