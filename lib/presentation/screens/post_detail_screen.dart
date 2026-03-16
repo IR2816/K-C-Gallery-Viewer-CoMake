@@ -3157,12 +3157,15 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     // Build URL using active source to prevent cross-domain content mixing.
     final baseUrl = _activeApiSource == ApiSource.coomer
         ? 'https://n2.coomer.st/data'
-        : 'https://n1.kemono.cr/data';
+        : 'https://n2.kemono.cr/data';
 
-    // Remove leading slash if present to avoid double slashes
+    // Strip leading slash, then strip any existing 'data/' prefix so that
+    // API paths like '/data/ab/cd/file.jpg' don't produce /data/data/...
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    final strippedPath =
+        cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
 
-    return '$baseUrl/$cleanPath';
+    return '$baseUrl/$strippedPath';
   }
 
   /// Copy link to clipboard

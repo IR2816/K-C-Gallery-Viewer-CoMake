@@ -145,8 +145,12 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
     for (final attachment in widget.post.attachments) {
       if (attachment.path.isNotEmpty == true) {
         final path = attachment.path;
-        final originalUrl = 'https://n2.kemono.cr/data$path';
-        final thumbnailUrl = 'https://img.kemono.cr/thumbnail/data$path';
+        // Strip leading slash and any existing 'data/' prefix to avoid
+        // double /data/ when the API path is /data/ab/cd/file.jpg.
+        final clean = path.startsWith('/') ? path.substring(1) : path;
+        final stripped = clean.startsWith('data/') ? clean.substring(5) : clean;
+        final originalUrl = 'https://n2.kemono.cr/data/$stripped';
+        final thumbnailUrl = 'https://img.kemono.cr/thumbnail/data/$stripped';
         final isImage = _isImageAttachment(attachment);
         final isVideo = _isVideoAttachment(attachment);
         final type = isImage ? 'image' : (isVideo ? 'video' : 'file');

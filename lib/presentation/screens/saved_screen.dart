@@ -485,7 +485,11 @@ class _SavedPostsTabState extends State<SavedPostsTab>
       domain = 'https://n2.kemono.cr';
     }
 
-    return '$domain/data$path';
+    // Strip leading slash then any existing 'data/' prefix so API paths like
+    // '/data/ab/cd/file.jpg' don't produce /data/data/ab/cd/file.jpg.
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    final stripped = cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
+    return '$domain/data/$stripped';
   }
 
   Map<String, dynamic>? _getFirstMedia(Post post) {

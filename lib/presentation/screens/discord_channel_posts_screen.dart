@@ -345,7 +345,11 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
         } else if (path.startsWith('//')) {
           rawUrl = 'https:$path';
         } else {
-          rawUrl = 'https://n2.kemono.cr/data$path';
+          // Strip leading slash and any existing 'data/' prefix to avoid
+          // double /data/ when the API path is /data/ab/cd/file.jpg.
+          final clean = path.startsWith('/') ? path.substring(1) : path;
+          final stripped = clean.startsWith('data/') ? clean.substring(5) : clean;
+          rawUrl = 'https://n2.kemono.cr/data/$stripped';
         }
 
         String thumbnailUrl;
@@ -354,7 +358,9 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
         } else if (path.startsWith('//')) {
           thumbnailUrl = 'https:$path';
         } else {
-          thumbnailUrl = 'https://img.kemono.cr/thumbnail/data$path';
+          final clean = path.startsWith('/') ? path.substring(1) : path;
+          final stripped = clean.startsWith('data/') ? clean.substring(5) : clean;
+          thumbnailUrl = 'https://img.kemono.cr/thumbnail/data/$stripped';
         }
 
         final isImage = _isImageAttachment(attachment);
