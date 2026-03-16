@@ -196,7 +196,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       // Lowercase each post tag once per post rather than once per
       // (post, blocked-tag) pair. Blocked tags are already stored in
       // lowercase by TagFilterProvider, so no extra transform is needed.
-      final lowerPostTags = post.tags.map((t) => t.toLowerCase());
+      final lowerPostTags = post.tags.map((t) => t.toLowerCase()).toList();
       return !_blockedTags.any(
         (blockedTag) => lowerPostTags.any(
           (postTag) => postTag.contains(blockedTag),

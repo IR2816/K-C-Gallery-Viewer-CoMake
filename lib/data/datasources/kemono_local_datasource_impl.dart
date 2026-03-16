@@ -95,10 +95,14 @@ class KemonoLocalDataSourceImpl implements KemonoLocalDataSource {
   @override
   Future<void> removeSavedPost(String id) async {
     final posts = await getSavedPosts();
+    final initialLength = posts.length;
     posts.removeWhere((p) => p.id == id);
 
-    final jsonString = json.encode(posts.map((e) => e.toJson()).toList());
-    await prefs.setString(_savedPostsKey, jsonString);
+    // Only persist if something was actually removed
+    if (posts.length < initialLength) {
+      final jsonString = json.encode(posts.map((e) => e.toJson()).toList());
+      await prefs.setString(_savedPostsKey, jsonString);
+    }
   }
 
   @override
@@ -152,10 +156,14 @@ class KemonoLocalDataSourceImpl implements KemonoLocalDataSource {
   @override
   Future<void> removeFolder(String folderId) async {
     final folders = await getFolders();
+    final initialLength = folders.length;
     folders.removeWhere((f) => f.id == folderId);
 
-    final jsonString = json.encode(folders.map((e) => e.toJson()).toList());
-    await prefs.setString(_foldersKey, jsonString);
+    // Only persist if something was actually removed
+    if (folders.length < initialLength) {
+      final jsonString = json.encode(folders.map((e) => e.toJson()).toList());
+      await prefs.setString(_foldersKey, jsonString);
+    }
   }
 
   @override
