@@ -13,6 +13,7 @@ import 'package:html/parser.dart' as html_parser;
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../data/services/api_header_service.dart';
 import '../../domain/entities/post.dart';
@@ -342,10 +343,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final sourceAccent = _activeApiSource == ApiSource.kemono
+        ? AppTheme.primaryColor
+        : AppTheme.accentColor;
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        toolbarHeight: 84,
+        toolbarHeight: 60,
         backgroundColor: Colors.transparent,
         foregroundColor: AppTheme.getOnSurfaceColor(context),
         elevation: 0,
@@ -356,51 +360,90 @@ class _PostDetailScreenState extends State<PostDetailScreen>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                (_activeApiSource == ApiSource.kemono
-                        ? AppTheme.primaryColor
-                        : AppTheme.accentColor)
-                    .withValues(
-                      alpha: Theme.of(context).brightness == Brightness.dark
-                          ? 0.16
-                          : 0.08,
-                    ),
+                sourceAccent.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.18
+                      : 0.10,
+                ),
                 Colors.transparent,
               ],
             ),
           ),
         ),
         titleSpacing: 16,
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            ShaderMask(
-              shaderCallback: (bounds) =>
-                  AppTheme.primaryGradient.createShader(bounds),
-              child: Text(
-                'Post Detail',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 28,
-                  color: AppTheme.getPrimaryTextColor(context),
-                  letterSpacing: -0.9,
-                  height: 1,
-                ),
+            // Animated source dot
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: sourceAccent,
+                boxShadow: [
+                  BoxShadow(
+                    color: sourceAccent.withValues(alpha: 0.55),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
-            Text(
-              _activeApiSource == ApiSource.kemono
-                  ? 'Viewing from Kemono'
-                  : 'Viewing from Coomer',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getSecondaryTextColor(context, opacity: 0.85),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                _currentPost.title.isNotEmpty
+                    ? _currentPost.title
+                    : 'Post',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                  color: AppTheme.getPrimaryTextColor(context),
+                  letterSpacing: -0.4,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        actions: [],
+        actions: [
+          // Source switcher in app bar
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AppTheme.getElevatedSurfaceColorContext(
+                  context,
+                ).withValues(alpha: 0.82),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.16)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildApiSourceChip(
+                    source: ApiSource.kemono,
+                    label: 'K',
+                    color: AppTheme.primaryColor,
+                  ),
+                  const SizedBox(width: 3),
+                  _buildApiSourceChip(
+                    source: ApiSource.coomer,
+                    label: 'C',
+                    color: AppTheme.accentColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       // Removing Bottom Action Bar for social media inline layout
       body: _isLoading
@@ -511,6 +554,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                       children: [
                         const SizedBox(height: 10),
                         _buildCreatorHeader(), // Updated: No margin/padding, clean row
+                        const SizedBox(height: 10),
                         _buildMediaSection(), // Updated: Edge-to-edge
                         _buildVideoSection(), // Updated: Edge-to-edge
                         _buildSocialActionBar(), // NEW: Inline action bar
@@ -529,51 +573,80 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     );
   }
 
-  // New modern inline action bar mimicking Instagram/Twitter
+  // Modern inline action bar with icon + label buttons
   Widget _buildSocialActionBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Row(
+            children: [
+              _buildActionButton(
+                icon: _currentPost.saved
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                label: _currentPost.saved ? 'Saved' : 'Save',
+                color: _currentPost.saved
+                    ? Colors.red
+                    : AppTheme.getPrimaryTextColor(context),
+                onTap: _toggleSave,
+              ),
+              const SizedBox(width: 20),
+              _buildActionButton(
+                icon: Icons.send_rounded,
+                label: 'Share',
+                color: AppTheme.getPrimaryTextColor(context),
+                onTap: _sharePost,
+              ),
+              const SizedBox(width: 20),
+              _buildActionButton(
+                icon: Icons.download_rounded,
+                label: 'Download',
+                color: AppTheme.getPrimaryTextColor(context),
+                onTap: _downloadAllFiles,
+              ),
+              const Spacer(),
+              _buildActionButton(
+                icon: Icons.open_in_browser_rounded,
+                label: 'Browser',
+                color: AppTheme.getPrimaryTextColor(context),
+                onTap: _launchSourceUrl,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Divider(
+            color: AppTheme.getBorderColor(context).withValues(alpha: 0.5),
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Action button: stacked icon + label
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Like / Save
-          GestureDetector(
-            onTap: _toggleSave,
-            child: Icon(
-              _currentPost.saved ? Icons.favorite : Icons.favorite_border,
-              color: _currentPost.saved
-                  ? Colors.red
-                  : AppTheme.getPrimaryTextColor(context),
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Share
-          GestureDetector(
-            onTap: _sharePost,
-            child: Icon(
-              Icons.send_rounded, // or Icons.share_rounded
-              color: AppTheme.getPrimaryTextColor(context),
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Download All
-          GestureDetector(
-            onTap: _downloadAllFiles,
-            child: Icon(
-              Icons.download_rounded,
-              color: AppTheme.getPrimaryTextColor(context),
-              size: 28,
-            ),
-          ),
-          const Spacer(),
-          // Source link
-          GestureDetector(
-            onTap: _launchSourceUrl,
-            child: Icon(
-              Icons.open_in_browser_rounded,
-              color: AppTheme.getPrimaryTextColor(context),
-              size: 28,
+          Icon(icon, color: color, size: 26),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -702,31 +775,35 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   Widget _buildCreatorHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    final serviceAccent = _getServiceAccentColor();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Creator Avatar
+          // Creator avatar with gradient ring
           GestureDetector(
             onTap: _navigateToCreatorDetail,
             child: Container(
-              width: 44,
-              height: 44,
+              width: 54,
+              height: 54,
+              padding: const EdgeInsets.all(2.5),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppTheme.getBorderColor(
-                    context,
-                  ).withValues(alpha: 0.5),
-                  width: 1,
-                ),
+                gradient: AppTheme.storyRingGradient,
               ),
-              child: ClipOval(child: _buildCreatorAvatar()),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.getBackgroundColor(context),
+                ),
+                padding: const EdgeInsets.all(1.5),
+                child: ClipOval(child: _buildCreatorAvatar()),
+              ),
             ),
           ),
           const SizedBox(width: 12),
-          // Creator Name & Info
+          // Creator name & service badge
           Expanded(
             child: GestureDetector(
               onTap: _navigateToCreatorDetail,
@@ -740,8 +817,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                           _currentPost.user,
                           style: TextStyle(
                             color: AppTheme.getPrimaryTextColor(context),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
                           ),
                           maxLines: 1,
@@ -750,39 +827,172 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                       ),
                       const SizedBox(width: 4),
                       Icon(
-                        Icons.verified,
+                        Icons.verified_rounded,
                         size: 14,
                         color: AppTheme.primaryColor,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_getServiceDisplayName()} • ${_formatDate(_currentPost.published.toString())}',
-                    style: TextStyle(
-                      color: AppTheme.getSecondaryTextColor(context),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      // Service badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: serviceAccent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: serviceAccent.withValues(alpha: 0.4),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _getServiceDisplayName(),
+                          style: TextStyle(
+                            color: serviceAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '· ${_formatDate(_currentPost.published.toString())}',
+                        style: TextStyle(
+                          color: AppTheme.getSecondaryTextColor(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          // More Options Placeholder
-          IconButton(
-            icon: Icon(
-              Icons.more_vert,
-              color: AppTheme.getPrimaryTextColor(context),
+          // More options button → bottom sheet
+          _buildMoreOptionsButton(),
+        ],
+      ),
+    );
+  }
+
+  /// Returns the accent color for the post's service
+  Color _getServiceAccentColor() {
+    return AppTheme.serviceColors[_currentPost.service] ??
+        AppTheme.primaryColor;
+  }
+
+  /// Returns the correct CDN referer URL for the currently active API source.
+  String _getRefererUrl() {
+    return _activeApiSource == ApiSource.coomer
+        ? 'https://coomer.st/'
+        : 'https://kemono.cr/';
+  }
+
+  /// More-options icon button that opens a bottom sheet
+  Widget _buildMoreOptionsButton() {
+    return IconButton(
+      icon: Icon(
+        Icons.more_vert_rounded,
+        color: AppTheme.getPrimaryTextColor(context),
+      ),
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          isDismissible: true,
+          enableDrag: true,
+          builder: (context) => _buildMoreOptionsSheet(),
+        );
+      },
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+    );
+  }
+
+  /// Bottom sheet for additional post actions
+  Widget _buildMoreOptionsSheet() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.getBorderColor(context),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            onPressed: () {
-              // Placeholder for more actions like report, unfollow, copy link natively
+          ),
+          const SizedBox(height: 20),
+          _buildBottomSheetOption(
+            icon: Icons.open_in_browser_rounded,
+            label: 'Open in Browser',
+            onTap: () {
+              Navigator.pop(context);
+              _launchSourceUrl();
             },
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
+          ),
+          _buildBottomSheetOption(
+            icon: Icons.person_outline_rounded,
+            label: 'View Creator',
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToCreatorDetail();
+            },
+          ),
+          _buildBottomSheetOption(
+            icon: Icons.share_outlined,
+            label: 'Share Post',
+            onTap: () {
+              Navigator.pop(context);
+              _sharePost();
+            },
+          ),
+          _buildBottomSheetOption(
+            icon: Icons.download_outlined,
+            label: 'Download All Files',
+            onTap: () {
+              Navigator.pop(context);
+              _downloadAllFiles();
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBottomSheetOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: AppTheme.getPrimaryTextColor(context)),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: AppTheme.getPrimaryTextColor(context),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
@@ -1036,13 +1246,20 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
   String buildThumbnailFromRawPath(String rawPath) {
     if (rawPath.isEmpty) return '';
-    final clean = rawPath.startsWith('/') ? rawPath : '/$rawPath';
-    final thumbnailPath = 'thumbnail/data$clean';
+    // Strip query/fragment, then locate the /data/ segment so we never
+    // produce a double /data/data/ path when the API returns /data/xx/yy/...
+    final cleanPath = rawPath.split('?').first.split('#').first;
     final base = _activeApiSource == ApiSource.coomer
         ? 'https://img.coomer.st'
         : 'https://img.kemono.cr';
-    final thumbnailUrl = '$base/$thumbnailPath';
-    return thumbnailUrl;
+    final dataIndex = cleanPath.indexOf('/data/');
+    if (dataIndex != -1) {
+      // Grab everything from /data/ onward (e.g. "data/56/0b/abc.jpg")
+      return '$base/thumbnail/${cleanPath.substring(dataIndex + 1)}';
+    }
+    // Path doesn't contain /data/ – treat it as relative to the data root.
+    final clean = cleanPath.startsWith('/') ? cleanPath : '/$cleanPath';
+    return '$base/thumbnail/data$clean';
   }
 
   // ignore: unused_element
@@ -1265,26 +1482,41 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     return dotIndex != -1 ? filename.substring(dotIndex + 1) : 'unknown';
   }
 
-  /// 🚀 FIX: Get HTTP headers for Coomer CDN anti-hotlink protection
+  /// Get HTTP headers for Coomer/Kemono CDN anti-hotlink protection.
+  ///
+  /// Both CDNs require a matching Referer/Origin header or they return 403.
+  /// Kemono media is served from kemono.cr / img.kemono.cr / n*.kemono.cr.
+  /// Coomer media is served from coomer.st / img.coomer.st / n*.coomer.st.
   Map<String, String>? _getCoomerHeaders(String imageUrl) {
-    final isCoomerDomain =
-        imageUrl.contains('coomer.st') || imageUrl.contains('n2.coomer.st');
-
-    if (isCoomerDomain) {
+    if (imageUrl.contains('coomer.st')) {
       return const {
         'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'image/avif,image/webp,image/*,*/*;q=0.8',
         'Referer': 'https://coomer.st/',
         'Origin': 'https://coomer.st',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
       };
     }
 
-    return null; // No headers needed for non-Coomer domains
+    // kemono.cr is the current domain; kemono.su is the legacy domain that
+    // still serves some older content and redirects.
+    if (imageUrl.contains('kemono.cr') || imageUrl.contains('kemono.su')) {
+      return const {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/*,*/*;q=0.8',
+        'Referer': 'https://kemono.cr/',
+        'Origin': 'https://kemono.cr',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+      };
+    }
+
+    return null;
   }
 
   void _openMediaFullscreen(Map<String, dynamic> mediaItem, int index) {
@@ -1441,6 +1673,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
               CachedNetworkImage(
                 imageUrl: thumbnailUrl,
+                httpHeaders: _getCoomerHeaders(thumbnailUrl),
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: Colors.black,
@@ -1504,7 +1737,66 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   /// Download single file to Downloads/KC Download
+  /// Request the appropriate storage permission before downloading.
+  ///
+  /// On Android 11+ (API 30+) writing to the public Downloads directory
+  /// requires MANAGE_EXTERNAL_STORAGE.  On Android ≤10 the legacy
+  /// WRITE_EXTERNAL_STORAGE (Permission.storage) is sufficient.
+  /// On non-Android platforms, returns true immediately.
+  Future<bool> _requestStoragePermission() async {
+    if (!Platform.isAndroid) return true;
+
+    // Try MANAGE_EXTERNAL_STORAGE (Android 11+)
+    PermissionStatus manageStatus =
+        await Permission.manageExternalStorage.status;
+    if (manageStatus.isGranted) return true;
+
+    // Also check legacy storage permission (Android ≤10)
+    PermissionStatus storageStatus = await Permission.storage.status;
+    if (storageStatus.isGranted) return true;
+
+    // Request MANAGE_EXTERNAL_STORAGE; on Android 11+ this opens Settings.
+    manageStatus = await Permission.manageExternalStorage.request();
+    if (manageStatus.isGranted) return true;
+
+    // Fallback to legacy storage permission
+    storageStatus = await Permission.storage.request();
+    if (storageStatus.isGranted) return true;
+
+    if (!mounted) return false;
+
+    // Guide the user to grant permission manually.
+    final isPermanentlyDenied =
+        manageStatus.isPermanentlyDenied || storageStatus.isPermanentlyDenied;
+    if (isPermanentlyDenied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Storage permission denied. Please enable it in App Settings to download files.',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'Settings',
+            textColor: Colors.white,
+            onPressed: openAppSettings,
+          ),
+        ),
+      );
+    } else {
+      _showSnackBar(
+        'Storage permission is required to download files.',
+        Colors.orange,
+      );
+    }
+    return false;
+  }
+
   Future<void> _downloadSingleFile(PostLink link) async {
+    // Check / request storage permission first.
+    final hasPermission = await _requestStoragePermission();
+    if (!hasPermission) return;
+
     final url = link.url;
     // Extract a reasonable filename from the URL or label
     String fileName =
@@ -1542,6 +1834,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
       final savePath = '${downloadsDirectory.path}/$fileName';
 
+      // Determine the correct referer for CDN anti-hotlink headers.
+      final referer = _getRefererUrl();
+
       // Route through DownloadProvider so progress shows in Download Manager
       if (!mounted) return;
       final downloadProvider = context.read<DownloadProvider>();
@@ -1549,6 +1844,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         name: fileName,
         url: url,
         savePath: savePath,
+        referer: referer,
       );
       _showSnackBar(
         'Download started: $fileName — check Download Manager',
@@ -2861,12 +3157,15 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     // Build URL using active source to prevent cross-domain content mixing.
     final baseUrl = _activeApiSource == ApiSource.coomer
         ? 'https://n2.coomer.st/data'
-        : 'https://n1.kemono.cr/data';
+        : 'https://n2.kemono.cr/data';
 
-    // Remove leading slash if present to avoid double slashes
+    // Strip leading slash, then strip any existing 'data/' prefix so that
+    // API paths like '/data/ab/cd/file.jpg' don't produce /data/data/...
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    final strippedPath =
+        cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
 
-    return '$baseUrl/$cleanPath';
+    return '$baseUrl/$strippedPath';
   }
 
   /// Copy link to clipboard
@@ -2936,7 +3235,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2945,12 +3244,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
               _currentPost.title,
               style: TextStyle(
                 color: AppTheme.getPrimaryTextColor(context),
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                height: 1.25,
               ),
             ),
-            if (cleanContent.isNotEmpty) const SizedBox(height: 6),
+            if (cleanContent.isNotEmpty) const SizedBox(height: 8),
           ],
           if (cleanContent.isNotEmpty) _buildLinkifiedContent(),
         ],
@@ -3047,48 +3347,78 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     );
   }
 
+  // Palette of accent colors for colorful tags
+  static const List<Color> _tagColorPalette = [
+    Color(0xFFFF6B35), // orange
+    Color(0xFF6366F1), // indigo
+    Color(0xFFF43F5E), // rose
+    Color(0xFF06B6D4), // cyan
+    Color(0xFF8B5CF6), // violet
+    Color(0xFF10B981), // emerald
+    Color(0xFFF59E0B), // amber
+    Color(0xFF3B82F6), // blue
+  ];
+
   Widget _buildTagsSection() {
     return _buildSectionShell(
-      accentColor: Colors.orange,
+      accentColor: const Color(0xFFFF6B35),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
-            icon: Icons.tag,
+            icon: Icons.tag_rounded,
             title: 'Tags (${_currentPost.tags.length})',
-            color: Colors.orange,
+            color: const Color(0xFFFF6B35),
             context: context,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: _currentPost.tags.map((tag) {
+              final tagColor =
+                  _tagColorPalette[tag.hashCode.abs() % _tagColorPalette.length];
+              final accent = Theme.of(context).brightness == Brightness.dark
+                  ? tagColor
+                  : _getLightModeColor(tagColor);
               return Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 10,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.orange.withValues(alpha: 0.1)
-                      : Colors.orange.withValues(alpha: 0.05), // Light mode
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: [
+                      accent.withValues(alpha: 0.15),
+                      accent.withValues(alpha: 0.07),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.orange.withValues(alpha: 0.3)
-                        : Colors.orange.withValues(alpha: 0.2), // Light mode
+                    color: accent.withValues(alpha: 0.45),
+                    width: 1,
                   ),
                 ),
-                child: Text(
-                  tag,
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.orange
-                        : _getLightModeColor(Colors.orange), // Light mode
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '#',
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      tag,
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               );
             }).toList(),
@@ -3524,6 +3854,10 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   Future<void> _downloadAllFiles() async {
+    // Check / request storage permission before doing anything.
+    final hasPermission = await _requestStoragePermission();
+    if (!hasPermission) return;
+
     final links = collectAllLinks();
     if (links.isEmpty) {
       _showSnackBar('No files found to download.', Colors.orange);
@@ -3561,9 +3895,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       }
 
       final dio = Dio();
-      final referer = _activeApiSource == ApiSource.coomer
-          ? 'https://coomer.st/'
-          : 'https://kemono.cr/';
+      final referer = _getRefererUrl();
       final headers = ApiHeaderService.getMediaHeaders(referer: referer);
 
       for (final link in links) {
