@@ -11,11 +11,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:html/parser.dart' as html_parser;
 
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../data/services/api_header_service.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/entities/api_source.dart';
 import '../../domain/entities/comment.dart';
@@ -3869,9 +3867,6 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       Colors.blue,
     );
 
-    int successCount = 0;
-    int failCount = 0;
-
     try {
       Directory? downloadsDirectory;
       if (Platform.isAndroid) {
@@ -3894,9 +3889,11 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
-      final dio = Dio();
       final referer = _getRefererUrl();
-      final headers = ApiHeaderService.getMediaHeaders(referer: referer);
+      if (!mounted) return;
+      final downloadProvider = context.read<DownloadProvider>();
+      int queuedCount = 0;
+      int failCount = 0;
 
       for (final link in links) {
         try {
@@ -3914,8 +3911,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           }
           final savePath = '${downloadsDirectory.path}/$fileName';
 
-          await dio.download(url, savePath, options: Options(headers: headers));
-          successCount++;
+          downloadProvider.addDownload(
+            name: fileName,
+            url: url,
+            savePath: savePath,
+            referer: referer,
+          );
+          queuedCount++;
         } catch (e) {
           failCount++;
           AppLogger.warning(
@@ -3928,12 +3930,12 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
       if (failCount > 0) {
         _showSnackBar(
-          'Downloaded $successCount files ($failCount failed)',
+          'Queued $queuedCount files ($failCount failed)',
           Colors.orange,
         );
       } else {
         _showSnackBar(
-          'Successfully downloaded all $successCount files to KC Download!',
+          'Queued all $queuedCount files in Download Manager!',
           Colors.green,
         );
       }
