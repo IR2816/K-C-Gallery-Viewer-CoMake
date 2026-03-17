@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
@@ -36,63 +37,130 @@ class KemonoApi {
   /// Get headers untuk semua request
   static Map<String, String> get headers => Map<String, String>.from(_headers);
 
-  /// HTTP request dengan fallback domain dan error handling
+  /// Simple in-memory cache (endpoint → cached body + expiry)
+  static final Map<String, _CachedResponse> _responseCache = {};
+  static const Duration _defaultCacheTtl = Duration(minutes: 5);
+
+  /// HTTP request dengan retry + exponential backoff + in-memory cache
   static Future<http.Response> _makeRequest(
     String endpoint, {
     ApiSource apiSource = ApiSource.kemono,
     Map<String, String>? additionalHeaders,
     Duration? timeout,
+    bool useCache = true,
+    Duration cacheTtl = _defaultCacheTtl,
   }) async {
+    final cacheKey = '${apiSource.name}:$endpoint';
+
+    // Return cached response if still valid
+    if (useCache) {
+      final cached = _responseCache[cacheKey];
+      if (cached != null && cached.isValid) {
+        debugPrint('KemonoApi: Cache hit for $cacheKey');
+        return cached.response;
+      }
+    }
+
     final domains = apiSource == ApiSource.kemono
         ? _kemonoDomains
         : _coomerDomains;
     final requestHeaders = {..._headers, ...?additionalHeaders};
-    final requestTimeout = timeout ?? const Duration(seconds: 15);
+    final requestTimeout = timeout ?? const Duration(seconds: 18);
+
+    // Prefer the last-known-good domain first
+    final orderedDomains = _lastSuccessfulDomain != null &&
+            domains.contains(_lastSuccessfulDomain)
+        ? [_lastSuccessfulDomain!, ...domains.where((d) => d != _lastSuccessfulDomain)]
+        : domains;
 
     String? lastError;
+    const maxRetries = 2;
 
-    for (final domain in domains) {
-      try {
-        final url = '$domain$endpoint';
-        debugPrint('KemonoApi: Requesting $url');
+    for (final domain in orderedDomains) {
+      for (int attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          // Exponential backoff on retries
+          if (attempt > 0) {
+            final delay = Duration(milliseconds: 400 * (1 << (attempt - 1)));
+            debugPrint('KemonoApi: Retry $attempt after ${delay.inMilliseconds}ms');
+            await Future.delayed(delay);
+          }
 
-        final response = await http
-            .get(Uri.parse(url), headers: requestHeaders)
-            .timeout(requestTimeout);
+          final url = '$domain$endpoint';
+          debugPrint('KemonoApi: Requesting $url (attempt ${attempt + 1})');
 
-        // Validasi response
-        final bodyTrimmed = response.body.trimLeft();
-        final looksLikeHtml =
-            bodyTrimmed.startsWith('<!') ||
-            bodyTrimmed.toLowerCase().startsWith('<html');
+          final response = await http
+              .get(Uri.parse(url), headers: requestHeaders)
+              .timeout(requestTimeout);
 
-        if (response.statusCode >= 200 &&
-            response.statusCode < 400 &&
-            !looksLikeHtml) {
-          _lastSuccessfulDomain = domain;
-          debugPrint('KemonoApi: Success from $domain');
-          return response;
+          // Validate response
+          final bodyTrimmed = response.body.trimLeft();
+          final looksLikeHtml =
+              bodyTrimmed.startsWith('<!') ||
+              bodyTrimmed.toLowerCase().startsWith('<html');
+
+          if (response.statusCode >= 200 &&
+              response.statusCode < 400 &&
+              !looksLikeHtml) {
+            _lastSuccessfulDomain = domain;
+            debugPrint('KemonoApi: Success from $domain');
+
+            // Cache successful response
+            if (useCache) {
+              _responseCache[cacheKey] =
+                  _CachedResponse(response, DateTime.now().add(cacheTtl));
+              // Prune cache if too large (keep newest 100 entries)
+              if (_responseCache.length > 100) {
+                final oldest = _responseCache.entries
+                    .reduce((a, b) => a.value.expiresAt.isBefore(b.value.expiresAt) ? a : b);
+                _responseCache.remove(oldest.key);
+              }
+            }
+
+            return response;
+          }
+
+          final snippet = bodyTrimmed.length > 200
+              ? bodyTrimmed.substring(0, 200)
+              : bodyTrimmed;
+          lastError =
+              'Domain=$domain Status=${response.statusCode} Html=$looksLikeHtml Snippet=${snippet.replaceAll("\n", " ")}';
+
+          // Don't retry on 404 or 403 — move to next domain immediately
+          if (response.statusCode == 404 || response.statusCode == 403) {
+            break;
+          }
+
+          // Don't retry on the last attempt
+          if (attempt >= maxRetries) break;
+        } on TimeoutException catch (e) {
+          lastError = 'Domain=$domain Timeout=$e (attempt ${attempt + 1})';
+          debugPrint('KemonoApi: Timeout from $domain: $e');
+          // Retry on timeout up to maxRetries
+        } catch (e) {
+          lastError = 'Domain=$domain Exception=$e';
+          debugPrint('KemonoApi: Error from $domain: $e');
+          // Only retry on network errors
+          if (e.toString().contains('SocketException') ||
+              e.toString().contains('Connection')) {
+            continue;
+          }
+          break;
         }
-
-        final snippet = bodyTrimmed.length > 200
-            ? bodyTrimmed.substring(0, 200)
-            : bodyTrimmed;
-        lastError =
-            'Domain=$domain Status=${response.statusCode} Html=$looksLikeHtml Snippet=${snippet.replaceAll("\n", " ")}';
-
-        // Jika 404, coba domain lain
-        if (response.statusCode == 404) {
-          continue;
-        }
-      } catch (e) {
-        lastError = 'Domain=$domain Exception=$e';
-        debugPrint('KemonoApi: Error from $domain: $e');
-        continue;
       }
     }
 
     // Prinsip 5: Error handling yang robust
     throw Exception('All domains failed. Last error: $lastError');
+  }
+
+  /// Invalidate cache for a specific endpoint (e.g., after forced refresh)
+  static void invalidateCache({String? endpoint, ApiSource? apiSource}) {
+    if (endpoint != null && apiSource != null) {
+      _responseCache.remove('${apiSource.name}:$endpoint');
+    } else {
+      _responseCache.clear();
+    }
   }
 
   /// Prinsip 1: Creator by ID (primary method)
@@ -302,4 +370,14 @@ class KemonoApi {
       apiSource: ApiSource.kemono,
     );
   }
+}
+
+/// Internal cache entry for HTTP responses
+class _CachedResponse {
+  final http.Response response;
+  final DateTime expiresAt;
+
+  const _CachedResponse(this.response, this.expiresAt);
+
+  bool get isValid => DateTime.now().isBefore(expiresAt);
 }
