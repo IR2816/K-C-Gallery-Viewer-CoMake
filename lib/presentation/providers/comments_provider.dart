@@ -13,12 +13,14 @@ class CommentsProvider with ChangeNotifier {
   String? _error;
   String? _currentPostId;
   String? _currentService;
+  String? _currentCreatorId;
 
   List<Comment> get comments => _comments;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get currentPostId => _currentPostId;
   String? get currentService => _currentService;
+  String? get currentCreatorId => _currentCreatorId;
   int get commentCount => _comments.length;
 
   Future<void> loadComments(
@@ -42,6 +44,7 @@ class CommentsProvider with ChangeNotifier {
 
     _currentPostId = postId;
     _currentService = service;
+    _currentCreatorId = creatorId;
     _isLoading = true;
     _error = null;
     notifyListeners(); // Notify immediately to update preview
@@ -68,6 +71,7 @@ class CommentsProvider with ChangeNotifier {
     _comments.clear();
     _currentPostId = null;
     _currentService = null;
+    _currentCreatorId = null;
     _error = null;
     notifyListeners();
   }
@@ -82,11 +86,13 @@ class CommentsProvider with ChangeNotifier {
   }
 
   void refresh() {
-    if (_currentPostId != null && _currentService != null) {
-      // We need creatorId for refresh, but we don't store it
-      // This is a limitation - we'll need to store creatorId as well
-      // For now, just return
-      return;
+    if (_currentPostId != null &&
+        _currentService != null &&
+        _currentCreatorId != null) {
+      // Clear comments so loadComments does not skip the reload due to
+      // the "same post already loaded" guard.
+      _comments.clear();
+      loadComments(_currentPostId!, _currentService!, _currentCreatorId!);
     }
   }
 }

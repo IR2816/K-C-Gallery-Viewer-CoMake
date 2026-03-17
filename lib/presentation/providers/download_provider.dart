@@ -170,6 +170,34 @@ class DownloadProvider extends ChangeNotifier {
     }
   }
 
+  /// Retry a failed or cancelled download
+  void retryDownload(String downloadId) {
+    final index = _downloads.indexWhere((d) => d.id == downloadId);
+    if (index == -1) return;
+
+    final download = _downloads[index];
+    if (download.status != DownloadStatus.failed &&
+        download.status != DownloadStatus.cancelled) {
+      return;
+    }
+
+    final retried = DownloadItem(
+      id: download.id,
+      name: download.name,
+      url: download.url,
+      totalBytes: download.totalBytes,
+      downloadedBytes: 0,
+      status: DownloadStatus.pending,
+      startTime: DateTime.now(),
+      savePath: download.savePath,
+      referer: download.referer,
+    );
+    _downloads[index] = retried;
+    notifyListeners();
+
+    _startDownload(retried);
+  }
+
   /// Remove download from list
   void removeDownload(String downloadId) {
     _downloads.removeWhere((d) => d.id == downloadId);
