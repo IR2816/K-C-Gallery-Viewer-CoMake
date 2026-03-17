@@ -86,6 +86,13 @@ flutter_export_environment.sh
 app.*.symbols
 app.*.map.json
 
+# Android signing — never commit keystores or key.properties
+*.jks
+*.p12
+*.keystore
+android/key.properties
+android/keystore/
+
 
 task.md.resolved
 analyze_output.txt

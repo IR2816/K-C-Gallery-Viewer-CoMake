@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'data/datasources/kemono_remote_datasource_impl.dart';
 import 'data/datasources/kemono_local_datasource_impl.dart';
 import 'data/repositories/kemono_repository_impl.dart';
@@ -45,8 +46,14 @@ import 'utils/error_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    // Firebase initialization failed (e.g. missing google-services.json).
+    // The app continues without Crashlytics; errors are still logged locally.
+    debugPrint('Firebase initialization failed: $e');
+  }
   AppErrorHandler.initialize();
-
   final prefs = await SharedPreferences.getInstance();
 
   final remoteDataSource =
@@ -170,7 +177,9 @@ class MyApp extends StatelessWidget {
                         data: mediaQuery.copyWith(
                           textScaler: TextScaler.linear(themeProvider.textScale),
                         ),
-                        child: child ?? const SizedBox.shrink(),
+                        child: _DataUsageAlertOverlay(
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       );
                     },
                     home: MainNavigationScreen(),
@@ -247,4 +256,96 @@ class MyApp extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Listens to [DataUsageTracker] and shows in-app notifications for data
+/// usage warnings and critical alerts.
+class _DataUsageAlertOverlay extends StatefulWidget {
+  final Widget child;
+
+  const _DataUsageAlertOverlay({required this.child});
+
+  @override
+  State<_DataUsageAlertOverlay> createState() => _DataUsageAlertOverlayState();
+}
+
+class _DataUsageAlertOverlayState extends State<_DataUsageAlertOverlay> {
+  DataUsageTracker? _tracker;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tracker = Provider.of<DataUsageTracker>(context, listen: false);
+    if (_tracker != tracker) {
+      _tracker?.removeListener(_onTrackerUpdate);
+      _tracker = tracker;
+      _tracker!.addListener(_onTrackerUpdate);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tracker?.removeListener(_onTrackerUpdate);
+    super.dispose();
+  }
+
+  void _onTrackerUpdate() {
+    final alert = _tracker?.pendingAlert;
+    if (alert == null) return;
+    // Clear immediately so a subsequent update does not repeat the same alert.
+    _tracker?.clearPendingAlert();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (alert.level == DataUsageAlertLevel.critical) {
+        _showCriticalDialog(alert.percentage);
+      } else {
+        _showWarningSnackBar(alert.percentage);
+      }
+    });
+  }
+
+  void _showWarningSnackBar(double percentage) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '⚠️ Data usage warning: ${percentage.toStringAsFixed(1)}% of daily limit used',
+        ),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showCriticalDialog(double percentage) {
+    final tracker = _tracker;
+    if (tracker == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('🚨 Critical Data Usage'),
+        content: Text(
+          'You have used ${percentage.toStringAsFixed(1)}% of your daily data limit. '
+          'Consider enabling Data Saver to reduce usage.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Dismiss'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              tracker.updateLimits(
+                tracker.limits.copyWith(autoDataSaver: true),
+              );
+            },
+            child: const Text('Enable Data Saver'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

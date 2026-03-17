@@ -3,6 +3,7 @@ import 'package:kc_gallery_viewer/domain/entities/post.dart';
 import 'package:kc_gallery_viewer/domain/entities/api_source.dart';
 import 'package:kc_gallery_viewer/presentation/widgets/image_viewer_final.dart';
 import 'package:kc_gallery_viewer/utils/logger.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// 🎯 SwipeableImageViewer - Gambar bisa swipe untuk lihat semua media
 ///
@@ -210,14 +211,30 @@ class _SwipeableImageViewerState extends State<SwipeableImageViewer> {
     );
   }
 
-  void _openCurrentInBrowser() {
+  void _openCurrentInBrowser() async {
     if (_currentIndex < _mediaItems.length) {
       final mediaItem = _mediaItems[_currentIndex];
       AppLogger.info(
         'Opening media in browser: ${mediaItem.path}',
         tag: 'ImageViewer',
       );
-      // TODO: Implement url_launcher
+      try {
+        final uri = Uri.parse(mediaItem.path);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          AppLogger.warning(
+            'Cannot launch URL: ${mediaItem.path}',
+            tag: 'ImageViewer',
+          );
+        }
+      } catch (e) {
+        AppLogger.error(
+          'Failed to open media in browser',
+          tag: 'ImageViewer',
+          error: e,
+        );
+      }
     }
   }
 
