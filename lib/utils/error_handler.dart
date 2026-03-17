@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'logger.dart';
 
 /// Global error handler for uncaught Flutter and platform errors.
@@ -7,17 +8,8 @@ import 'logger.dart';
 /// to catch all unhandled exceptions and log them via [AppLogger].
 ///
 /// ### Firebase Crashlytics
-/// Once the project is configured with `google-services.json` /
-/// `GoogleService-Info.plist`, add the `firebase_crashlytics` import and
-/// replace the two TODO stubs below to forward errors to Crashlytics:
-///
-/// ```dart
-/// // In _onFlutterError:
-/// FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-///
-/// // In PlatformDispatcher.instance.onError:
-/// FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-/// ```
+/// Errors are automatically forwarded to Firebase Crashlytics when the app
+/// is running in release/profile mode and Firebase has been initialized.
 class AppErrorHandler {
   AppErrorHandler._();
 
@@ -36,8 +28,7 @@ class AppErrorHandler {
         stackTrace: stack,
       );
 
-      // TODO: when Firebase is configured, add:
-      // FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
 
       return true;
     };
@@ -57,7 +48,6 @@ class AppErrorHandler {
     // in debug mode and the error is printed to the console.
     FlutterError.presentError(details);
 
-    // TODO: when Firebase is configured, add:
-    // FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
   }
 }

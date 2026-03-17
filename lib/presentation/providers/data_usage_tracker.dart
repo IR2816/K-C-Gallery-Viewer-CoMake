@@ -3,6 +3,17 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
+/// Severity level of a data usage alert.
+enum DataUsageAlertLevel { warning, critical }
+
+/// Holds information about a pending data usage alert to be shown by the UI.
+class DataUsageAlert {
+  final DataUsageAlertLevel level;
+  final double percentage;
+
+  const DataUsageAlert({required this.level, required this.percentage});
+}
+
 /// Data Usage Categories
 enum UsageCategory { images, videos, thumbnails, apiCalls, attachments, other }
 
@@ -87,6 +98,26 @@ class UsageLimits {
       criticalThreshold: json['criticalThreshold'] ?? 95,
     );
   }
+
+  UsageLimits copyWith({
+    int? dailyLimitMB,
+    int? weeklyLimitMB,
+    int? monthlyLimitMB,
+    bool? enableWarnings,
+    bool? autoDataSaver,
+    int? warningThreshold,
+    int? criticalThreshold,
+  }) {
+    return UsageLimits(
+      dailyLimitMB: dailyLimitMB ?? this.dailyLimitMB,
+      weeklyLimitMB: weeklyLimitMB ?? this.weeklyLimitMB,
+      monthlyLimitMB: monthlyLimitMB ?? this.monthlyLimitMB,
+      enableWarnings: enableWarnings ?? this.enableWarnings,
+      autoDataSaver: autoDataSaver ?? this.autoDataSaver,
+      warningThreshold: warningThreshold ?? this.warningThreshold,
+      criticalThreshold: criticalThreshold ?? this.criticalThreshold,
+    );
+  }
 }
 
 /// Main Data Usage Tracker
@@ -109,6 +140,9 @@ class DataUsageTracker extends ChangeNotifier {
   // Configuration
   UsageLimits _limits = const UsageLimits();
 
+  // Pending alert to be consumed by the UI layer
+  DataUsageAlert? _pendingAlert;
+
   // Getters
   int get sessionUsage => _sessionUsage;
   Map<UsageCategory, int> get sessionCategoryUsage =>
@@ -119,6 +153,19 @@ class DataUsageTracker extends ChangeNotifier {
   UsageData? get monthlyUsage => _monthlyUsage;
   List<UsageData> get usageHistory => List.unmodifiable(_usageHistory);
   UsageLimits get limits => _limits;
+
+  /// The most recent unread data-usage alert.
+  ///
+  /// Widgets should call [clearPendingAlert] after handling the alert to
+  /// prevent it from being shown again.
+  DataUsageAlert? get pendingAlert => _pendingAlert;
+
+  /// Mark the current pending alert as handled.
+  void clearPendingAlert() {
+    if (_pendingAlert == null) return;
+    _pendingAlert = null;
+    notifyListeners();
+  }
 
   DataUsageTracker() {
     _initializeCategoryUsage();
@@ -250,14 +297,22 @@ class DataUsageTracker extends ChangeNotifier {
     debugPrint(
       '⚠️ DATA USAGE WARNING: ${percentage.toStringAsFixed(1)}% of daily limit used',
     );
-    // TODO: Show in-app notification
+    _pendingAlert = DataUsageAlert(
+      level: DataUsageAlertLevel.warning,
+      percentage: percentage,
+    );
+    notifyListeners();
   }
 
   void _showCriticalAlert(double percentage) {
     debugPrint(
       '🚨 CRITICAL DATA USAGE: ${percentage.toStringAsFixed(1)}% of daily limit used!',
     );
-    // TODO: Show critical dialog with data saver option
+    _pendingAlert = DataUsageAlert(
+      level: DataUsageAlertLevel.critical,
+      percentage: percentage,
+    );
+    notifyListeners();
   }
 
   /// Update usage limits
