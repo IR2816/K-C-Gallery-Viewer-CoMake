@@ -11,9 +11,7 @@ import 'latest_posts_screen.dart';
 import 'search_screen_dual.dart';
 import 'saved_screen.dart';
 import 'settings_screen.dart';
-
-// Widgets
-import '../widgets/popular_creators_section.dart';
+import 'creators_list_screen.dart';
 
 /// 🎯 HomeScreen - Main Navigation Hub
 ///
@@ -137,118 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppTheme.primaryColor,
       tooltip: 'Settings',
       child: const Icon(Icons.settings),
-    );
-  }
-}
-
-/// Temporary CreatorsListScreen placeholder
-class CreatorsListScreen extends StatelessWidget {
-  const CreatorsListScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Creators'),
-        backgroundColor: AppTheme.surfaceColor,
-        foregroundColor: AppTheme.primaryTextColor,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Popular Creators Section
-            const PopularCreatorsSection(),
-
-            const SizedBox(height: 24),
-
-            // Search Bar (placeholder for now)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Search by Name',
-                    style: AppTheme.subtitleStyle.copyWith(
-                      color: AppTheme.getOnBackgroundColor(context),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search creators...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: AppTheme.getBackgroundColor(context),
-                    ),
-                    onTap: () {
-                      // Navigate to search screen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SearchScreenDual(),
-                        ),
-                      );
-                    },
-                    readOnly:
-                        true, // Make it read-only to navigate to search screen
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // All Creators Section (placeholder)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'All Creators',
-                    style: AppTheme.subtitleStyle.copyWith(
-                      color: AppTheme.getOnBackgroundColor(context),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Text(
-                      'Browse all creators\n(Coming Soon)',
-                      style: AppTheme.bodyStyle.copyWith(
-                        color: AppTheme.secondaryTextColor,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
