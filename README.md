@@ -117,11 +117,56 @@ flutter format .
 flutter analyze
 ```
 
+## CI/CD — Automated APK Builds
+
+The GitHub Actions workflow (`.github/workflows/build-apk.yml`) automatically builds and releases a signed APK on every tag push (`v*.*.*`).
+
+### Setting Up Release Signing (Recommended)
+
+Properly signed APKs allow over-the-air upgrades (new versions install over old ones).
+
+**Step 1 — Generate a keystore locally (one-time):**
+
+```bash
+keytool -genkey -v -keystore ~/kc-gallery-release.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias kc_gallery_key
+```
+
+**Step 2 — Encode the keystore to base64:**
+
+```bash
+base64 ~/kc-gallery-release.jks
+```
+
+**Step 3 — Add these four secrets to GitHub Settings → Secrets → Actions:**
+
+| Secret name | Value |
+|---|---|
+| `KEYSTORE_BASE64` | Base64 output from Step 2 |
+| `KEYSTORE_ALIAS` | `kc_gallery_key` |
+| `KEYSTORE_PASSWORD` | Keystore password chosen in Step 1 |
+| `KEYSTORE_KEY_PASSWORD` | Key password chosen in Step 1 |
+
+Once all four secrets are set, every tagged release will produce a properly signed APK.
+
+### Releasing a New Version
+
+```bash
+git tag v1.1.2
+git push origin v1.1.2
+```
+
+GitHub Actions will build the APK and attach it to a new GitHub Release automatically.
+
+> **Without signing secrets:** The workflow still succeeds but produces a debug-signed APK (not upgradeable over a release-signed build).
+
 ## Security & Privacy
 
 - No API keys are stored in the repository.
 - Do not commit private tokens/endpoints.
 - Keep secrets in environment variables or secure platform storage.
+- The keystore file (`*.jks`, `android/keystore/`) and `android/key.properties` are excluded from version control via `.gitignore`.
 
 ## Third-Party Services
 
