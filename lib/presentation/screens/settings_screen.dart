@@ -148,7 +148,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.only(
+                top: 8,
+                bottom: AppTheme.getBottomContentPadding(context),
+              ),
               children: [
                 _buildAppProfileCard(),
                 const SizedBox(height: 24),
@@ -548,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 leading: const Icon(
                   Icons.view_column_rounded,
                   size: 20,
-                  color: Colors.cyanAccent,
+                  color: Colors.cyan,
                 ),
                 title: const Text(
                   'Layout Columns',
@@ -592,7 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 secondary: const Icon(
                   Icons.slow_motion_video_rounded,
                   size: 20,
-                  color: Colors.purpleAccent,
+                  color: Colors.purple,
                 ),
                 title: const Text(
                   'Autoplay Videos',
@@ -612,7 +615,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 secondary: const Icon(
                   Icons.image_aspect_ratio_rounded,
                   size: 20,
-                  color: Colors.greenAccent,
+                  color: Colors.green,
                 ),
                 title: const Text(
                   'Optimize Images',
@@ -1023,7 +1026,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: Icon(
               Icons.verified_rounded,
               size: 20,
-              color: Colors.greenAccent,
+              color: Colors.green,
             ),
             title: Text(
               'Build Version',
@@ -1073,7 +1076,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(
               Icons.code_rounded,
               size: 20,
-              color: Colors.cyanAccent,
+              color: Colors.cyan,
             ),
             title: const Text(
               'Core Engine',
