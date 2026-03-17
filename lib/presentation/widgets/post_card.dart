@@ -672,8 +672,8 @@ class _PostOptionsSheet extends StatelessWidget {
     );
   }
 
-  Widget _option(
-    BuildContext context, {
+  Widget _option({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required VoidCallback onTap,
