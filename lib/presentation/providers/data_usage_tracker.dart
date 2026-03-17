@@ -137,6 +137,28 @@ class DataUsageTracker extends ChangeNotifier {
     _sessionUsage = 0;
     _sessionCategoryUsage.clear();
     _initializeCategoryUsage();
+
+    // Increment today's session count
+    final today = DateTime.now();
+    final todayKey = DateTime(today.year, today.month, today.day);
+    if (_todayUsage != null && _todayUsage!.date == todayKey) {
+      _todayUsage = UsageData(
+        date: _todayUsage!.date,
+        categoryUsage: Map.from(_todayUsage!.categoryUsage),
+        totalUsage: _todayUsage!.totalUsage,
+        sessionCount: _todayUsage!.sessionCount + 1,
+      );
+    } else if (_todayUsage == null || _todayUsage!.date != todayKey) {
+      _todayUsage = UsageData(
+        date: todayKey,
+        categoryUsage: Map.from(
+          UsageCategory.values.asMap().map((k, v) => MapEntry(v, 0)),
+        ),
+        totalUsage: 0,
+        sessionCount: 1,
+      );
+    }
+
     notifyListeners();
   }
 

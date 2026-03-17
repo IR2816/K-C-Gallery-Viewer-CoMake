@@ -41,9 +41,11 @@ import 'presentation/screens/settings_screen.dart';
 import 'presentation/screens/discord_server_screen.dart';
 import 'presentation/screens/discord_search_screen.dart';
 import 'presentation/screens/discord_api_test_screen.dart';
+import 'utils/error_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppErrorHandler.initialize();
 
   final prefs = await SharedPreferences.getInstance();
 

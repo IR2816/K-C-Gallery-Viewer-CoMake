@@ -226,6 +226,13 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                   icon: const Icon(Icons.cancel, color: Colors.red, size: 16),
                   tooltip: 'Cancel',
                 ),
+              if (download.status == DownloadStatus.failed ||
+                  download.status == DownloadStatus.cancelled)
+                IconButton(
+                  onPressed: () => downloadProvider.retryDownload(download.id),
+                  icon: const Icon(Icons.refresh, color: Colors.orange, size: 16),
+                  tooltip: 'Retry',
+                ),
             ],
           ),
 
