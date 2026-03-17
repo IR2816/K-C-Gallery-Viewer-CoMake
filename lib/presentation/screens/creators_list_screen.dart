@@ -88,20 +88,80 @@ class _CreatorsListScreenState extends State<CreatorsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        title: const Text('Creators'),
-        backgroundColor: AppTheme.getSurfaceColor(context),
-        foregroundColor: AppTheme.getOnSurfaceColor(context),
+        toolbarHeight: 72,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppTheme.successColor.withValues(alpha: 0.12),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+        titleSpacing: 16,
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [AppTheme.successColor, AppTheme.primaryColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Text(
+                'Creators',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 28,
+                  color: Colors.white,
+                  letterSpacing: -0.8,
+                  height: 1,
+                ),
+              ),
+            ),
+            Text(
+              'Follow your favourite artists',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.85),
+              ),
+            ),
+          ],
+        ),
         actions: [
           Consumer<SettingsProvider>(
             builder: (context, settings, _) {
               return PopupMenuButton<ApiSource>(
-                icon: Icon(
-                  Icons.swap_horiz,
-                  color: AppTheme.getOnSurfaceColor(context),
+                icon: Container(
+                  width: 36,
+                  height: 36,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.getElevatedSurfaceColorContext(
+                      context,
+                    ).withValues(alpha: isDark ? 0.84 : 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.getBorderColor(context),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.swap_horiz_rounded,
+                    color: AppTheme.getSecondaryTextColor(context),
+                    size: 18,
+                  ),
                 ),
                 tooltip: 'Switch API source',
                 onSelected: (source) {
@@ -164,71 +224,116 @@ class _CreatorsListScreenState extends State<CreatorsListScreen> {
   }
 
   Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Filter creators…',
-          prefixIcon: const Icon(Icons.search, size: 20),
-          suffixIcon: _query.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
-                  onPressed: () {
-                    setState(() {
-                      _query = '';
-                      _searchController.clear();
-                    });
-                  },
-                )
-              : IconButton(
-                  icon: const Icon(Icons.open_in_new, size: 18),
-                  tooltip: 'Advanced search',
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SearchScreenDual(),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppTheme.getSurfaceColor(context).withValues(
+            alpha: isDark ? 0.85 : 0.7,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.getBorderColor(context)),
+        ),
+        child: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Search creators…',
+            hintStyle: TextStyle(
+              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.6),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              size: 20,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
+            suffixIcon: _query.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.cancel_rounded,
+                      size: 18,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _query = '';
+                        _searchController.clear();
+                      });
+                    },
+                  )
+                : IconButton(
+                    icon: Icon(
+                      Icons.open_in_new_rounded,
+                      size: 18,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                    tooltip: 'Advanced search',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SearchScreenDual(),
+                      ),
                     ),
                   ),
-                ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: InputBorder.none,
+            isDense: true,
           ),
-          filled: true,
-          fillColor: AppTheme.getSurfaceColor(context),
+          style: TextStyle(
+            color: AppTheme.getPrimaryTextColor(context),
+            fontSize: 14,
+          ),
+          onChanged: (value) => setState(() => _query = value),
         ),
-        onChanged: (value) => setState(() => _query = value),
       ),
     );
   }
 
   Widget _buildServiceFilters() {
     return SizedBox(
-      height: 40,
+      height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
         itemCount: _services.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final service = _services[index];
           final selected = _selectedService == service['id'];
-          return ChoiceChip(
-            label: Text(service['label'] as String),
-            selected: selected,
-            onSelected: (_) => _onServiceSelected(service['id'] as String),
-            selectedColor: AppTheme.primaryColor,
-            labelStyle: TextStyle(
-              color: selected ? Colors.white : AppTheme.getOnSurfaceColor(context),
-              fontSize: 12,
+          final serviceColor = selected
+              ? AppTheme.getServiceColor(service['id'] as String)
+              : AppTheme.getSecondaryTextColor(context);
+          return GestureDetector(
+            onTap: () => _onServiceSelected(service['id'] as String),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: selected
+                    ? serviceColor.withValues(alpha: 0.14)
+                    : AppTheme.getSurfaceColor(context).withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: selected
+                      ? serviceColor.withValues(alpha: 0.55)
+                      : AppTheme.getBorderColor(context).withValues(alpha: 0.7),
+                ),
+              ),
+              child: Text(
+                service['label'] as String,
+                style: TextStyle(
+                  color: selected
+                      ? serviceColor
+                      : AppTheme.getSecondaryTextColor(context),
+                  fontSize: 12,
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
             ),
-            backgroundColor: AppTheme.getSurfaceColor(context),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
           );
         },
       ),

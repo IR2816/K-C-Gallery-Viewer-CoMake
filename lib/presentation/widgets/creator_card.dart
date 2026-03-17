@@ -35,7 +35,8 @@ class CreatorCard extends StatefulWidget {
   State<CreatorCard> createState() => _CreatorCardState();
 }
 
-class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStateMixin {
+class _CreatorCardState extends State<CreatorCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _scaleAnim;
 
@@ -81,7 +82,8 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
 
     return Consumer<CreatorsProvider>(
       builder: (context, provider, _) {
-        final isFavorite = provider.favoriteCreators.contains(widget.creator.id);
+        final isFavorite =
+            provider.favoriteCreators.contains(widget.creator.id);
 
         return GestureDetector(
           onTapDown: (_) => _animController.forward(),
@@ -95,24 +97,33 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
               child: child,
             ),
             child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
                 color: isDark ? AppTheme.darkCardColor : AppTheme.lightCardColor,
-                borderRadius: BorderRadius.circular(AppTheme.mdRadius),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? AppTheme.darkBorderColor : AppTheme.lightBorderColor,
+                  color: isDark
+                      ? AppTheme.darkBorderColor
+                      : AppTheme.lightBorderColor,
                   width: 1,
                 ),
-                boxShadow: [AppTheme.getCardShadow()],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.06),
+                    blurRadius: 16,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
                 child: Row(
                   children: [
                     // Story-ring avatar
                     _buildAvatar(serviceColor),
 
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
 
                     // Name + service info
                     Expanded(
@@ -125,11 +136,12 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
                                 child: Text(
                                   widget.creator.name,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                     color: isDark
                                         ? AppTheme.darkPrimaryTextColor
                                         : AppTheme.lightPrimaryTextColor,
+                                    letterSpacing: -0.2,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -137,11 +149,17 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
                               ),
                               if (widget.experimentalBadge)
                                 Container(
-                                  margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  margin: const EdgeInsets.only(left: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.warningColor.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                                    color: AppTheme.warningColor.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.circular(AppTheme.pillRadius),
                                   ),
                                   child: const Text(
                                     'EXP',
@@ -157,25 +175,29 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
                           ),
                           const SizedBox(height: 4),
 
-                          // Service badge + updated
+                          // Service badge + updated time
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: serviceColor.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                                  color: serviceColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   widget.creator.service.toUpperCase(),
                                   style: TextStyle(
                                     color: serviceColor,
                                     fontSize: 9,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 7),
                               Icon(
                                 Icons.update_rounded,
                                 size: 11,
@@ -200,7 +222,7 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
                             ],
                           ),
 
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
 
                           // ID row
                           Text(
@@ -219,23 +241,82 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
                       ),
                     ),
 
-                    // Favorite button
-                    const SizedBox(width: 8),
+                    // Favorite / follow button
+                    const SizedBox(width: 4),
                     GestureDetector(
                       onTap: widget.onFavorite,
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isFavorite
-                              ? AppTheme.accentColor.withValues(alpha: 0.12)
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
                         ),
-                        child: Icon(
-                          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          color: isFavorite ? AppTheme.accentColor : AppTheme.darkSecondaryTextColor,
-                          size: 22,
+                        decoration: BoxDecoration(
+                          gradient: isFavorite
+                              ? const LinearGradient(
+                                  colors: [
+                                    AppTheme.primaryColor,
+                                    AppTheme.accentColor,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          color: isFavorite
+                              ? null
+                              : (isDark
+                                    ? AppTheme.darkElevatedSurfaceColor
+                                    : AppTheme.lightElevatedSurfaceColor),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isFavorite
+                                ? AppTheme.primaryColor
+                                : (isDark
+                                      ? AppTheme.darkBorderColor
+                                      : AppTheme.lightBorderColor),
+                            width: 1,
+                          ),
+                          boxShadow: isFavorite
+                              ? [
+                                  BoxShadow(
+                                    color:
+                                        AppTheme.primaryColor.withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    spreadRadius: -6,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isFavorite
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              color: isFavorite
+                                  ? Colors.white
+                                  : (isDark
+                                        ? AppTheme.darkSecondaryTextColor
+                                        : AppTheme.lightSecondaryTextColor),
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isFavorite ? 'Saved' : 'Save',
+                              style: TextStyle(
+                                color: isFavorite
+                                    ? Colors.white
+                                    : (isDark
+                                          ? AppTheme.darkSecondaryTextColor
+                                          : AppTheme.lightSecondaryTextColor),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -268,6 +349,8 @@ class _CreatorCardState extends State<CreatorCard> with SingleTickerProviderStat
           child: CachedNetworkImage(
             imageUrl: _avatarUrl(),
             fit: BoxFit.cover,
+            memCacheWidth: 108,
+            memCacheHeight: 108,
             placeholder: (_, url) => Container(
               color: AppTheme.darkElevatedSurfaceColor,
               child: Center(
