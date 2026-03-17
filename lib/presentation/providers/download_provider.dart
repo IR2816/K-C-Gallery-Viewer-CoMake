@@ -60,6 +60,8 @@ class DownloadProvider extends ChangeNotifier {
   // should always pass an explicit referer when downloading Coomer content.
   static const String _defaultReferer = 'https://kemono.cr/';
 
+  static int _idCounter = 0;
+
   final List<DownloadItem> _downloads = [];
   final Map<String, CancelToken> _cancelTokens = {};
   bool _disposed = false;
@@ -85,7 +87,7 @@ class DownloadProvider extends ChangeNotifier {
     int totalBytes = 0,
     String? referer,
   }) {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final id = '${DateTime.now().millisecondsSinceEpoch}_${++_idCounter}';
     final download = DownloadItem(
       id: id,
       name: name,

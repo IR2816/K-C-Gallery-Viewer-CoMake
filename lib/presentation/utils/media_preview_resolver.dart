@@ -264,10 +264,7 @@ class MediaPreviewResolver {
 
     if (hasImage) {
       // Gunakan gambar pertama sebagai thumbnail
-      return mediaItems.firstWhere(
-        (item) => item['type'] == 'image',
-        orElse: () => mediaItems.first,
-      );
+      return mediaItems.firstWhere((item) => item['type'] == 'image');
     } else {
       // Jika tidak ada gambar, gunakan media pertama (video)
       return mediaItems.first;
