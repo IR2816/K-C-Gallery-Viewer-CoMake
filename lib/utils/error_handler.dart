@@ -28,7 +28,11 @@ class AppErrorHandler {
         stackTrace: stack,
       );
 
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      try {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      } catch (_) {
+        // Firebase may not be initialized (e.g. missing google-services.json).
+      }
 
       return true;
     };
@@ -48,6 +52,10 @@ class AppErrorHandler {
     // in debug mode and the error is printed to the console.
     FlutterError.presentError(details);
 
-    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    try {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    } catch (_) {
+      // Firebase may not be initialized (e.g. missing google-services.json).
+    }
   }
 }
