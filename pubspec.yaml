@@ -78,6 +78,7 @@ dependencies:
   connectivity_plus: any
   flutter_cache_manager: any
   better_player: any
+  wakelock_plus: ^1.5.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

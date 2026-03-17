@@ -54,9 +54,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Base background
-          Positioned.fill(child: Container(color: Colors.black)),
-
           // Video Player fills the whole screen
           Positioned.fill(
             child: ClipRect(

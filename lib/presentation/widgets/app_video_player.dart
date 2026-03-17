@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../data/services/api_header_service.dart';
 import '../theme/app_theme.dart';
 import 'video_webview.dart';
@@ -67,12 +68,19 @@ class _AppVideoPlayerState extends State<AppVideoPlayer> {
   @override
   void dispose() {
     _disposeController();
+    WakelockPlus.disable();
     super.dispose();
+  }
+
+  void _onVideoValueChanged() {
+    final isPlaying = _controller?.value.isPlaying ?? false;
+    WakelockPlus.toggle(enable: isPlaying);
   }
 
   void _disposeController() {
     _chewieController?.dispose();
     _chewieController = null;
+    _controller?.removeListener(_onVideoValueChanged);
     _controller?.dispose();
     _controller = null;
   }
@@ -136,6 +144,9 @@ class _AppVideoPlayerState extends State<AppVideoPlayer> {
 
       await controller.initialize().timeout(const Duration(seconds: 25));
       if (!mounted) return false;
+
+      controller.addListener(_onVideoValueChanged);
+      _onVideoValueChanged(); // sync initial play state
 
       _chewieController = ChewieController(
         videoPlayerController: controller,
