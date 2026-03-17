@@ -39,7 +39,7 @@ class KemonoApi {
 
   /// Simple in-memory cache (endpoint → cached body + expiry)
   static final Map<String, _CachedResponse> _responseCache = {};
-  static const Duration _defaultCacheTtl = Duration(minutes: 5);
+  static const Duration _defaultCacheTtl = Duration(minutes: 2);
 
   /// HTTP request dengan retry + exponential backoff + in-memory cache
   static Future<http.Response> _makeRequest(
@@ -109,8 +109,8 @@ class KemonoApi {
             if (useCache) {
               _responseCache[cacheKey] =
                   _CachedResponse(response, DateTime.now().add(cacheTtl));
-              // Prune cache if too large (keep newest 100 entries)
-              if (_responseCache.length > 100) {
+              // Prune cache if too large (keep newest 30 entries)
+              if (_responseCache.length > 30) {
                 final oldest = _responseCache.entries
                     .reduce((a, b) => a.value.expiresAt.isBefore(b.value.expiresAt) ? a : b);
                 _responseCache.remove(oldest.key);
@@ -271,6 +271,7 @@ class KemonoApi {
       final response = await _makeRequest(
         '/v1/creators.txt',
         apiSource: apiSource,
+        cacheTtl: const Duration(minutes: 15),
       );
 
       final dynamic decoded = json.decode(response.body);
