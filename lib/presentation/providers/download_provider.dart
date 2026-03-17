@@ -62,6 +62,7 @@ class DownloadProvider extends ChangeNotifier {
 
   final List<DownloadItem> _downloads = [];
   final Map<String, CancelToken> _cancelTokens = {};
+  bool _disposed = false;
 
   List<DownloadItem> get downloads => List.unmodifiable(_downloads);
 
@@ -96,7 +97,7 @@ class DownloadProvider extends ChangeNotifier {
     );
 
     _downloads.add(download);
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     // Start download
     _startDownload(download);
@@ -193,7 +194,7 @@ class DownloadProvider extends ChangeNotifier {
       referer: download.referer,
     );
     _downloads[index] = retried;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     _startDownload(retried);
   }
@@ -201,13 +202,13 @@ class DownloadProvider extends ChangeNotifier {
   /// Remove download from list
   void removeDownload(String downloadId) {
     _downloads.removeWhere((d) => d.id == downloadId);
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   /// Clear completed downloads
   void clearCompleted() {
     _downloads.removeWhere((d) => d.status == DownloadStatus.completed);
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   /// Update download status
@@ -215,7 +216,7 @@ class DownloadProvider extends ChangeNotifier {
     final index = _downloads.indexWhere((d) => d.id == downloadId);
     if (index != -1) {
       _downloads[index] = _downloads[index].copyWith(status: status);
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -231,7 +232,7 @@ class DownloadProvider extends ChangeNotifier {
         downloadedBytes: downloadedBytes,
         totalBytes: totalBytes,
       );
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -243,7 +244,7 @@ class DownloadProvider extends ChangeNotifier {
         status: DownloadStatus.failed,
         errorMessage: errorMessage,
       );
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -258,6 +259,7 @@ class DownloadProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     // Cancel all active downloads
     for (final cancelToken in _cancelTokens.values) {
       if (!cancelToken.isCancelled) {
