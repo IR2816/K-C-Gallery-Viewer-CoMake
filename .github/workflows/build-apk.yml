@@ -35,6 +35,9 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Run Unit Tests
+        run: flutter test --reporter=compact
+
       # ── Release signing (only when KEYSTORE_BASE64 secret is set) ──────────
       - name: Set up release keystore
         if: env.KEYSTORE_BASE64 != ''

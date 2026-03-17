@@ -97,3 +97,14 @@ android/keystore/
 task.md.resolved
 analyze_output.txt
 format_error.txt
+
+# Temporary agent output files in repository root
+/analyze*.txt
+/analyze*.json
+/build_output*.txt
+/compile_errors.txt
+/dart_analyze.txt
+/errors.txt
+/machine_output.txt
+/output.txt
+/temp_analyze.txt
