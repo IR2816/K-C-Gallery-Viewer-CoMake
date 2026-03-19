@@ -107,3 +107,6 @@ format_error.txt
 /machine_output.txt
 /output.txt
 /temp_analyze.txt
+
+# Unused files
+creator_search_provider.dart
