@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../../domain/entities/api_source.dart';
 import 'video_player_screen.dart';
 import '../../utils/logger.dart';
+import '../../utils/download_path_builder.dart';
 import '../widgets/app_video_player.dart';
 import '../providers/download_provider.dart';
 import '../providers/settings_provider.dart';
@@ -635,9 +636,10 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     final url = (mediaItem['url'] ?? '').toString();
     if (url.isEmpty) return;
 
-    final fileName = _getFileName(
+    var fileName = _getFileName(
       (mediaItem['name'] ?? url).toString(),
     );
+    fileName = DownloadPathBuilder.sanitizeFileName(fileName);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -679,23 +681,42 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
 
       if (!mounted) return;
 
-      // Optionally organize into {creator}/{date}_{title}/ subfolders.
-      Directory saveDir = downloadsDirectory;
+      // Build organized directory using the shared utility
       final settings = context.read<SettingsProvider>();
+      Directory saveDir = downloadsDirectory;
+      
       if (settings.organizeDownloads &&
           widget.postCreator != null &&
           widget.postDate != null &&
           widget.postTitle != null) {
-        final sub = Directory(
-          '${downloadsDirectory.path}/${widget.postCreator}/${widget.postDate}_${widget.postTitle}',
-        );
-        if (!await sub.exists()) {
-          await sub.create(recursive: true);
+        // Convert postDate string (YYYY-MM-DD) back to DateTime
+        DateTime? postDateTime;
+        try {
+          final parts = widget.postDate!.split('-');
+          if (parts.length == 3) {
+            postDateTime = DateTime(
+              int.parse(parts[0]),
+              int.parse(parts[1]),
+              int.parse(parts[2]),
+            );
+          }
+        } catch (e) {
+          AppLogger.warning('Failed to parse post date: ${widget.postDate}', tag: 'FileDownload', error: e);
         }
-        saveDir = sub;
+
+        saveDir = await DownloadPathBuilder.buildDownloadDirectory(
+          baseDir: downloadsDirectory,
+          creatorName: widget.postCreator!,
+          postDate: postDateTime,
+          postTitle: widget.postTitle!,
+          organizeByCreator: true,
+        );
       }
 
-      final savePath = '${saveDir.path}/$fileName';
+      final savePath = await DownloadPathBuilder.buildDownloadFilePath(
+        saveDir: saveDir,
+        fileName: fileName,
+      );
 
       // Use the correct CDN referer so the download provider sends the right
       // anti-hotlink header (fixes Kemono downloads that previously got 403).

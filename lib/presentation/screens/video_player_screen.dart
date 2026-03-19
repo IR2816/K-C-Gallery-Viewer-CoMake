@@ -8,6 +8,9 @@ import 'package:provider/provider.dart';
 import '../widgets/app_video_player.dart';
 import '../theme/app_theme.dart';
 import '../providers/download_provider.dart';
+import '../providers/settings_provider.dart';
+import '../../utils/download_path_builder.dart';
+import '../../domain/entities/api_source.dart';
 
 /// Dedicated Video Player Screen untuk Post Detail
 ///
@@ -17,16 +20,23 @@ import '../providers/download_provider.dart';
 /// - Loading states
 /// - Error handling
 /// - Back navigation
+/// - Organized downloads by creator/date (optional)
 class VideoPlayerScreen extends StatefulWidget {
   final String videoUrl;
   final String videoName;
   final String apiSource;
+  final String? postCreator;
+  final String? postDate;
+  final String? postTitle;
 
   const VideoPlayerScreen({
     super.key,
     required this.videoUrl,
     required this.videoName,
     required this.apiSource,
+    this.postCreator,
+    this.postDate,
+    this.postTitle,
   });
 
   @override
@@ -317,7 +327,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<void> _downloadVideo() async {
     final url = widget.videoUrl;
-    final fileName = widget.videoName.isEmpty ? 'video.mp4' : widget.videoName;
+    var fileName = widget.videoName.isEmpty ? 'video.mp4' : widget.videoName;
+    fileName = DownloadPathBuilder.sanitizeFileName(fileName);
 
     try {
       Directory? downloadsDirectory;
@@ -348,15 +359,37 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         await downloadsDirectory.create(recursive: true);
       }
 
-      final savePath = '${downloadsDirectory.path}/$fileName';
+      final settings = context.read<SettingsProvider>();
+      
+      // Build organized directory if we have post info
+      Directory saveDir = downloadsDirectory;
+      if (settings.organizeDownloads &&
+          widget.postCreator != null &&
+          widget.postDate != null &&
+          widget.postTitle != null) {
+        saveDir = await DownloadPathBuilder.buildDownloadDirectory(
+          baseDir: downloadsDirectory,
+          creatorName: widget.postCreator!,
+          postDate: DateTime.tryParse(widget.postDate!),
+          postTitle: widget.postTitle!,
+          organizeByCreator: true,
+        );
+      }
+
+      final savePath = await DownloadPathBuilder.buildDownloadFilePath(
+        saveDir: saveDir,
+        fileName: fileName,
+      );
 
       if (!mounted) return;
+      
       // Route through DownloadProvider so progress shows in Download Manager
       context.read<DownloadProvider>().addDownload(
         name: fileName,
         url: url,
         savePath: savePath,
       );
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Download started: $fileName — check Download Manager'),

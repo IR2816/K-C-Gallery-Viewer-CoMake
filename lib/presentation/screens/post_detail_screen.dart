@@ -19,6 +19,7 @@ import '../../domain/entities/api_source.dart';
 import '../../domain/entities/comment.dart';
 import '../../domain/entities/creator.dart';
 import '../../utils/logger.dart';
+import '../../utils/download_path_builder.dart';
 import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/comments_provider.dart';
@@ -1734,6 +1735,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             videoUrl: mediaItem['url'],
             videoName: mediaItem['name'] ?? 'Video',
             apiSource: _activeApiSource.name,
+            postCreator: _currentPost.user,
+            postDate: DownloadPathBuilder.formatPostDate(_currentPost.published),
+            postTitle: _currentPost.title,
           ),
         ),
       );
@@ -1745,9 +1749,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             mediaItems: _collectAndSortMedia(),
             initialIndex: index,
             apiSource: _activeApiSource,
-            postCreator: _sanitizePathComponent(_currentPost.user),
-            postDate: _formatPostDate(_currentPost.published),
-            postTitle: _sanitizePathComponent(_currentPost.title),
+            postCreator: DownloadPathBuilder.sanitizePathComponent(_currentPost.user),
+            postDate: DownloadPathBuilder.formatPostDate(_currentPost.published),
+            postTitle: DownloadPathBuilder.sanitizePathComponent(_currentPost.title),
           ),
         ),
       );
@@ -1938,6 +1942,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           videoUrl: videoFile['url'],
           videoName: videoFile['name'] ?? 'Video',
           apiSource: _activeApiSource.name,
+          postCreator: _currentPost.user,
+          postDate: DownloadPathBuilder.formatPostDate(_currentPost.published),
+          postTitle: _currentPost.title,
         ),
       ),
     );
@@ -1999,43 +2006,6 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     return false;
   }
 
-  /// Sanitize a string for use as a filesystem path component.
-  /// Removes characters not allowed in directory/file names.
-  String _sanitizePathComponent(String name) {
-    var result = name
-        .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1F]'), '_') // control chars ASCII 0-31
-        .trim()
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .replaceAll(RegExp(r'[. ]+$'), ''); // strip trailing dots/spaces
-    return result.isEmpty ? 'unknown' : result;
-  }
-
-  /// Format a DateTime as YYYY-MM-DD.
-  String _formatPostDate(DateTime dt) {
-    final y = dt.year.toString().padLeft(4, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
-  }
-
-  /// Return the directory where files for the current post should be saved.
-  /// When "Organize by Creator" is enabled the structure is:
-  ///   {baseDir}/{creator}/{YYYY-MM-DD}_{title}/
-  /// Otherwise files land directly in {baseDir}.
-  Future<Directory> _resolvePostSaveDir(Directory baseDir) async {
-    final settings = context.read<SettingsProvider>();
-    if (!settings.organizeDownloads) return baseDir;
-
-    final creator = _sanitizePathComponent(_currentPost.user);
-    final date = _formatPostDate(_currentPost.published);
-    final title = _sanitizePathComponent(_currentPost.title);
-    final sub = Directory('${baseDir.path}/$creator/${date}_$title');
-    if (!await sub.exists()) {
-      await sub.create(recursive: true);
-    }
-    return sub;
-  }
-
   Future<void> _downloadSingleFile(PostLink link) async {
     // Check / request storage permission first.
     final hasPermission = await _requestStoragePermission();
@@ -2051,7 +2021,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     if (fileName.contains('?')) {
       fileName = fileName.split('?').first;
     }
-    _showSnackBar('Starting download for $fileName...', Colors.blue);
+    fileName = DownloadPathBuilder.sanitizeFileName(fileName);
 
     try {
       // Get the default Downloads directory
@@ -2076,8 +2046,28 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
-      final saveDir = await _resolvePostSaveDir(downloadsDirectory);
-      final savePath = '${saveDir.path}/$fileName';
+      final settings = context.read<SettingsProvider>();
+      final saveDir = await DownloadPathBuilder.buildDownloadDirectory(
+        baseDir: downloadsDirectory,
+        creatorName: _currentPost.user,
+        postDate: _currentPost.published,
+        postTitle: _currentPost.title,
+        organizeByCreator: settings.organizeDownloads,
+      );
+
+      final savePath = await DownloadPathBuilder.buildDownloadFilePath(
+        saveDir: saveDir,
+        fileName: fileName,
+      );
+
+      final displayPath = DownloadPathBuilder.buildPathDisplayMessage(
+        creatorName: _currentPost.user,
+        postDate: _currentPost.published,
+        postTitle: _currentPost.title,
+        organizeByCreator: settings.organizeDownloads,
+      );
+
+      _showSnackBar('$displayPath', Colors.blue);
 
       // Determine the correct referer for CDN anti-hotlink headers.
       final referer = _getRefererUrl();
@@ -2092,8 +2082,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         referer: referer,
       );
       _showSnackBar(
-        'Download started: $fileName — check Download Manager',
-        Colors.blue,
+        'Download queued: $fileName — check Download Manager',
+        Colors.green,
       );
     } catch (e) {
       AppLogger.warning('Download failed', tag: 'Downloader', error: e);
@@ -4119,11 +4109,6 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       return;
     }
 
-    _showSnackBar(
-      'Starting batch download for $totalCount files...',
-      Colors.blue,
-    );
-
     try {
       Directory? downloadsDirectory;
       if (Platform.isAndroid) {
@@ -4146,7 +4131,27 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
-      final saveDir = await _resolvePostSaveDir(downloadsDirectory);
+      final settings = context.read<SettingsProvider>();
+      final saveDir = await DownloadPathBuilder.buildDownloadDirectory(
+        baseDir: downloadsDirectory,
+        creatorName: _currentPost.user,
+        postDate: _currentPost.published,
+        postTitle: _currentPost.title,
+        organizeByCreator: settings.organizeDownloads,
+      );
+
+      final displayPath = DownloadPathBuilder.buildPathDisplayMessage(
+        creatorName: _currentPost.user,
+        postDate: _currentPost.published,
+        postTitle: _currentPost.title,
+        organizeByCreator: settings.organizeDownloads,
+      );
+
+      _showSnackBar(
+        'Starting batch download for $totalCount files...\n$displayPath',
+        Colors.blue,
+      );
+
       final referer = _getRefererUrl();
       if (!mounted) return;
       final downloadProvider = context.read<DownloadProvider>();
@@ -4167,7 +4172,12 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           if (fileName.contains('?')) {
             fileName = fileName.split('?').first;
           }
-          final savePath = '${saveDir.path}/$fileName';
+          fileName = DownloadPathBuilder.sanitizeFileName(fileName);
+
+          final savePath = await DownloadPathBuilder.buildDownloadFilePath(
+            saveDir: saveDir,
+            fileName: fileName,
+          );
 
           downloadProvider.addDownload(
             name: fileName,
@@ -4199,7 +4209,12 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           if (fileName.contains('?')) {
             fileName = fileName.split('?').first;
           }
-          final savePath = '${saveDir.path}/$fileName';
+          fileName = DownloadPathBuilder.sanitizeFileName(fileName);
+
+          final savePath = await DownloadPathBuilder.buildDownloadFilePath(
+            saveDir: saveDir,
+            fileName: fileName,
+          );
 
           downloadProvider.addDownload(
             name: fileName,

@@ -620,7 +620,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: const Text('Sort into {creator}/{date}_{title}/ subfolders'),
                 activeThumbColor: AppTheme.primaryColor,
                 value: settingsProvider.organizeDownloads,
-                onChanged: (bool value) => settingsProvider.setOrganizeDownloads(value),
+                onChanged: (bool value) {
+                  settingsProvider.setOrganizeDownloads(value);
+                  // Show feedback
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        value
+                            ? '✓ Downloads will be organized by creator and date'
+                            : '✓ Downloads will be saved to flat folder structure',
+                      ),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
               ),
             ],
           ),
