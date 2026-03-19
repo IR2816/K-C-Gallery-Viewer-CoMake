@@ -25,6 +25,7 @@ import 'presentation/providers/popular_creators_provider.dart';
 import 'presentation/providers/data_usage_tracker.dart';
 import 'presentation/providers/tracked_http_client.dart';
 import 'presentation/providers/download_provider.dart';
+import 'presentation/providers/bookmark_provider.dart';
 // 🚀 NEW: Discord imports
 import 'providers/discord_provider.dart';
 import 'providers/discord_search_provider.dart';
@@ -150,6 +151,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DataUsageTracker()),
         // Download Provider
         ChangeNotifierProvider(create: (_) => DownloadProvider()),
+        // Bookmark Provider
+        ChangeNotifierProvider(
+          create: (_) => BookmarkProvider()..initialize(),
+        ),
         // 🚀 NEW: Discord Provider
         ChangeNotifierProvider(
           create: (_) => DiscordProvider(DiscordApiClient(Dio())),

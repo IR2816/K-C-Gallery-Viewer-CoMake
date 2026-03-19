@@ -23,6 +23,7 @@ import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/comments_provider.dart';
 import '../providers/download_provider.dart';
+import '../providers/bookmark_provider.dart';
 import '../theme/app_theme.dart';
 import 'fullscreen_media_viewer.dart';
 import 'creator_detail_screen.dart';
@@ -573,6 +574,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
   // Modern inline action bar with icon + label buttons
   Widget _buildSocialActionBar() {
+    final bookmarkProvider = context.watch<BookmarkProvider>();
+    final isBookmarked = bookmarkProvider.isBookmarked(_currentPost.id);
+
     return Column(
       children: [
         Padding(
@@ -589,14 +593,25 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                     : AppTheme.getPrimaryTextColor(context),
                 onTap: _toggleSave,
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
+              _buildActionButton(
+                icon: isBookmarked
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                label: isBookmarked ? 'Bookmarked' : 'Bookmark',
+                color: isBookmarked
+                    ? const Color(0xFFFFB300)
+                    : AppTheme.getPrimaryTextColor(context),
+                onTap: () => _handleBookmark(bookmarkProvider, isBookmarked),
+              ),
+              const SizedBox(width: 16),
               _buildActionButton(
                 icon: Icons.send_rounded,
                 label: 'Share',
                 color: AppTheme.getPrimaryTextColor(context),
                 onTap: _sharePost,
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
               _buildActionButton(
                 icon: Icons.download_rounded,
                 label: 'Download',
@@ -622,6 +637,197 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         ),
       ],
     );
+  }
+
+  /// Opens bookmark dialog (add) or removes (if already bookmarked).
+  void _handleBookmark(BookmarkProvider provider, bool isBookmarked) {
+    if (isBookmarked) {
+      _confirmRemoveBookmark(provider);
+    } else {
+      _showAddBookmarkDialog(provider);
+    }
+  }
+
+  Future<void> _confirmRemoveBookmark(BookmarkProvider provider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Bookmark'),
+        content: const Text('Remove this post from bookmarks?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child:
+                const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await provider.removeBookmark(_currentPost.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bookmark removed')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showAddBookmarkDialog(BookmarkProvider provider) async {
+    final notesCtrl = TextEditingController();
+    final tagCtrl = TextEditingController();
+    int? rating;
+    final tags = <String>[];
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: const Text('Bookmark Post'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Personal notes (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Rating',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: List.generate(5, (i) {
+                    final starVal = i + 1;
+                    return GestureDetector(
+                      onTap: () => setD(
+                        () => rating = rating == starVal ? null : starVal,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Icon(
+                          (rating != null && i < rating!)
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: (rating != null && i < rating!)
+                              ? const Color(0xFFFFB300)
+                              : Colors.grey,
+                          size: 28,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Tags (max 5)',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                const SizedBox(height: 6),
+                if (tags.isNotEmpty)
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: tags
+                        .map(
+                          (t) => Chip(
+                            label: Text(
+                              t,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            deleteIcon: const Icon(Icons.close, size: 14),
+                            onDeleted: () => setD(() => tags.remove(t)),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                if (tags.length < 5) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: tagCtrl,
+                          decoration: const InputDecoration(
+                            hintText: 'Add tag',
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (v) {
+                            final tag = v.trim();
+                            if (tag.isNotEmpty && !tags.contains(tag)) {
+                              setD(() {
+                                tags.add(tag);
+                                tagCtrl.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () {
+                          final tag = tagCtrl.text.trim();
+                          if (tag.isNotEmpty && !tags.contains(tag)) {
+                            setD(() {
+                              tags.add(tag);
+                              tagCtrl.clear();
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final thumbnailUrl = _currentPost.getThumbnailUrl(
+                  _activeApiSource,
+                );
+                await provider.addBookmark(
+                  _currentPost,
+                  notes: notesCtrl.text.trim(),
+                  rating: rating,
+                  tags: List<String>.from(tags),
+                  thumbnailUrl: thumbnailUrl,
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Post bookmarked! ⭐')),
+                  );
+                }
+              },
+              child: const Text('Bookmark'),
+            ),
+          ],
+        ),
+      ),
+    );
+    notesCtrl.dispose();
+    tagCtrl.dispose();
   }
 
   /// Action button: stacked icon + label
