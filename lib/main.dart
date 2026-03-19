@@ -28,6 +28,7 @@ import 'presentation/providers/download_provider.dart';
 import 'presentation/providers/bookmark_provider.dart';
 import 'presentation/providers/creator_quick_access_provider.dart';
 import 'presentation/providers/search_history_provider.dart';
+import 'presentation/providers/post_search_provider.dart';
 // 🚀 NEW: Discord imports
 import 'providers/discord_provider.dart';
 import 'providers/discord_search_provider.dart';
@@ -149,6 +150,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CreatorQuickAccessProvider()..initialize()),
         // Search History (tracks searches with frequency)
         ChangeNotifierProvider(create: (_) => SearchHistoryProvider()..initialize()),
+        // Post Search (search posts by title + tags)
+        ChangeNotifierProvider(create: (_) => PostSearchProvider()),
         // 🚀 NEW: Discord Provider
         ChangeNotifierProvider(create: (_) => DiscordProvider(DiscordApiClient(Dio()))),
         ChangeNotifierProvider(create: (_) => DiscordSearchProvider()),

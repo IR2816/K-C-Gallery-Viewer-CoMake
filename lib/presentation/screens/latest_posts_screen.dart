@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,6 +9,7 @@ import '../../domain/entities/creator.dart';
 import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
+import '../providers/post_search_provider.dart';
 import '../providers/creator_quick_access_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_state_widgets.dart';
@@ -43,6 +45,12 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   int _currentPage = 1;
   static const int _pageSize = 24;
 
+  // Post search state
+  late PostSearchProvider _postSearchProvider;
+  late TextEditingController _postSearchController;
+  late FocusNode _postSearchFocusNode;
+  Timer? _postSearchDebounce;
+
   // Memory management simplified (Image cache naturally manages its own memory)
   @override
   bool get wantKeepAlive => _posts.length < 100; // Limit keep alive to prevent memory bloat
@@ -54,6 +62,12 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     _loadFilterState();
     _settingsProvider = context.read<SettingsProvider>();
     _tagFilterProvider = context.read<TagFilterProvider>();
+    _postSearchProvider = context.read<PostSearchProvider>();
+
+    // Initialize search controllers
+    _postSearchController = TextEditingController();
+    _postSearchFocusNode = FocusNode();
+
     _settingsProvider?.addListener(_onSettingsChanged);
     _tagFilterProvider?.addListener(_onSettingsChanged);
   }
@@ -63,6 +77,11 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     _settingsProvider?.removeListener(_onSettingsChanged);
     _tagFilterProvider?.removeListener(_onSettingsChanged);
     _scrollController.dispose();
+
+    // Clean up search resources
+    _postSearchController.dispose();
+    _postSearchFocusNode.dispose();
+    _postSearchDebounce?.cancel();
 
     // Clean up image cache to free memory
     PaintingBinding.instance.imageCache.clear();
@@ -77,21 +96,24 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     final postsProvider = context.read<PostsProvider>();
     final newService = _settingsProvider?.defaultApiSource.name ?? 'kemono';
     final shouldReload = newService != _selectedService;
-    
+
     if (shouldReload) {
       if (_isSwitchingSource) return;
-      
+
       setState(() {
         _isSwitchingSource = true;
         _selectedService = newService;
         _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
         _posts = [];
         _currentPage = 1;
+        // Reset search when switching service
+        _postSearchProvider.clearSearch();
+        _postSearchController.clear();
       });
-      
+
       HapticFeedback.lightImpact();
       await _loadInitialPosts();
-      
+
       if (mounted) {
         setState(() {
           _isSwitchingSource = false;
@@ -190,23 +212,29 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   List<Post> _getFilteredPosts(List<Post> posts) {
     final hideNsfw = context.read<SettingsProvider>().hideNsfw;
     final shouldFilterTags = _blockedTags.isNotEmpty;
-    if (!hideNsfw && !shouldFilterTags) return posts;
 
-    final filteredPosts = posts.where((post) {
-      if (hideNsfw && _isNsfwPost(post)) return false;
-      if (!shouldFilterTags) return true;
-      // Lowercase each post tag once per post rather than once per
-      // (post, blocked-tag) pair. Blocked tags are already stored in
-      // lowercase by TagFilterProvider, so no extra transform is needed.
-      final lowerPostTags = post.tags.map((t) => t.toLowerCase()).toList();
-      return !_blockedTags.any(
-        (blockedTag) => lowerPostTags.any(
-          (postTag) => postTag.contains(blockedTag),
-        ),
-      );
-    }).toList();
+    // First apply NSFW and tag blacklist filters
+    List<Post> filteredPosts = posts;
+    if (hideNsfw || shouldFilterTags) {
+      filteredPosts = posts.where((post) {
+        if (hideNsfw && _isNsfwPost(post)) return false;
+        if (!shouldFilterTags) return true;
+        final lowerPostTags = post.tags.map((t) => t.toLowerCase()).toList();
+        return !_blockedTags.any(
+          (blockedTag) => lowerPostTags.any(
+            (postTag) => postTag.contains(blockedTag),
+          ),
+        );
+      }).toList();
+    }
 
-    return filteredPosts;
+    // Then apply post search filters (title + tags)
+    final searchFiltered = _postSearchProvider.getFilteredPosts(
+      filteredPosts,
+      blacklistedTags: _blockedTags,
+    );
+
+    return searchFiltered;
   }
 
   bool _isNsfwPost(Post post) {
@@ -639,59 +667,162 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: AppTheme.getCardColor(
-                  context,
-                ).withValues(alpha: isDark ? 0.75 : 0.5),
-                borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                border: Border.all(
-                  color: AppTheme.getBorderColor(context, opacity: 0.8),
-                ),
-              ),
-              child: Row(
-                children: services.map((s) {
-                  final sid = s['id']!;
-                  return Expanded(
-                    child: _buildServiceToggle(id: sid, label: s['label']!),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-          if (_blockedTags.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-              decoration: BoxDecoration(
-                color: AppTheme.warningColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppTheme.warningColor.withValues(alpha: 0.34),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.block_rounded,
-                    size: 14,
-                    color: AppTheme.warningColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_blockedTags.length}',
-                    style: const TextStyle(
-                      color: AppTheme.warningColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+          // Service selector row
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.getCardColor(
+                      context,
+                    ).withValues(alpha: isDark ? 0.75 : 0.5),
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                    border: Border.all(
+                      color: AppTheme.getBorderColor(context, opacity: 0.8),
                     ),
                   ),
-                ],
+                  child: Row(
+                    children: services.map((s) {
+                      final sid = s['id']!;
+                      return Expanded(
+                        child: _buildServiceToggle(id: sid, label: s['label']!),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              if (_blockedTags.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: AppTheme.warningColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppTheme.warningColor.withValues(alpha: 0.34),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.block_rounded,
+                        size: 14,
+                        color: AppTheme.warningColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${_blockedTags.length}',
+                        style: const TextStyle(
+                          color: AppTheme.warningColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          // Post search bar
+          const SizedBox(height: 8),
+          _buildPostSearchBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostSearchBar() {
+    final resultCount = _postSearchProvider.resultCount;
+    final hasSearchQuery = _postSearchProvider.searchQuery.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context).withValues(alpha: isDark ? 0.6 : 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.getBorderColor(context, opacity: 0.6),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.search_rounded,
+            size: 18,
+            color: AppTheme.getSecondaryTextColor(context, opacity: 0.6),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _postSearchController,
+              focusNode: _postSearchFocusNode,
+              onChanged: (query) {
+                _postSearchDebounce?.cancel();
+                _postSearchDebounce =
+                    Timer(const Duration(milliseconds: 350), () {
+                  _postSearchProvider.setSearchQuery(query);
+
+                  setState(() {
+                    final postsProvider = context.read<PostsProvider>();
+                    _posts = _getFilteredPosts(postsProvider.posts);
+                  });
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search posts by title...',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+                hintStyle: TextStyle(
+                  color:
+                      AppTheme.getSecondaryTextColor(context, opacity: 0.5),
+                ),
+              ),
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.getOnSurfaceColor(context),
+              ),
+              textInputAction: TextInputAction.done,
+            ),
+          ),
+          if (hasSearchQuery) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '$resultCount',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () {
+                _postSearchController.clear();
+                _postSearchProvider.clearSearch();
+                _postSearchFocusNode.unfocus();
+                setState(() {
+                  final postsProvider = context.read<PostsProvider>();
+                  _posts = _getFilteredPosts(postsProvider.posts);
+                });
+              },
+              child: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: AppTheme.getSecondaryTextColor(context, opacity: 0.6),
               ),
             ),
           ],
