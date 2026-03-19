@@ -44,7 +44,6 @@ import 'presentation/screens/settings_screen.dart';
 // 🚀 NEW: Discord screens
 import 'presentation/screens/discord_server_screen.dart';
 import 'presentation/screens/discord_search_screen.dart';
-import 'presentation/screens/discord_api_test_screen.dart';
 import 'utils/error_handler.dart';
 
 void main() async {
@@ -200,10 +199,6 @@ class MyApp extends StatelessWidget {
                         case '/discord-search':
                           return MaterialPageRoute(
                             builder: (context) => const DiscordSearchScreen(),
-                          );
-                        case '/discord-test':
-                          return MaterialPageRoute(
-                            builder: (context) => const DiscordApiTestScreen(),
                           );
                         case '/post':
                           final Post? post = settings.arguments as Post?;
