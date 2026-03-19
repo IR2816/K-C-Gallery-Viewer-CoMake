@@ -123,9 +123,16 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       });
 
       AppLogger.debug(
-        '🔍 DEBUG: API source changed in settings. Clearing posts and reloading...',
+        '🔍 DEBUG: API source changed in settings. Clearing image cache and reloading...',
       );
       HapticFeedback.lightImpact();
+      
+      // ✅ CLEAR IMAGE CACHE BEFORE LOADING NEW POSTS
+      // This prevents old kemono.cr thumbnails from persisting when switching to coomer.st
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      AppLogger.debug('🔍 DEBUG: Image cache cleared for API source change');
+      
       await _loadInitialPosts();
 
       if (mounted) {
@@ -165,6 +172,10 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
     try {
       final postsProvider = context.read<PostsProvider>();
+      AppLogger.debug(
+        '🔍 DEBUG: _loadInitialPosts - Starting load with API source: $_currentApiSource',
+      );
+      
       await postsProvider.loadLatestPosts(
         refresh: true,
         apiSource: _currentApiSource,
@@ -176,6 +187,9 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
           _isLoading = false;
           _hasMore = postsProvider.hasMore;
         });
+        AppLogger.debug(
+          '🔍 DEBUG: _loadInitialPosts - Loaded ${_posts.length} posts from ${_currentApiSource.name}',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -183,6 +197,10 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
           _isLoading = false;
           _error = e.toString();
         });
+        AppLogger.error(
+          '🔍 DEBUG: _loadInitialPosts - Error loading posts: $e',
+          tag: 'LatestPostsScreen',
+        );
       }
     }
   }
