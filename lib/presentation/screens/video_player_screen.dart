@@ -10,7 +10,6 @@ import '../theme/app_theme.dart';
 import '../providers/download_provider.dart';
 import '../providers/settings_provider.dart';
 import '../../utils/download_path_builder.dart';
-import '../../domain/entities/api_source.dart';
 
 /// Dedicated Video Player Screen untuk Post Detail
 ///
@@ -359,6 +358,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         await downloadsDirectory.create(recursive: true);
       }
 
+      if (!mounted) return;
       final settings = context.read<SettingsProvider>();
       
       // Build organized directory if we have post info

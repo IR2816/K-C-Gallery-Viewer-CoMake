@@ -2046,6 +2046,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
+      if (!mounted) return;
       final settings = context.read<SettingsProvider>();
       final saveDir = await DownloadPathBuilder.buildDownloadDirectory(
         baseDir: downloadsDirectory,
@@ -2067,7 +2068,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         organizeByCreator: settings.organizeDownloads,
       );
 
-      _showSnackBar('$displayPath', Colors.blue);
+      _showSnackBar(displayPath, Colors.blue);
 
       // Determine the correct referer for CDN anti-hotlink headers.
       final referer = _getRefererUrl();
@@ -4131,6 +4132,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
+      if (!mounted) return;
       final settings = context.read<SettingsProvider>();
       final saveDir = await DownloadPathBuilder.buildDownloadDirectory(
         baseDir: downloadsDirectory,

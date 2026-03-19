@@ -143,7 +143,7 @@ class DownloadPathBuilder {
     final withoutQuery = fileNameOrUrl.split('?').first;
     if (!withoutQuery.contains('.')) return '';
     
-    return '.' + withoutQuery.split('.').last.toLowerCase();
+    return '.${withoutQuery.split('.').last.toLowerCase()}';
   }
 
   /// Build a descriptive message for the organized path.
@@ -163,6 +163,6 @@ class DownloadPathBuilder {
     final formattedDate = formatPostDate(postDate);
     final sanitizedTitle = sanitizePathComponent(postTitle);
 
-    return 'Saving to $sanitizedCreator/$formattedDate\_$sanitizedTitle/';
+    return 'Saving to $sanitizedCreator/${formattedDate}_$sanitizedTitle/';
   }
 }
