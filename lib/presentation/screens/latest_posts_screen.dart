@@ -51,6 +51,9 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   late FocusNode _postSearchFocusNode;
   Timer? _postSearchDebounce;
 
+  // UI state
+  bool _isRecentlyViewedExpanded = true; // Collapsible section state
+
   // Memory management simplified (Image cache naturally manages its own memory)
   @override
   bool get wantKeepAlive => _posts.length < 100; // Limit keep alive to prevent memory bloat
@@ -477,7 +480,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
               children: [
                 _buildFilterInfoBar(),
                 _buildRecentCreatorsCarousel(),
-                if (_posts.isNotEmpty && !_isLoading) _buildStoriesRow(),
+                // Stories row removed to reduce clutter (Recently Viewed handles creator browsing)
                 Expanded(
                   child: _isSwitchingSource
                       ? _buildSwitchingSourceIndicator()
@@ -775,7 +778,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Search posts by title...',
+                hintText: 'Search loaded posts by title…',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
@@ -900,47 +903,80 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.history_rounded,
-                      size: 14,
-                      color: AppTheme.primaryColor,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Recently Viewed',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.getSecondaryTextColor(context),
-                        letterSpacing: 0.3,
+              // Header with collapse button
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isRecentlyViewedExpanded = !_isRecentlyViewedExpanded;
+                  });
+                },
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.history_rounded,
+                            size: 14,
+                            color: AppTheme.primaryColor,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Recently Viewed',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.getSecondaryTextColor(context),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      AnimatedRotation(
+                        turns: _isRecentlyViewedExpanded ? 0 : 0.5,
+                        duration: const Duration(milliseconds: 250),
+                        child: Icon(
+                          Icons.expand_less_rounded,
+                          size: 18,
+                          color:
+                              AppTheme.getSecondaryTextColor(context)
+                                  .withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              SizedBox(
-                height: 90,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: recents.length,
-                  itemBuilder: (context, index) {
-                    return _buildRecentCreatorItem(
-                      recents[index],
-                      quickAccess,
-                      isDark,
-                    );
-                  },
-                ),
+              // Collapsible content
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                alignment: Alignment.topCenter,
+                child: _isRecentlyViewedExpanded
+                    ? SizedBox(
+                        height: 90,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          itemCount: recents.length,
+                          itemBuilder: (context, index) {
+                            return _buildRecentCreatorItem(
+                              recents[index],
+                              quickAccess,
+                              isDark,
+                            );
+                          },
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
               Divider(
                 height: 8,
                 thickness: 0.5,
-                color: AppTheme.getBorderColor(context).withValues(alpha: 0.4),
+                color:
+                    AppTheme.getBorderColor(context).withValues(alpha: 0.4),
               ),
             ],
           ),
@@ -1331,12 +1367,12 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       return MasonryGridView.builder(
         padding: isSingleColumn 
             ? const EdgeInsets.symmetric(vertical: 4) 
-            : const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
         gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columnCount,
         ),
-        mainAxisSpacing: isSingleColumn ? 32 : 16,
-        crossAxisSpacing: isSingleColumn ? 0 : 16,
+        mainAxisSpacing: isSingleColumn ? 32 : 12,
+        crossAxisSpacing: isSingleColumn ? 0 : 12,
         itemCount: 6, // Show 6 skeleton items
         itemBuilder: (context, index) => const PostGridSkeleton(),
       );
@@ -1363,12 +1399,12 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       return MasonryGridView.builder(
         padding: isSingleColumn 
             ? const EdgeInsets.symmetric(vertical: 4) 
-            : const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
         gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columnCount,
         ),
-        mainAxisSpacing: isSingleColumn ? 32 : 16,
-        crossAxisSpacing: isSingleColumn ? 0 : 16,
+        mainAxisSpacing: isSingleColumn ? 32 : 12,
+        crossAxisSpacing: isSingleColumn ? 0 : 12,
         itemCount: 6, // Show 6 skeleton items
         itemBuilder: (context, index) => const PostGridSkeleton(),
       );
@@ -1378,12 +1414,12 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       controller: _scrollController,
       padding: isSingleColumn 
             ? const EdgeInsets.symmetric(vertical: 12) 
-            : const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
       gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: columnCount,
       ),
-      mainAxisSpacing: isSingleColumn ? 32 : 16,
-      crossAxisSpacing: isSingleColumn ? 0 : 16,
+      mainAxisSpacing: isSingleColumn ? 32 : 12,
+      crossAxisSpacing: isSingleColumn ? 0 : 12,
       addAutomaticKeepAlives: false,
       itemCount: pagePosts.length,
       itemBuilder: (context, index) {
