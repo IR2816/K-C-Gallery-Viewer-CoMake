@@ -19,6 +19,7 @@ import 'download_manager_screen.dart';
 import '../widgets/post_card.dart';
 import '../widgets/skeleton_loader.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import '../../utils/logger.dart';
 
 /// Latest Posts Screen - Quick Update Feed
 class LatestPostsScreen extends StatefulWidget {
@@ -97,15 +98,22 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   Future<void> _onSettingsChanged() async {
     if (!mounted) return;
     final postsProvider = context.read<PostsProvider>();
-    final newService = _settingsProvider?.defaultApiSource.name ?? 'kemono';
-    final shouldReload = newService != _selectedService;
+    final settingsProvider = context.read<SettingsProvider>();
+    
+    // Check if the API source in settings has changed from what we're currently using
+    final settingsApiSource = settingsProvider.defaultApiSource;
+    final currentLoadedApiSource = postsProvider.currentApiSource;
+    
+    // Determine if we need to reload based on API source change
+    final shouldReload = currentLoadedApiSource == null || 
+                        currentLoadedApiSource != settingsApiSource;
 
     if (shouldReload) {
       if (_isSwitchingSource) return;
 
       setState(() {
         _isSwitchingSource = true;
-        _selectedService = newService;
+        _selectedService = settingsApiSource.name;
         _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
         _posts = [];
         _currentPage = 1;
@@ -114,6 +122,9 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         _postSearchController.clear();
       });
 
+      AppLogger.debug(
+        '🔍 DEBUG: API source changed in settings. Clearing posts and reloading...',
+      );
       HapticFeedback.lightImpact();
       await _loadInitialPosts();
 
@@ -123,6 +134,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         });
       }
     } else {
+      // API source hasn't changed, just update tag filters
       setState(() {
         _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
         _posts = _getFilteredPosts(postsProvider.posts);
@@ -519,35 +531,71 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         ),
       ),
       titleSpacing: 16,
-      title: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ShaderMask(
-            shaderCallback: (bounds) =>
-                AppTheme.primaryGradient.createShader(bounds),
-            child: const Text(
-              'Feed',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 34,
-                color: Colors.white,
-                letterSpacing: -1.2,
-                height: 1,
+      title: Consumer<PostsProvider>(
+        builder: (context, postsProvider, _) {
+          final currentApiSource = postsProvider.currentApiSourceDisplayName;
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ShaderMask(
+                    shaderCallback: (bounds) =>
+                        AppTheme.primaryGradient.createShader(bounds),
+                    child: const Text(
+                      'Feed',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 34,
+                        color: Colors.white,
+                        letterSpacing: -1.2,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // API Source Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: currentApiSource == 'COOMER'
+                          ? const Color(0xFF00BCD4).withValues(alpha: 0.15)
+                          : AppTheme.primaryColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: currentApiSource == 'COOMER'
+                            ? const Color(0xFF00BCD4).withValues(alpha: 0.5)
+                            : AppTheme.primaryColor.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Text(
+                      currentApiSource,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: currentApiSource == 'COOMER'
+                            ? const Color(0xFF00BCD4)
+                            : AppTheme.primaryColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          Text(
-            'Latest drops from creators',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.getSecondaryTextColor(
-                context,
-              ).withValues(alpha: 0.8),
-            ),
-          ),
-        ],
+              Text(
+                'Latest drops from creators',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.getSecondaryTextColor(
+                    context,
+                  ).withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          );
+        },
       ),
       actions: [
         _buildTopActionButton(
@@ -1255,11 +1303,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     }
 
     if (_error != null) {
-      return AppErrorState(
-        title: 'Error loading posts',
-        message: _error!,
-        onRetry: _loadInitialPosts,
-      );
+      return _buildApiErrorState();
     }
 
     if (_posts.isEmpty && !_isLoading) {
@@ -1591,6 +1635,174 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       icon: Icons.article_outlined,
       title: 'No posts yet',
       message: 'Pull down to refresh',
+    );
+  }
+
+  /// Display error message when API is unavailable with option to switch API
+  Widget _buildApiErrorState() {
+    final isApiUnavailable = _error?.contains('unavailable') ?? false;
+    final isRetrying = _error?.contains('retry') ?? false;
+    
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Error icon with animation
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: isRetrying 
+                      ? AppTheme.warningColor.withValues(alpha: 0.15)
+                      : AppTheme.errorColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isRetrying ? Icons.hourglass_top_rounded : Icons.wifi_off_rounded,
+                  size: 40,
+                  color: isRetrying 
+                      ? AppTheme.warningColor
+                      : AppTheme.errorColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Error title
+              Text(
+                isRetrying ? 'Connecting...' : 'API Unavailable',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              
+              // Error message
+              Text(
+                _error ?? 'Unable to load posts. Please try again.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.getSecondaryTextColor(context),
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              
+              // Action buttons
+              if (!isRetrying) ...[
+                // Retry button
+                GestureDetector(
+                  onTap: _loadInitialPosts,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryColor.withValues(alpha: 0.9),
+                          AppTheme.primaryColor.withValues(alpha: 0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.refresh_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Try Again',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Switch API button  
+                if (isApiUnavailable)
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to settings to switch API
+                      // You may need to adjust this based on your app's navigation
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Switch API in Settings'),
+                          action: SnackBarAction(
+                            label: 'Settings',
+                            onPressed: () {
+                              // Navigate to settings screen
+                              // This would be: Navigator.pushNamed(context, '/settings');
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.getElevatedSurfaceColorContext(context)
+                            .withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.getBorderColor(context),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.settings_rounded,
+                            color: AppTheme.primaryColor,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Switch API',
+                            style: TextStyle(
+                              color: AppTheme.primaryColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 

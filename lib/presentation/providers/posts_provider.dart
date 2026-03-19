@@ -33,6 +33,14 @@ class PostsProvider with ChangeNotifier {
   bool get hasMore => _hasMore;
   String? get error => _error;
   ApiSource? get currentApiSource => _currentApiSource;
+  
+  /// Get display name of current API source (e.g., "Kemono" or "Coomer")
+  String get currentApiSourceDisplayName {
+    if (_currentApiSource == null) {
+      return settingsProvider.defaultApiSource.name.toUpperCase();
+    }
+    return _currentApiSource!.name.toUpperCase();
+  }
 
   // Saved posts getters
   List<Post> get savedPosts => _savedPosts;
@@ -236,30 +244,24 @@ class PostsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Use provided apiSource or fallback to settings
+      // IMPORTANT: Set API source at START and stick to it for entire session
+      // Never auto-switch to other API - user controls API selection only
       final effectiveApiSource = apiSource ?? settingsProvider.defaultApiSource;
       _currentApiSource = effectiveApiSource;
+      
+      AppLogger.debug(
+        '🔍 DEBUG: loadLatestPosts - Using API source: $effectiveApiSource (locked for this session)',
+      );
 
-      // Enhanced logging for debugging
-
-      // Force clear cache when switching API sources
-      if (apiSource != null && apiSource != _currentApiSource) {
-        _posts.clear();
-        _offset = 0;
-        _hasMore = true;
-      }
-
-      // ENHANCED AUTO-RETRY MECHANISM for Latest Posts
-      int maxRetries = (effectiveApiSource == ApiSource.coomer)
-          ? 6
-          : 3; // Increased retries
+      // NO AUTO-FALLBACK for latest posts - stick to selected API only
+      int maxRetries = (effectiveApiSource == ApiSource.coomer) ? 6 : 3;
       int retryCount = 0;
       bool shouldRetry = true;
 
       while (shouldRetry && retryCount <= maxRetries) {
         try {
           AppLogger.debug(
-            '🔍 DEBUG: Attempting to load latest posts (attempt ${retryCount + 1}/${maxRetries + 1})',
+            '🔍 DEBUG: Attempting to load latest posts from ${effectiveApiSource.name} (attempt ${retryCount + 1}/${maxRetries + 1})',
           );
 
           // Use different query based on filter
@@ -275,6 +277,7 @@ class PostsProvider with ChangeNotifier {
               query = ' '; // Space for all posts (latest)
           }
 
+          // Direct API call WITHOUT fallback to other APIs
           final newPosts = await repository.searchPosts(
             query,
             offset: _offset,
@@ -282,40 +285,162 @@ class PostsProvider with ChangeNotifier {
             apiSource: effectiveApiSource,
           );
           AppLogger.debug(
-            '🔍 DEBUG: Repository returned ${newPosts.length} latest posts',
+            '🔍 DEBUG: ${effectiveApiSource.name.toUpperCase()} returned ${newPosts.length} latest posts',
           );
 
           if (newPosts.isEmpty) {
             _hasMore = false;
             AppLogger.debug(
-              '🔍 DEBUG: No more latest posts available, setting _hasMore to false',
+              '🔍 DEBUG: No more posts available on ${effectiveApiSource.name}',
             );
           } else {
             _posts.addAll(newPosts);
             _offset += newPosts.length;
             AppLogger.debug(
-              '🔍 DEBUG: Added ${newPosts.length} latest posts, total now: ${_posts.length}',
+              '🔍 DEBUG: Added ${newPosts.length} posts, total now: ${_posts.length}',
             );
           }
 
           // Success - clear error and break the retry loop
           _error = null;
           shouldRetry = false;
-          AppLogger.debug('🔍 DEBUG: Success! Breaking retry loop');
+          AppLogger.debug('🔍 DEBUG: ✅ Successfully loaded latest posts from ${effectiveApiSource.name}');
           break;
         } catch (e) {
           retryCount++;
           AppLogger.debug(
-            '🔍 DEBUG: Latest posts load attempt $retryCount failed: $e',
+            '🔍 DEBUG: ❌ Load attempt $retryCount/${maxRetries + 1} failed on ${effectiveApiSource.name}: $e',
           );
 
           // Check if we should continue retrying
           if (retryCount > maxRetries) {
-            // Final attempt failed - set user-friendly error
-            _error = _getErrorMessage(e, effectiveApiSource, retryCount);
+            // Final attempt failed - show error and DO NOT fallback to other API
+            _error = 'Kemono API is currently unavailable';
+            if (effectiveApiSource == ApiSource.coomer) {
+              _error = 'Coomer API is currently unavailable';
+            }
+            _error = '$_error. Please try again or switch API in Settings.';
             AppLogger.debug(
-              '🔍 DEBUG: All latest posts retry attempts failed, setting error: $_error',
+              '🔍 DEBUG: ❌ Max retries exhausted on ${effectiveApiSource.name}. Error: $_error',
             );
+            shouldRetry = false;
+            break;
+          }
+
+          // Check if error is retryable (don't auto-fallback)
+          final errorString = e.toString().toLowerCase();
+          final isRetryable =
+              errorString.contains('timeout') ||
+              errorString.contains('connection') ||
+              errorString.contains('503') ||
+              errorString.contains('unavailable') ||
+              errorString.contains('socket') ||
+              errorString.contains('network');
+
+          if (!isRetryable) {
+            _error = 'Kemono API is currently unavailable';
+            if (effectiveApiSource == ApiSource.coomer) {
+              _error = 'Coomer API is currently unavailable';
+            }
+            _error = '$_error. Please try again or switch API in Settings.';
+            AppLogger.debug(
+              '🔍 DEBUG: Non-retryable error on ${effectiveApiSource.name}, stopping retries',
+            );
+            shouldRetry = false;
+            break;
+          }
+
+          // Exponential backoff - retry on SAME API only
+          int delayMs;
+          if (effectiveApiSource == ApiSource.coomer) {
+            delayMs = 1000 * (1 << (retryCount - 1)); // 1s, 2s, 4s, 8s, 16s, 32s
+          } else {
+            delayMs = 500 * retryCount; // 0.5s, 1s, 1.5s, 2s, 2.5s
+          }
+          delayMs = delayMs.clamp(0, 10000);
+
+          AppLogger.debug(
+            '🔍 DEBUG: Retrying ${effectiveApiSource.name} in ${delayMs}ms...',
+          );
+          await Future.delayed(Duration(milliseconds: delayMs));
+
+          // Update UI with retry status (only show to user for first 2 retries)
+          if (retryCount <= 2) {
+            _error = 'Loading from ${effectiveApiSource.name.toUpperCase()}... (retry $retryCount/$maxRetries)';
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      _error = 'Failed to load latest posts. Please try again or switch API in Settings.';
+      AppLogger.debug('🔍 DEBUG: Final error in loadLatestPosts: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMorePosts() async {
+    if (_isLoading || !_hasMore) return;
+
+    // Use the SAME API source that was used to load the initial posts
+    // DO NOT switch to settingsProvider.defaultApiSource
+    final effectiveApiSource = _currentApiSource ?? settingsProvider.defaultApiSource;
+    
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      AppLogger.debug(
+        '🔍 DEBUG: loadMorePosts - Continuing with ${effectiveApiSource.name} (offset: $_offset)',
+      );
+
+      // NO AUTO-FALLBACK - use only the same API source
+      int maxRetries = (effectiveApiSource == ApiSource.coomer) ? 6 : 3;
+      int retryCount = 0;
+      bool shouldRetry = true;
+
+      while (shouldRetry && retryCount <= maxRetries) {
+        try {
+          // Use empty query to get more latest posts from SAME API
+          final newPosts = await repository.searchPosts(
+            ' ',
+            offset: _offset,
+            limit: 50,
+            apiSource: effectiveApiSource,
+          );
+
+          if (newPosts.isEmpty) {
+            _hasMore = false;
+            AppLogger.debug(
+              '🔍 DEBUG: No more posts available on ${effectiveApiSource.name}',
+            );
+          } else {
+            _posts.addAll(newPosts);
+            _offset += newPosts.length;
+            AppLogger.debug(
+              '🔍 DEBUG: Loaded ${newPosts.length} more posts from ${effectiveApiSource.name}, total: ${_posts.length}',
+            );
+          }
+
+          _error = null;
+          shouldRetry = false;
+          AppLogger.debug('🔍 DEBUG: ✅ Successfully loaded more posts from ${effectiveApiSource.name}');
+          break;
+        } catch (e) {
+          retryCount++;
+          AppLogger.debug(
+            '🔍 DEBUG: ❌ Load more attempt $retryCount/${maxRetries + 1} failed on ${effectiveApiSource.name}: $e',
+          );
+
+          if (retryCount > maxRetries) {
+            // Final attempt failed - show error without fallback
+            _error = 'Kemono API is currently unavailable';
+            if (effectiveApiSource == ApiSource.coomer) {
+              _error = 'Coomer API is currently unavailable';
+            }
+            _error = '$_error. Please try again or switch API in Settings.';
             shouldRetry = false;
             break;
           }
@@ -327,71 +452,34 @@ class PostsProvider with ChangeNotifier {
               errorString.contains('connection') ||
               errorString.contains('503') ||
               errorString.contains('unavailable') ||
-              (effectiveApiSource == ApiSource.coomer); // Always retry Coomer
+              errorString.contains('socket') ||
+              errorString.contains('network');
 
           if (!isRetryable) {
-            _error = _getErrorMessage(e, effectiveApiSource, retryCount);
-            AppLogger.debug(
-              '🔍 DEBUG: Non-retryable error, stopping retries: $_error',
-            );
+            _error = 'Kemono API is currently unavailable';
+            if (effectiveApiSource == ApiSource.coomer) {
+              _error = 'Coomer API is currently unavailable';
+            }
+            _error = '$_error. Please try again or switch API in Settings.';
             shouldRetry = false;
             break;
           }
 
-          // Enhanced backoff: exponential for Coomer, linear for others
+          // Exponential backoff on SAME API only
           int delayMs;
           if (effectiveApiSource == ApiSource.coomer) {
-            delayMs =
-                1000 * (1 << (retryCount - 1)); // 1s, 2s, 4s, 8s, 16s, 32s
+            delayMs = 1000 * (1 << (retryCount - 1));
           } else {
-            delayMs = 500 * retryCount; // 0.5s, 1s, 1.5s, 2s, 2.5s
+            delayMs = 500 * retryCount;
           }
-
-          // Cap delay at 10 seconds
           delayMs = delayMs.clamp(0, 10000);
-
+          
           await Future.delayed(Duration(milliseconds: delayMs));
-
-          // Update UI with retry status
-          if (retryCount <= 2) {
-            // Only show first few retries
-            _error = 'Loading... (retry $retryCount/$maxRetries)';
-            notifyListeners();
-          }
         }
       }
     } catch (e) {
-      _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono, 99);
-      AppLogger.debug('🔍 DEBUG: Final error in loadLatestPosts: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadMorePosts() async {
-    if (_isLoading || !_hasMore) return;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Use empty query to get more latest posts
-      final newPosts = await repository.searchPosts(
-        ' ',
-        offset: _offset,
-        limit: 50,
-        apiSource: settingsProvider.defaultApiSource,
-      );
-
-      if (newPosts.isEmpty) {
-        _hasMore = false;
-      } else {
-        _posts.addAll(newPosts);
-        _offset += newPosts.length;
-      }
-    } catch (e) {
-      _error = e.toString();
+      _error = 'Failed to load more posts. Please try again.';
+      AppLogger.debug('🔍 DEBUG: Final error in loadMorePosts: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
