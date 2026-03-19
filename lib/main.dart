@@ -11,7 +11,6 @@ import 'domain/entities/post.dart';
 import 'domain/entities/creator.dart';
 import 'presentation/providers/creators_provider.dart';
 import 'presentation/providers/posts_provider.dart';
-import 'presentation/providers/creator_search_provider.dart';
 import 'presentation/providers/settings_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/download_manager.dart';
@@ -131,13 +130,15 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ScrollMemoryProvider()),
         ChangeNotifierProvider(create: (_) => MediaFilterProvider()),
         ChangeNotifierProvider(
-          create: (_) =>
-              CreatorsProvider(repository: repository, settingsProvider: settingsProvider),
+          create: (_) => CreatorsProvider(
+            repository: repository,
+            settingsProvider: settingsProvider,
+            indexManager: creatorIndexManager,
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) => PostsProvider(repository: repository, settingsProvider: settingsProvider),
         ),
-        ChangeNotifierProvider(create: (_) => CreatorSearchProvider(creatorIndexManager)),
         ChangeNotifierProvider(create: (_) => CommentsProvider(repository: repository)),
         ChangeNotifierProvider(create: (_) => PopularCreatorsProvider()),
         // Data Usage Tracking

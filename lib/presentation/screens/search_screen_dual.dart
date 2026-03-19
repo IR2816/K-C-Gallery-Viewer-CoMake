@@ -11,16 +11,11 @@ import '../../domain/entities/creator.dart';
 import '../../domain/entities/discord_server.dart';
 
 // Providers
-import '../providers/creator_search_provider.dart';
 import '../providers/creators_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/search_history_provider.dart';
 
-// Services
-import '../services/creator_index_manager.dart';
-
 // Data
-import '../../data/datasources/creator_index_datasource_impl.dart';
 import '../../data/models/creator_search_result.dart';
 
 // Theme
@@ -66,7 +61,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
   late Animation<double> _fadeAnimation;
 
   // Provider Instance
-  late CreatorSearchProvider _creatorSearchProvider;
+  late CreatorsProvider _creatorsProvider;
 
   // State
   ApiSource _selectedApiSource = ApiSource.kemono;
@@ -103,11 +98,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
   void initState() {
     super.initState();
 
-    // Initialize provider instance
-    _creatorSearchProvider = CreatorSearchProvider(
-      CreatorIndexManager(CreatorIndexDatasourceImpl()),
-    );
-
+    // Provider instance will be obtained from context later
     _tabController = TabController(length: 2, vsync: this);
     _tabController.index = 1; // Default to "Search by ID" (index 1)
     _fadeController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
@@ -149,13 +140,14 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
 
   void _initializeSearch() {
     final settingsProvider = context.read<SettingsProvider>();
+    _creatorsProvider = context.read<CreatorsProvider>();
     _selectedApiSource = settingsProvider.defaultApiSource;
 
     // Reset service to default for the API source
     _selectedService = _selectedApiSource == ApiSource.coomer ? 'onlyfans' : 'patreon';
 
     // Prepare index for current API source
-    _creatorSearchProvider.prepareIndex(_selectedApiSource);
+    _creatorsProvider.prepareIndex(_selectedApiSource);
 
     // Start animation
     _fadeController.forward();
@@ -195,13 +187,14 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
   }
 
   void _handleNameQuery(String query) {
+    final creatorsProvider = context.read<CreatorsProvider>();
     if (query.isEmpty) {
       if (!_showPopular) {
         setState(() {
           _showPopular = true;
         });
       }
-      _creatorSearchProvider.clearSearch();
+      creatorsProvider.clearSearch();
       return;
     }
 
@@ -211,7 +204,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
       });
     }
 
-    _creatorSearchProvider.searchCreatorsByName(query, _selectedApiSource);
+    creatorsProvider.searchCreatorsByName(query, _selectedApiSource);
   }
 
   Future<void> _searchCreatorsById(String query) async {
@@ -261,7 +254,8 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
     HapticFeedback.lightImpact();
 
     // Prepare index for new API source
-    await _creatorSearchProvider.switchApiSource(apiSource);
+    final creatorsProvider = context.read<CreatorsProvider>();
+    await creatorsProvider.switchApiSource(apiSource);
 
     if (!mounted) {
       return;
@@ -320,12 +314,10 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _creatorSearchProvider,
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            backgroundColor: AppTheme.getBackgroundColor(context),
+    return Builder(
+      builder: (context) {
+        return Scaffold(
+          backgroundColor: AppTheme.getBackgroundColor(context),
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -447,8 +439,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
               ),
             ),
           );
-        },
-      ),
+      },
     );
   }
 
@@ -484,7 +475,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
 
   Widget _buildApiSourceButton(ApiSource apiSource) {
     final isSelected = _selectedApiSource == apiSource;
-    final isPreparing = context.select<CreatorSearchProvider, bool>(
+    final isPreparing = context.select<CreatorsProvider, bool>(
       (provider) => provider.preparing && provider.currentApiSource == apiSource,
     );
     final label = apiSource == ApiSource.kemono ? 'Kemono' : 'Coomer';
@@ -530,7 +521,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
   }
 
   Widget _buildNameSearchTab(BuildContext context) {
-    return Consumer2<CreatorSearchProvider, SearchHistoryProvider>(
+    return Consumer2<CreatorsProvider, SearchHistoryProvider>(
       builder: (context, provider, searchHistory, _) {
         final history = searchHistory.getSearchHistory(type: 'creator', limit: 10);
 
@@ -882,7 +873,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
     );
   }
 
-  Widget _buildNameSearchContent(BuildContext context, CreatorSearchProvider provider) {
+  Widget _buildNameSearchContent(BuildContext context, CreatorsProvider provider) {
     // Show loading state
     if (provider.loading) {
       return ListView.builder(
@@ -1190,7 +1181,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
     );
   }
 
-  Widget _buildPopularCreators(CreatorSearchProvider provider) {
+  Widget _buildPopularCreators(CreatorsProvider provider) {
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Column(
@@ -1202,7 +1193,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
     );
   }
 
-  Widget _buildNameSearchResults(BuildContext context, CreatorSearchProvider provider) {
+  Widget _buildNameSearchResults(BuildContext context, CreatorsProvider provider) {
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Column(
