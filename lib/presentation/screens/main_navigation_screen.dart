@@ -9,6 +9,7 @@ import 'saved_screen.dart';
 import 'settings_screen.dart';
 import 'discord_server_screen.dart';
 import 'creators_list_screen.dart';
+import 'favorite_creators_screen.dart';
 
 // Theme
 import '../theme/app_theme.dart';
@@ -59,6 +60,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     _NavItem(
       icon: Icons.bookmark_rounded,
       label: 'Saved',
+      color: Color(0xFFFFD740),
+    ),
+    _NavItem(
+      icon: Icons.star_rounded,
+      label: 'Favorites',
       color: Color(0xFFFFD740),
     ),
     _NavItem(
@@ -130,6 +136,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
           const SearchScreenDual(),
           const DiscordServerScreen(),
           SavedScreen(),
+          const FavoriteCreatorsScreen(),
           const SettingsScreen(),
         ],
       ),

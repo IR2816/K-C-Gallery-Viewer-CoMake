@@ -26,6 +26,7 @@ import 'presentation/providers/data_usage_tracker.dart';
 import 'presentation/providers/tracked_http_client.dart';
 import 'presentation/providers/download_provider.dart';
 import 'presentation/providers/bookmark_provider.dart';
+import 'presentation/providers/creator_quick_access_provider.dart';
 // 🚀 NEW: Discord imports
 import 'providers/discord_provider.dart';
 import 'providers/discord_search_provider.dart';
@@ -154,6 +155,10 @@ class MyApp extends StatelessWidget {
         // Bookmark Provider
         ChangeNotifierProvider(
           create: (_) => BookmarkProvider()..initialize(),
+        ),
+        // Creator Quick Access (recent + local favorites)
+        ChangeNotifierProvider(
+          create: (_) => CreatorQuickAccessProvider()..initialize(),
         ),
         // 🚀 NEW: Discord Provider
         ChangeNotifierProvider(
