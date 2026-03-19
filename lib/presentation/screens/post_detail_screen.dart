@@ -1797,7 +1797,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   /// Removes characters not allowed in directory/file names.
   String _sanitizePathComponent(String name) {
     var result = name
-        .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1F]'), '_')
+        .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1F]'), '_') // control chars ASCII 0-31
         .trim()
         .replaceAll(RegExp(r'\s+'), ' ')
         .replaceAll(RegExp(r'[. ]+$'), ''); // strip trailing dots/spaces
