@@ -23,6 +23,7 @@ import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/comments_provider.dart';
 import '../providers/download_provider.dart';
+import '../providers/bookmark_provider.dart';
 import '../theme/app_theme.dart';
 import 'fullscreen_media_viewer.dart';
 import 'creator_detail_screen.dart';
@@ -573,6 +574,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
   // Modern inline action bar with icon + label buttons
   Widget _buildSocialActionBar() {
+    final bookmarkProvider = context.watch<BookmarkProvider>();
+    final isBookmarked = bookmarkProvider.isBookmarked(_currentPost.id);
+
     return Column(
       children: [
         Padding(
@@ -589,14 +593,25 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                     : AppTheme.getPrimaryTextColor(context),
                 onTap: _toggleSave,
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
+              _buildActionButton(
+                icon: isBookmarked
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                label: isBookmarked ? 'Bookmarked' : 'Bookmark',
+                color: isBookmarked
+                    ? const Color(0xFFFFB300)
+                    : AppTheme.getPrimaryTextColor(context),
+                onTap: () => _handleBookmark(bookmarkProvider, isBookmarked),
+              ),
+              const SizedBox(width: 16),
               _buildActionButton(
                 icon: Icons.send_rounded,
                 label: 'Share',
                 color: AppTheme.getPrimaryTextColor(context),
                 onTap: _sharePost,
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
               _buildActionButton(
                 icon: Icons.download_rounded,
                 label: 'Download',
@@ -622,6 +637,197 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         ),
       ],
     );
+  }
+
+  /// Opens bookmark dialog (add) or removes (if already bookmarked).
+  void _handleBookmark(BookmarkProvider provider, bool isBookmarked) {
+    if (isBookmarked) {
+      _confirmRemoveBookmark(provider);
+    } else {
+      _showAddBookmarkDialog(provider);
+    }
+  }
+
+  Future<void> _confirmRemoveBookmark(BookmarkProvider provider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Bookmark'),
+        content: const Text('Remove this post from bookmarks?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child:
+                const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await provider.removeBookmark(_currentPost.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bookmark removed')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showAddBookmarkDialog(BookmarkProvider provider) async {
+    final notesCtrl = TextEditingController();
+    final tagCtrl = TextEditingController();
+    int? rating;
+    final tags = <String>[];
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: const Text('Bookmark Post'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: notesCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Personal notes (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Rating',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: List.generate(5, (i) {
+                    final starVal = i + 1;
+                    return GestureDetector(
+                      onTap: () => setD(
+                        () => rating = rating == starVal ? null : starVal,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Icon(
+                          (rating != null && i < rating!)
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: (rating != null && i < rating!)
+                              ? const Color(0xFFFFB300)
+                              : Colors.grey,
+                          size: 28,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Tags (max 5)',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                const SizedBox(height: 6),
+                if (tags.isNotEmpty)
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: tags
+                        .map(
+                          (t) => Chip(
+                            label: Text(
+                              t,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            deleteIcon: const Icon(Icons.close, size: 14),
+                            onDeleted: () => setD(() => tags.remove(t)),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                if (tags.length < 5) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: tagCtrl,
+                          decoration: const InputDecoration(
+                            hintText: 'Add tag',
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (v) {
+                            final tag = v.trim();
+                            if (tag.isNotEmpty && !tags.contains(tag)) {
+                              setD(() {
+                                tags.add(tag);
+                                tagCtrl.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () {
+                          final tag = tagCtrl.text.trim();
+                          if (tag.isNotEmpty && !tags.contains(tag)) {
+                            setD(() {
+                              tags.add(tag);
+                              tagCtrl.clear();
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final thumbnailUrl = _currentPost.getThumbnailUrl(
+                  _activeApiSource,
+                );
+                await provider.addBookmark(
+                  _currentPost,
+                  notes: notesCtrl.text.trim(),
+                  rating: rating,
+                  tags: List<String>.from(tags),
+                  thumbnailUrl: thumbnailUrl,
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Post bookmarked! ⭐')),
+                  );
+                }
+              },
+              child: const Text('Bookmark'),
+            ),
+          ],
+        ),
+      ),
+    );
+    notesCtrl.dispose();
+    tagCtrl.dispose();
   }
 
   /// Action button: stacked icon + label
@@ -1539,6 +1745,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             mediaItems: _collectAndSortMedia(),
             initialIndex: index,
             apiSource: _activeApiSource,
+            postCreator: _sanitizePathComponent(_currentPost.user),
+            postDate: _formatPostDate(_currentPost.published),
+            postTitle: _sanitizePathComponent(_currentPost.title),
           ),
         ),
       );
@@ -1790,6 +1999,43 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     return false;
   }
 
+  /// Sanitize a string for use as a filesystem path component.
+  /// Removes characters not allowed in directory/file names.
+  String _sanitizePathComponent(String name) {
+    var result = name
+        .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1F]'), '_') // control chars ASCII 0-31
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'[. ]+$'), ''); // strip trailing dots/spaces
+    return result.isEmpty ? 'unknown' : result;
+  }
+
+  /// Format a DateTime as YYYY-MM-DD.
+  String _formatPostDate(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  /// Return the directory where files for the current post should be saved.
+  /// When "Organize by Creator" is enabled the structure is:
+  ///   {baseDir}/{creator}/{YYYY-MM-DD}_{title}/
+  /// Otherwise files land directly in {baseDir}.
+  Future<Directory> _resolvePostSaveDir(Directory baseDir) async {
+    final settings = context.read<SettingsProvider>();
+    if (!settings.organizeDownloads) return baseDir;
+
+    final creator = _sanitizePathComponent(_currentPost.user);
+    final date = _formatPostDate(_currentPost.published);
+    final title = _sanitizePathComponent(_currentPost.title);
+    final sub = Directory('${baseDir.path}/$creator/${date}_$title');
+    if (!await sub.exists()) {
+      await sub.create(recursive: true);
+    }
+    return sub;
+  }
+
   Future<void> _downloadSingleFile(PostLink link) async {
     // Check / request storage permission first.
     final hasPermission = await _requestStoragePermission();
@@ -1830,7 +2076,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
-      final savePath = '${downloadsDirectory.path}/$fileName';
+      final saveDir = await _resolvePostSaveDir(downloadsDirectory);
+      final savePath = '${saveDir.path}/$fileName';
 
       // Determine the correct referer for CDN anti-hotlink headers.
       final referer = _getRefererUrl();
@@ -3856,14 +4103,24 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     final hasPermission = await _requestStoragePermission();
     if (!hasPermission) return;
 
+    // Populate media caches so gallery items are included in the download.
+    _ensureMediaCache();
+
     final links = collectAllLinks();
-    if (links.isEmpty) {
+    final allMediaItems = [
+      ..._cachedMediaItems,
+      ..._cachedVideoItems,
+      ..._cachedAudioItems,
+    ];
+    final totalCount = links.length + allMediaItems.length;
+
+    if (totalCount == 0) {
       _showSnackBar('No files found to download.', Colors.orange);
       return;
     }
 
     _showSnackBar(
-      'Starting batch download for ${links.length} files...',
+      'Starting batch download for $totalCount files...',
       Colors.blue,
     );
 
@@ -3889,6 +4146,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
+      final saveDir = await _resolvePostSaveDir(downloadsDirectory);
       final referer = _getRefererUrl();
       if (!mounted) return;
       final downloadProvider = context.read<DownloadProvider>();
@@ -3909,7 +4167,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           if (fileName.contains('?')) {
             fileName = fileName.split('?').first;
           }
-          final savePath = '${downloadsDirectory.path}/$fileName';
+          final savePath = '${saveDir.path}/$fileName';
 
           downloadProvider.addDownload(
             name: fileName,
@@ -3922,6 +4180,38 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           failCount++;
           AppLogger.warning(
             'Failed batch download for ${link.url}',
+            tag: 'Downloader',
+            error: e,
+          );
+        }
+      }
+
+      for (final item in allMediaItems) {
+        try {
+          final url = item['url'] as String;
+          String fileName = (item['name'] as String?) ??
+              url
+                  .split('/')
+                  .lastWhere(
+                    (e) => e.isNotEmpty,
+                    orElse: () => 'download_file',
+                  );
+          if (fileName.contains('?')) {
+            fileName = fileName.split('?').first;
+          }
+          final savePath = '${saveDir.path}/$fileName';
+
+          downloadProvider.addDownload(
+            name: fileName,
+            url: url,
+            savePath: savePath,
+            referer: referer,
+          );
+          queuedCount++;
+        } catch (e) {
+          failCount++;
+          AppLogger.warning(
+            'Failed batch download for ${item['url']}',
             tag: 'Downloader',
             error: e,
           );

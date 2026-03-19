@@ -727,6 +727,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: const Icon(Icons.info_outline_rounded, size: 18),
                 onTap: () => _showBrowserInfo(context),
               ),
+
+              const Divider(height: 1, indent: 56),
+
+              // Organize Downloads
+              SwitchListTile(
+                secondary: const Icon(
+                  Icons.folder_special_rounded,
+                  size: 20,
+                  color: Colors.orange,
+                ),
+                title: const Text(
+                  'Organize by Creator',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Sort into {creator}/{date}_{title}/ subfolders',
+                ),
+                activeThumbColor: AppTheme.primaryColor,
+                value: settingsProvider.organizeDownloads,
+                onChanged: (bool value) =>
+                    settingsProvider.setOrganizeDownloads(value),
+              ),
             ],
           ),
         );

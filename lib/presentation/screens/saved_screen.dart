@@ -7,11 +7,13 @@ import '../providers/creators_provider.dart';
 import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
+import '../providers/bookmark_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_state_widgets.dart';
 import '../widgets/skeleton_loader.dart';
 import 'creator_detail_screen.dart';
 import 'post_detail_screen.dart';
+import 'bookmarks_screen.dart';
 import '../../domain/entities/api_source.dart';
 import '../../domain/entities/creator.dart';
 import '../../domain/entities/post.dart';
@@ -33,7 +35,7 @@ class _SavedScreenState extends State<SavedScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
 
     // Auto-refresh when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -50,6 +52,9 @@ class _SavedScreenState extends State<SavedScreen>
       } else if (_tabController.index == 1) {
         // Creators tab - refresh favorite creators
         _refreshFavoriteCreators();
+      } else if (_tabController.index == 2) {
+        // Bookmarks tab - ensure provider is initialized
+        context.read<BookmarkProvider>().initialize();
       }
     });
   }
@@ -216,7 +221,7 @@ class _SavedScreenState extends State<SavedScreen>
             ),
             TabBarView(
               controller: _tabController,
-              children: const [SavedPostsTab(), FavoriteCreatorsTab()],
+              children: const [SavedPostsTab(), FavoriteCreatorsTab(), BookmarksScreen()],
             ),
           ],
         ),
@@ -242,6 +247,7 @@ class _SavedScreenState extends State<SavedScreen>
             children: [
               _buildSegmentTab(0, 'Posts', Icons.photo_library_rounded),
               _buildSegmentTab(1, 'Creators', Icons.people_alt_rounded),
+              _buildSegmentTabWithCount(2, 'Bookmarks', Icons.bookmarks_rounded),
             ],
           ),
         );
@@ -297,6 +303,86 @@ class _SavedScreenState extends State<SavedScreen>
                   fontSize: 14,
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  Widget _buildSegmentTabWithCount(int index, String label, IconData icon) {
+    final isSelected = _tabController.index == index;
+    final count = context.watch<BookmarkProvider>().count;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _tabController.animateTo(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? Colors.white
+                    : AppTheme.getSecondaryTextColor(context),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : AppTheme.getSecondaryTextColor(context),
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                  fontSize: 13,
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.3)
+                        : const Color(0xFFFFB300).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFFFFB300),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

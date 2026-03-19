@@ -20,6 +20,7 @@ import '../providers/posts_provider.dart';
 import '../providers/creators_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
+import '../providers/creator_quick_access_provider.dart';
 
 // Theme
 import '../theme/app_theme.dart';
@@ -84,6 +85,13 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     _tabController.addListener(_handleTabChange);
     _loadCreatorPosts();
     _linkedAccountsFuture = _fetchLinkedAccounts();
+    // Record this creator as recently viewed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context
+          .read<CreatorQuickAccessProvider>()
+          .addRecentCreator(widget.creator);
+    });
   }
 
   @override
@@ -454,11 +462,11 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
             ),
           ),
         // Bookmark Button
-        Consumer<CreatorsProvider>(
-          builder: (context, creatorsProvider, child) {
-            final isFavorited = creatorsProvider.favoriteCreators.contains(
-              widget.creator.id,
-            );
+        Consumer2<CreatorsProvider, CreatorQuickAccessProvider>(
+          builder: (context, creatorsProvider, quickAccess, child) {
+            final isFavorited =
+                creatorsProvider.favoriteCreators.contains(widget.creator.id) ||
+                quickAccess.isFavorite(widget.creator.id);
             return IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
@@ -467,8 +475,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isFavorited ? Icons.bookmark : Icons.bookmark_border,
-                  color: isFavorited ? AppTheme.primaryColor : Colors.white,
+                  isFavorited ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: isFavorited ? const Color(0xFFFFD740) : Colors.white,
                   size: 20,
                 ),
               ),
@@ -2019,6 +2027,15 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       final creator = widget.creator.copyWith(favorited: !isCurrentlyFavorited);
 
       await creatorsProvider.toggleFavorite(creator);
+
+      // Mirror the action in the local quick-access provider
+      final quickAccess = context.read<CreatorQuickAccessProvider>();
+      if (!isCurrentlyFavorited) {
+        await quickAccess.addFavoriteCreator(creator);
+      } else {
+        await quickAccess.removeFavoriteCreator(creator.id);
+      }
+
       if (!mounted) return;
 
       // Check new state after toggling

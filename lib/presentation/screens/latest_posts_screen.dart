@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/entities/api_source.dart';
 import '../../domain/entities/creator.dart';
 import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
+import '../providers/creator_quick_access_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_state_widgets.dart';
 import 'post_detail_screen.dart';
@@ -446,6 +448,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
             child: Column(
               children: [
                 _buildFilterInfoBar(),
+                _buildRecentCreatorsCarousel(),
                 if (_posts.isNotEmpty && !_isLoading) _buildStoriesRow(),
                 Expanded(
                   child: _isSwitchingSource
@@ -747,6 +750,214 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                 : AppTheme.getSecondaryTextColor(context),
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Horizontal carousel of recently-viewed creators from local storage.
+  Widget _buildRecentCreatorsCarousel() {
+    return Consumer<CreatorQuickAccessProvider>(
+      builder: (context, quickAccess, _) {
+        final recents = quickAccess.getRecentCreators(limit: 8);
+        if (recents.isEmpty) return const SizedBox.shrink();
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          margin: const EdgeInsets.only(top: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.history_rounded,
+                      size: 14,
+                      color: AppTheme.primaryColor,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Recently Viewed',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.getSecondaryTextColor(context),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 90,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: recents.length,
+                  itemBuilder: (context, index) {
+                    return _buildRecentCreatorItem(
+                      recents[index],
+                      quickAccess,
+                      isDark,
+                    );
+                  },
+                ),
+              ),
+              Divider(
+                height: 8,
+                thickness: 0.5,
+                color: AppTheme.getBorderColor(context).withValues(alpha: 0.4),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentCreatorItem(
+    Creator creator,
+    CreatorQuickAccessProvider quickAccess,
+    bool isDark,
+  ) {
+    final domain = (creator.service == 'fansly' ||
+            creator.service == 'onlyfans' ||
+            creator.service == 'candfans')
+        ? 'https://coomer.st'
+        : 'https://kemono.cr';
+    final avatarUrl =
+        '$domain/data/avatars/${creator.service}/${creator.id}/avatar.jpg';
+    final isFavorite = quickAccess.isFavorite(creator.id);
+
+    return GestureDetector(
+      onTap: () => _navigateToCreatorDetail(creator),
+      onLongPress: () async {
+        HapticFeedback.mediumImpact();
+        await quickAccess.toggleFavoriteCreator(creator);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              quickAccess.isFavorite(creator.id)
+                  ? '★ Added "${creator.name}" to favorites'
+                  : 'Removed "${creator.name}" from favorites',
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(right: 14),
+        child: SizedBox(
+          width: 60,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                alignment: Alignment.topRight,
+                children: [
+                  // Story ring avatar
+                  Container(
+                    width: 56,
+                    height: 56,
+                    padding: const EdgeInsets.all(2.5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: isFavorite
+                          ? const LinearGradient(
+                              colors: [Color(0xFFFFD740), Color(0xFFFF8C00)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : AppTheme.storyRingGradient,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? AppTheme.darkBackgroundColor
+                            : AppTheme.lightBackgroundColor,
+                      ),
+                      padding: const EdgeInsets.all(2),
+                      child: ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: avatarUrl,
+                          fit: BoxFit.cover,
+                          memCacheWidth: 112,
+                          memCacheHeight: 112,
+                          placeholder: (_, __) => Container(
+                            color: AppTheme.darkElevatedSurfaceColor,
+                            child: Center(
+                              child: Text(
+                                creator.name.isNotEmpty
+                                    ? creator.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: AppTheme.primaryColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (_, __, ___) => Container(
+                            color: AppTheme.darkElevatedSurfaceColor,
+                            child: Center(
+                              child: Text(
+                                creator.name.isNotEmpty
+                                    ? creator.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: AppTheme.primaryColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (isFavorite)
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD740),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark
+                              ? AppTheme.darkBackgroundColor
+                              : AppTheme.lightBackgroundColor,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.star_rounded,
+                        color: Colors.white,
+                        size: 9,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                creator.name,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.getPrimaryTextColor(context),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
