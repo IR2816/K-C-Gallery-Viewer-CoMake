@@ -1,0 +1,109 @@
+# Misc
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+*.class
+*.log
+*.pyc
+*.swp
+*.tmp
+*.md
+!README.md
+
+# IntelliJ
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code (uncomment if you do NOT want to track workspace settings)
+#.vscode/
+
+# Flutter / Dart / Pub
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.pub-cache/
+.pub/
+build/
+coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+flutter_export_environment.sh
+
+# Android
+**/android/**/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/**/gradlew
+**/android/**/gradlew.bat
+**/android/**/gradle/wrapper/gradle-wrapper.properties
+**/android/**/gradle/wrapper/gradle-wrapper.jar
+/android/.gradle/
+/android/captures/
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# iOS / Xcode
+**/ios/.symlinks/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/app.flx
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Generated.xcconfig
+**/ios/Runner/GeneratedPluginRegistrant.*
+/ios/Pods/
+/ios/.generated/
+
+# macOS
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.*
+/macos/Pods/
+
+# Windows
+**/windows/flutter/ephemeral/
+**/windows/Runner/GeneratedPluginRegistrant.*
+**/windows/.vs/
+
+# Linux
+**/linux/flutter/ephemeral/
+**/linux/Flutter/ephemeral/
+**/linux/Runner/GeneratedPluginRegistrant.*
+
+# Web
+/web/.dart_tool/
+/web/flutter.js
+/web/renderer/
+
+# Symbolication / Obfuscation
+app.*.symbols
+app.*.map.json
+
+# Android signing — never commit keystores or key.properties
+*.jks
+*.p12
+*.keystore
+android/key.properties
+android/keystore/
+
+
+task.md.resolved
+analyze_output.txt
+format_error.txt
+
+# Temporary agent output files in repository root
+/analyze*.txt
+/analyze*.json
+/build_output*.txt
+/compile_errors.txt
+/dart_analyze.txt
+/errors.txt
+/machine_output.txt
+/output.txt
+/temp_analyze.txt

@@ -1,0 +1,1 @@
+enum ApiSource { kemono, coomer }
