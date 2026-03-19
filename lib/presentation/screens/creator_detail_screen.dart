@@ -2028,6 +2028,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
 
       await creatorsProvider.toggleFavorite(creator);
 
+      if (!mounted) return;
+
       // Mirror the action in the local quick-access provider
       final quickAccess = context.read<CreatorQuickAccessProvider>();
       if (!isCurrentlyFavorited) {

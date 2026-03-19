@@ -59,8 +59,7 @@ void main() async {
   AppErrorHandler.initialize();
   final prefs = await SharedPreferences.getInstance();
 
-  final remoteDataSource =
-      KemonoRemoteDataSourceImpl(); // Will use tracked client automatically
+  final remoteDataSource = KemonoRemoteDataSourceImpl(); // Will use tracked client automatically
   final localDataSource = KemonoLocalDataSourceImpl(prefs: prefs);
   final repository = KemonoRepositoryImpl(
     remoteDataSource: remoteDataSource,
@@ -131,44 +130,27 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ScrollMemoryProvider()),
         ChangeNotifierProvider(create: (_) => MediaFilterProvider()),
         ChangeNotifierProvider(
-          create: (_) => CreatorsProvider(
-            repository: repository,
-            settingsProvider: settingsProvider,
-          ),
+          create: (_) =>
+              CreatorsProvider(repository: repository, settingsProvider: settingsProvider),
         ),
         ChangeNotifierProvider(
-          create: (_) => PostsProvider(
-            repository: repository,
-            settingsProvider: settingsProvider,
-          ),
+          create: (_) => PostsProvider(repository: repository, settingsProvider: settingsProvider),
         ),
-        ChangeNotifierProvider(
-          create: (_) => CreatorSearchProvider(creatorIndexManager),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CommentsProvider(repository: repository),
-        ),
+        ChangeNotifierProvider(create: (_) => CreatorSearchProvider(creatorIndexManager)),
+        ChangeNotifierProvider(create: (_) => CommentsProvider(repository: repository)),
         ChangeNotifierProvider(create: (_) => PopularCreatorsProvider()),
         // Data Usage Tracking
         ChangeNotifierProvider(create: (_) => DataUsageTracker()),
         // Download Provider
         ChangeNotifierProvider(create: (_) => DownloadProvider()),
         // Bookmark Provider
-        ChangeNotifierProvider(
-          create: (_) => BookmarkProvider()..initialize(),
-        ),
+        ChangeNotifierProvider(create: (_) => BookmarkProvider()..initialize()),
         // Creator Quick Access (recent + local favorites)
-        ChangeNotifierProvider(
-          create: (_) => CreatorQuickAccessProvider()..initialize(),
-        ),
+        ChangeNotifierProvider(create: (_) => CreatorQuickAccessProvider()..initialize()),
         // Search History (tracks searches with frequency)
-        ChangeNotifierProvider(
-          create: (_) => SearchHistoryProvider()..initialize(),
-        ),
+        ChangeNotifierProvider(create: (_) => SearchHistoryProvider()..initialize()),
         // 🚀 NEW: Discord Provider
-        ChangeNotifierProvider(
-          create: (_) => DiscordProvider(DiscordApiClient(Dio())),
-        ),
+        ChangeNotifierProvider(create: (_) => DiscordProvider(DiscordApiClient(Dio()))),
         ChangeNotifierProvider(create: (_) => DiscordSearchProvider()),
       ],
       child: Consumer<DataUsageTracker>(
@@ -192,30 +174,20 @@ class MyApp extends StatelessWidget {
                         data: mediaQuery.copyWith(
                           textScaler: TextScaler.linear(themeProvider.textScale),
                         ),
-                        child: _DataUsageAlertOverlay(
-                          child: child ?? const SizedBox.shrink(),
-                        ),
+                        child: _DataUsageAlertOverlay(child: child ?? const SizedBox.shrink()),
                       );
                     },
                     home: MainNavigationScreen(),
                     onGenerateRoute: (settings) {
                       switch (settings.name) {
                         case '/':
-                          return MaterialPageRoute(
-                            builder: (context) => MainNavigationScreen(),
-                          );
+                          return MaterialPageRoute(builder: (context) => MainNavigationScreen());
                         case '/home':
-                          return MaterialPageRoute(
-                            builder: (context) => const HomeScreen(),
-                          );
+                          return MaterialPageRoute(builder: (context) => const HomeScreen());
                         case '/search':
-                          return MaterialPageRoute(
-                            builder: (context) => const SearchScreenDual(),
-                          );
+                          return MaterialPageRoute(builder: (context) => const SearchScreenDual());
                         case '/settings':
-                          return MaterialPageRoute(
-                            builder: (context) => const SettingsScreen(),
-                          );
+                          return MaterialPageRoute(builder: (context) => const SettingsScreen());
                         // 🚀 NEW: Discord routes
                         case '/discord':
                           return MaterialPageRoute(
@@ -243,8 +215,7 @@ class MyApp extends StatelessWidget {
                             builder: (context) => const MainNavigationScreen(),
                           );
                         case '/creator':
-                          final Creator? creator =
-                              settings.arguments as Creator?;
+                          final Creator? creator = settings.arguments as Creator?;
                           if (creator != null) {
                             return MaterialPageRoute(
                               builder: (context) => CreatorDetailScreen(
@@ -257,9 +228,7 @@ class MyApp extends StatelessWidget {
                             builder: (context) => const MainNavigationScreen(),
                           );
                         default:
-                          return MaterialPageRoute(
-                            builder: (context) => MainNavigationScreen(),
-                          );
+                          return MaterialPageRoute(builder: (context) => MainNavigationScreen());
                       }
                     },
                   );
@@ -350,9 +319,7 @@ class _DataUsageAlertOverlayState extends State<_DataUsageAlertOverlay> {
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
-              tracker.updateLimits(
-                tracker.limits.copyWith(autoDataSaver: true),
-              );
+              tracker.updateLimits(tracker.limits.copyWith(autoDataSaver: true));
             },
             child: const Text('Enable Data Saver'),
           ),

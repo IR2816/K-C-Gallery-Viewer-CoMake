@@ -446,7 +446,7 @@ class _FavoriteCreatorsScreenState extends State<FavoriteCreatorsScreen> {
           child: CachedNetworkImage(
             imageUrl: avatarUrl,
             fit: BoxFit.cover,
-            placeholder: (_, __) => Container(
+            placeholder: (context, url) => Container(
               color: AppTheme.darkElevatedSurfaceColor,
               child: Center(
                 child: Text(
@@ -461,7 +461,7 @@ class _FavoriteCreatorsScreenState extends State<FavoriteCreatorsScreen> {
                 ),
               ),
             ),
-            errorWidget: (_, __, ___) => Container(
+            errorWidget: (context, url, error) => Container(
               color: AppTheme.darkElevatedSurfaceColor,
               child: Center(
                 child: Text(
@@ -492,7 +492,7 @@ class _FavoriteCreatorsScreenState extends State<FavoriteCreatorsScreen> {
           radius: 18,
           backgroundImage: imageProvider,
         ),
-        placeholder: (_, __) => Text(
+        placeholder: (context, url) => Text(
           creator.name.isNotEmpty ? creator.name[0].toUpperCase() : '?',
           style: const TextStyle(
             color: AppTheme.primaryColor,
@@ -500,7 +500,7 @@ class _FavoriteCreatorsScreenState extends State<FavoriteCreatorsScreen> {
             fontWeight: FontWeight.w800,
           ),
         ),
-        errorWidget: (_, __, ___) => Text(
+        errorWidget: (context, url, error) => Text(
           creator.name.isNotEmpty ? creator.name[0].toUpperCase() : '?',
           style: const TextStyle(
             color: AppTheme.primaryColor,

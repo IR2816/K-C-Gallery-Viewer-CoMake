@@ -889,7 +889,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                           fit: BoxFit.cover,
                           memCacheWidth: 112,
                           memCacheHeight: 112,
-                          placeholder: (_, __) => Container(
+                          placeholder: (context, url) => Container(
                             color: AppTheme.darkElevatedSurfaceColor,
                             child: Center(
                               child: Text(
@@ -904,7 +904,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                               ),
                             ),
                           ),
-                          errorWidget: (_, __, ___) => Container(
+                          errorWidget: (context, url, error) => Container(
                             color: AppTheme.darkElevatedSurfaceColor,
                             child: Center(
                               child: Text(
@@ -1054,7 +1054,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                       fit: BoxFit.cover,
                       cacheWidth: 120,
                       cacheHeight: 120,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (context, url, error) => Container(
                         color: AppTheme.darkElevatedSurfaceColor,
                         child: Center(
                           child: Text(

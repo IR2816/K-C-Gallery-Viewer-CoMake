@@ -298,7 +298,7 @@ class _CreatorsListScreenState extends State<CreatorsListScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
         itemCount: _services.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final service = _services[index];
           final selected = _selectedService == service['id'];
@@ -347,7 +347,7 @@ class _CreatorsListScreenState extends State<CreatorsListScreen> {
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             itemCount: 6,
-            itemBuilder: (_, __) => const _CreatorCardSkeleton(),
+            itemBuilder: (context, index) => const _CreatorCardSkeleton(),
           );
         }
 

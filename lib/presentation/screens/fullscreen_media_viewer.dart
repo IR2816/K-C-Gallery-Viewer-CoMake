@@ -677,6 +677,8 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
         await downloadsDirectory.create(recursive: true);
       }
 
+      if (!mounted) return;
+
       // Optionally organize into {creator}/{date}_{title}/ subfolders.
       Directory saveDir = downloadsDirectory;
       final settings = context.read<SettingsProvider>();

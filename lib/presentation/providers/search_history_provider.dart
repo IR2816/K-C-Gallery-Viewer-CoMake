@@ -17,27 +17,20 @@ class SearchHistoryEntry {
   });
 
   Map<String, dynamic> toJson() => {
-        'query': query,
-        'type': type,
-        'timestamp': timestamp.toIso8601String(),
-        'frequency': frequency,
-      };
+    'query': query,
+    'type': type,
+    'timestamp': timestamp.toIso8601String(),
+    'frequency': frequency,
+  };
 
-  factory SearchHistoryEntry.fromJson(Map<String, dynamic> json) =>
-      SearchHistoryEntry(
-        query: json['query'] as String? ?? '',
-        type: json['type'] as String? ?? 'creator',
-        timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ??
-            DateTime.now(),
-        frequency: json['frequency'] as int? ?? 1,
-      );
+  factory SearchHistoryEntry.fromJson(Map<String, dynamic> json) => SearchHistoryEntry(
+    query: json['query'] as String? ?? '',
+    type: json['type'] as String? ?? 'creator',
+    timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+    frequency: json['frequency'] as int? ?? 1,
+  );
 
-  SearchHistoryEntry copyWith({
-    String? query,
-    String? type,
-    DateTime? timestamp,
-    int? frequency,
-  }) =>
+  SearchHistoryEntry copyWith({String? query, String? type, DateTime? timestamp, int? frequency}) =>
       SearchHistoryEntry(
         query: query ?? this.query,
         type: type ?? this.type,
@@ -68,10 +61,7 @@ class SearchHistoryProvider with ChangeNotifier {
   // ── Public Queries ────────────────────────────────────────────────────────
 
   /// Get all searches, optionally filtered by type.
-  List<SearchHistoryEntry> getSearchHistory({
-    String? type,
-    int limit = 20,
-  }) {
+  List<SearchHistoryEntry> getSearchHistory({String? type, int limit = 20}) {
     var results = _history;
     if (type != null) {
       results = results.where((e) => e.type == type).toList();
@@ -83,9 +73,7 @@ class SearchHistoryProvider with ChangeNotifier {
   List<SearchHistoryEntry> getSuggestions(String query, {String? type}) {
     if (query.trim().isEmpty) return [];
     final q = query.toLowerCase();
-    var results = _history
-        .where((e) => e.query.toLowerCase().startsWith(q))
-        .toList();
+    var results = _history.where((e) => e.query.toLowerCase().startsWith(q)).toList();
     if (type != null) {
       results = results.where((e) => e.type == type).toList();
     }
@@ -93,10 +81,7 @@ class SearchHistoryProvider with ChangeNotifier {
   }
 
   /// Get most frequently searched items.
-  List<SearchHistoryEntry> getMostFrequent({
-    String? type,
-    int limit = 10,
-  }) {
+  List<SearchHistoryEntry> getMostFrequent({String? type, int limit = 10}) {
     var results = _history;
     if (type != null) {
       results = results.where((e) => e.type == type).toList();
@@ -122,23 +107,12 @@ class SearchHistoryProvider with ChangeNotifier {
       // Update frequency and move to top
       final entry = _history[index];
       _history.removeAt(index);
-      _history.insert(
-        0,
-        entry.copyWith(
-          timestamp: DateTime.now(),
-          frequency: entry.frequency + 1,
-        ),
-      );
+      _history.insert(0, entry.copyWith(timestamp: DateTime.now(), frequency: entry.frequency + 1));
     } else {
       // Add new entry
       _history.insert(
         0,
-        SearchHistoryEntry(
-          query: trimmed,
-          type: type,
-          timestamp: DateTime.now(),
-          frequency: 1,
-        ),
+        SearchHistoryEntry(query: trimmed, type: type, timestamp: DateTime.now(), frequency: 1),
       );
     }
 
@@ -217,9 +191,7 @@ class SearchHistoryProvider with ChangeNotifier {
   Future<void> _save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final encoded = _history
-          .map((e) => jsonEncode(e.toJson()))
-          .toList();
+      final encoded = _history.map((e) => jsonEncode(e.toJson())).toList();
       await prefs.setStringList(_historyKey, encoded);
     } catch (e) {
       debugPrint('SearchHistoryProvider: save error – $e');

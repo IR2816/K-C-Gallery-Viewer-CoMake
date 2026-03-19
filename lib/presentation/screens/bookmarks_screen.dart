@@ -308,8 +308,8 @@ class _BookmarksScreenState extends State<BookmarksScreen>
             ? CachedNetworkImage(
                 imageUrl: bm.thumbnailUrl!,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => _placeholderIcon(),
-                errorWidget: (_, __, ___) => _placeholderIcon(),
+                placeholder: (context, url) => _placeholderIcon(),
+                errorWidget: (context, url, error) => _placeholderIcon(),
               )
             : _placeholderIcon(),
       ),

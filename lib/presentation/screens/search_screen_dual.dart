@@ -52,8 +52,7 @@ class SearchScreenDual extends StatefulWidget {
   State<SearchScreenDual> createState() => _SearchScreenDualState();
 }
 
-class _SearchScreenDualState extends State<SearchScreenDual>
-    with TickerProviderStateMixin {
+class _SearchScreenDualState extends State<SearchScreenDual> with TickerProviderStateMixin {
   // Controllers
   final TextEditingController _nameSearchController = TextEditingController();
   final TextEditingController _idSearchController = TextEditingController();
@@ -78,81 +77,26 @@ class _SearchScreenDualState extends State<SearchScreenDual>
 
   // Service lists
   static const List<Map<String, dynamic>> _kemonoServices = [
-    {
-      'id': 'patreon',
-      'name': 'Patreon',
-      'icon': Icons.favorite,
-      'color': Colors.orange,
-    },
-    {
-      'id': 'pixiv_fanbox',
-      'name': 'Pixiv Fanbox',
-      'icon': Icons.palette,
-      'color': Colors.blue,
-    },
-    {
-      'id': 'discord',
-      'name': 'Discord',
-      'icon': Icons.discord,
-      'color': Colors.indigo,
-    },
-    {
-      'id': 'fantia',
-      'name': 'Fantia',
-      'icon': Icons.star,
-      'color': Colors.purple,
-    },
-    {
-      'id': 'afdian',
-      'name': 'Afdian',
-      'icon': Icons.payment,
-      'color': Colors.green,
-    },
-    {
-      'id': 'boosty',
-      'name': 'Boosty',
-      'icon': Icons.rocket_launch,
-      'color': Colors.red,
-    },
-    {
-      'id': 'gumroad',
-      'name': 'Gumroad',
-      'icon': Icons.shopping_cart,
-      'color': Colors.brown,
-    },
+    {'id': 'patreon', 'name': 'Patreon', 'icon': Icons.favorite, 'color': Colors.orange},
+    {'id': 'pixiv_fanbox', 'name': 'Pixiv Fanbox', 'icon': Icons.palette, 'color': Colors.blue},
+    {'id': 'discord', 'name': 'Discord', 'icon': Icons.discord, 'color': Colors.indigo},
+    {'id': 'fantia', 'name': 'Fantia', 'icon': Icons.star, 'color': Colors.purple},
+    {'id': 'afdian', 'name': 'Afdian', 'icon': Icons.payment, 'color': Colors.green},
+    {'id': 'boosty', 'name': 'Boosty', 'icon': Icons.rocket_launch, 'color': Colors.red},
+    {'id': 'gumroad', 'name': 'Gumroad', 'icon': Icons.shopping_cart, 'color': Colors.brown},
     {
       'id': 'subscribestar',
       'name': 'SubscribeStar',
       'icon': Icons.star_border,
       'color': Colors.teal,
     },
-    {
-      'id': 'dlsite',
-      'name': 'DLsite',
-      'icon': Icons.shop,
-      'color': Colors.pink,
-    },
+    {'id': 'dlsite', 'name': 'DLsite', 'icon': Icons.shop, 'color': Colors.pink},
   ];
 
   static const List<Map<String, dynamic>> _coomerServices = [
-    {
-      'id': 'onlyfans',
-      'name': 'OnlyFans',
-      'icon': Icons.lock,
-      'color': Colors.black,
-    },
-    {
-      'id': 'fansly',
-      'name': 'Fansly',
-      'icon': Icons.person,
-      'color': Colors.blue,
-    },
-    {
-      'id': 'candfans',
-      'name': 'CandFans',
-      'icon': Icons.cake,
-      'color': Colors.pink,
-    },
+    {'id': 'onlyfans', 'name': 'OnlyFans', 'icon': Icons.lock, 'color': Colors.black},
+    {'id': 'fansly', 'name': 'Fansly', 'icon': Icons.person, 'color': Colors.blue},
+    {'id': 'candfans', 'name': 'CandFans', 'icon': Icons.cake, 'color': Colors.pink},
   ];
 
   @override
@@ -166,13 +110,11 @@ class _SearchScreenDualState extends State<SearchScreenDual>
 
     _tabController = TabController(length: 2, vsync: this);
     _tabController.index = 1; // Default to "Search by ID" (index 1)
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
+    _fadeController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut));
 
     // Initialize provider and prepare index
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -210,9 +152,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     _selectedApiSource = settingsProvider.defaultApiSource;
 
     // Reset service to default for the API source
-    _selectedService = _selectedApiSource == ApiSource.coomer
-        ? 'onlyfans'
-        : 'patreon';
+    _selectedService = _selectedApiSource == ApiSource.coomer ? 'onlyfans' : 'patreon';
 
     // Prepare index for current API source
     _creatorSearchProvider.prepareIndex(_selectedApiSource);
@@ -228,10 +168,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
       final currentQuery = _nameSearchController.text.trim();
       if (currentQuery != query) return;
       if (currentQuery.isNotEmpty) {
-        context.read<SearchHistoryProvider>().trackSearch(
-          currentQuery,
-          type: 'creator',
-        );
+        context.read<SearchHistoryProvider>().trackSearch(currentQuery, type: 'creator');
       }
       _handleNameQuery(currentQuery);
     });
@@ -253,10 +190,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
       if (currentQuery.length < 3) return;
 
       _searchCreatorsById(currentQuery);
-      context.read<SearchHistoryProvider>().trackSearch(
-        currentQuery,
-        type: 'creator',
-      );
+      context.read<SearchHistoryProvider>().trackSearch(currentQuery, type: 'creator');
     });
   }
 
@@ -306,9 +240,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {
-          _selectedService = _selectedApiSource == ApiSource.coomer
-              ? 'onlyfans'
-              : 'patreon';
+          _selectedService = _selectedApiSource == ApiSource.coomer ? 'onlyfans' : 'patreon';
         });
       }
     });
@@ -344,17 +276,13 @@ class _SearchScreenDualState extends State<SearchScreenDual>
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CreatorDetailScreen(
-          creator: creator,
-          apiSource: apiSource ?? _selectedApiSource,
-        ),
+        builder: (context) =>
+            CreatorDetailScreen(creator: creator, apiSource: apiSource ?? _selectedApiSource),
       ),
     );
   }
 
-  Future<void> _openDiscordCreatorFromSearch(
-    CreatorSearchResult searchResult,
-  ) async {
+  Future<void> _openDiscordCreatorFromSearch(CreatorSearchResult searchResult) async {
     HapticFeedback.lightImpact();
 
     final server = DiscordServer(
@@ -367,17 +295,13 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => DiscordChannelListScreen(server: server),
-      ),
+      MaterialPageRoute(builder: (context) => DiscordChannelListScreen(server: server)),
     );
   }
 
   /// Get current service list based on API source
   List<Map<String, dynamic>> _getCurrentServices() {
-    return _selectedApiSource == ApiSource.coomer
-        ? _coomerServices
-        : _kemonoServices;
+    return _selectedApiSource == ApiSource.coomer ? _coomerServices : _kemonoServices;
   }
 
   Color _surfaceColor(BuildContext context) => AppTheme.getCardColor(context);
@@ -411,10 +335,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      AppTheme.primaryColor.withValues(alpha: 0.15),
-                      Colors.transparent,
-                    ],
+                    colors: [AppTheme.primaryColor.withValues(alpha: 0.15), Colors.transparent],
                   ),
                 ),
               ),
@@ -422,8 +343,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ShaderMask(
-                    shaderCallback: (bounds) =>
-                        AppTheme.primaryGradient.createShader(bounds),
+                    shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
                     child: const Text(
                       'Discover',
                       style: TextStyle(
@@ -452,9 +372,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                   decoration: BoxDecoration(
                     color: _surfaceColor(context).withValues(alpha: 0.72),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _borderColor(context, opacity: 0.55),
-                    ),
+                    border: Border.all(color: _borderColor(context, opacity: 0.55)),
                   ),
                   child: IconButton(
                     icon: const Icon(Icons.help_outline_rounded, size: 20),
@@ -514,9 +432,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
               ),
             ),
             body: Container(
-              decoration: BoxDecoration(
-                gradient: AppTheme.getBackgroundGradient(context),
-              ),
+              decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(context)),
               child: Column(
                 children: [
                   const SizedBox(height: 8),
@@ -524,10 +440,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                   Expanded(
                     child: TabBarView(
                       controller: _tabController,
-                      children: [
-                        _buildNameSearchTab(context),
-                        _buildIdSearchTab(context),
-                      ],
+                      children: [_buildNameSearchTab(context), _buildIdSearchTab(context)],
                     ),
                   ),
                 ],
@@ -551,9 +464,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
-                alpha: Theme.of(context).brightness == Brightness.dark
-                    ? 0.1
-                    : 0.05,
+                alpha: Theme.of(context).brightness == Brightness.dark ? 0.1 : 0.05,
               ),
               blurRadius: 10,
               offset: const Offset(0, 4),
@@ -574,8 +485,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
   Widget _buildApiSourceButton(ApiSource apiSource) {
     final isSelected = _selectedApiSource == apiSource;
     final isPreparing = context.select<CreatorSearchProvider, bool>(
-      (provider) =>
-          provider.preparing && provider.currentApiSource == apiSource,
+      (provider) => provider.preparing && provider.currentApiSource == apiSource,
     );
     final label = apiSource == ApiSource.kemono ? 'Kemono' : 'Coomer';
 
@@ -595,29 +505,19 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                 const SizedBox(
                   width: 14,
                   height: 14,
-                  child: AppSkeleton(
-                    width: 14,
-                    height: 14,
-                    shape: BoxShape.circle,
-                  ),
+                  child: AppSkeleton(width: 14, height: 14, shape: BoxShape.circle),
                 )
               else
                 Icon(
-                  apiSource == ApiSource.kemono
-                      ? Icons.star_rounded
-                      : Icons.favorite_rounded,
+                  apiSource == ApiSource.kemono ? Icons.star_rounded : Icons.favorite_rounded,
                   size: 14,
-                  color: isSelected
-                      ? Colors.white
-                      : _secondaryTextColor(context),
+                  color: isSelected ? Colors.white : _secondaryTextColor(context),
                 ),
               const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : _secondaryTextColor(context),
+                  color: isSelected ? Colors.white : _secondaryTextColor(context),
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: 12,
                 ),
@@ -632,10 +532,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
   Widget _buildNameSearchTab(BuildContext context) {
     return Consumer2<CreatorSearchProvider, SearchHistoryProvider>(
       builder: (context, provider, searchHistory, _) {
-        final history = searchHistory.getSearchHistory(
-          type: 'creator',
-          limit: 10,
-        );
+        final history = searchHistory.getSearchHistory(type: 'creator', limit: 10);
 
         return Column(
           children: [
@@ -660,9 +557,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                                   ? AppTheme.primaryColor
                                   : Colors.black)
                               .withValues(
-                                alpha:
-                                    Theme.of(context).brightness ==
-                                        Brightness.dark
+                                alpha: Theme.of(context).brightness == Brightness.dark
                                     ? 0.15
                                     : 0.08,
                               ),
@@ -761,10 +656,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                           deleteIcon: Icon(
                             Icons.close_rounded,
                             size: 14,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.65),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
                           ),
                         );
                       }).toList(),
@@ -786,13 +678,8 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     return Consumer2<CreatorsProvider, SearchHistoryProvider>(
       builder: (context, provider, searchHistory, _) {
         final currentServices = _getCurrentServices();
-        final services = currentServices
-            .map((service) => service['id'] as String)
-            .toList();
-        final history = searchHistory.getSearchHistory(
-          type: 'creator',
-          limit: 10,
-        );
+        final services = currentServices.map((service) => service['id'] as String).toList();
+        final history = searchHistory.getSearchHistory(type: 'creator', limit: 10);
 
         return Column(
           children: [
@@ -806,11 +693,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                   final service = services[index];
                   final serviceData = currentServices.firstWhere(
                     (item) => item['id'] == service,
-                    orElse: () => {
-                      'id': service,
-                      'name': service,
-                      'icon': Icons.hub_rounded,
-                    },
+                    orElse: () => {'id': service, 'name': service, 'icon': Icons.hub_rounded},
                   );
                   final isSelected = _selectedService == service;
                   final serviceColor = _getServiceColor(service);
@@ -831,10 +714,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 240),
                         curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? serviceColor.withValues(alpha: 0.15)
@@ -850,24 +730,17 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              serviceData['icon'] as IconData? ??
-                                  Icons.hub_rounded,
+                              serviceData['icon'] as IconData? ?? Icons.hub_rounded,
                               size: 16,
-                              color: isSelected
-                                  ? serviceColor
-                                  : _secondaryTextColor(context),
+                              color: isSelected ? serviceColor : _secondaryTextColor(context),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               serviceData['name'] as String? ?? service,
                               style: TextStyle(
-                                color: isSelected
-                                    ? serviceColor
-                                    : _secondaryTextColor(context),
+                                color: isSelected ? serviceColor : _secondaryTextColor(context),
                                 fontSize: 12,
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                               ),
                             ),
                           ],
@@ -900,9 +773,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                                   ? AppTheme.primaryColor
                                   : Colors.black)
                               .withValues(
-                                alpha:
-                                    Theme.of(context).brightness ==
-                                        Brightness.dark
+                                alpha: Theme.of(context).brightness == Brightness.dark
                                     ? 0.12
                                     : 0.06,
                               ),
@@ -921,13 +792,8 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                   ),
                   decoration: InputDecoration(
                     hintText: 'Search by creator ID or keyword...',
-                    hintStyle: TextStyle(
-                      color: _secondaryTextColor(context, opacity: 0.55),
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.tag_rounded,
-                      color: AppTheme.primaryColor,
-                    ),
+                    hintStyle: TextStyle(color: _secondaryTextColor(context, opacity: 0.55)),
+                    prefixIcon: const Icon(Icons.tag_rounded, color: AppTheme.primaryColor),
                     suffixIcon: _idSearchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.close_rounded, size: 20),
@@ -1000,9 +866,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                           deleteIcon: Icon(
                             Icons.close_rounded,
                             size: 14,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.65),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
                           ),
                         );
                       }).toList(),
@@ -1018,10 +882,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     );
   }
 
-  Widget _buildNameSearchContent(
-    BuildContext context,
-    CreatorSearchProvider provider,
-  ) {
+  Widget _buildNameSearchContent(BuildContext context, CreatorSearchProvider provider) {
     // Show loading state
     if (provider.loading) {
       return ListView.builder(
@@ -1043,16 +904,12 @@ class _SearchScreenDualState extends State<SearchScreenDual>
               const SizedBox(height: AppTheme.mdSpacing),
               Text(
                 'Search Error',
-                style: AppTheme.titleStyle.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                style: AppTheme.titleStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: AppTheme.smSpacing),
               Text(
                 provider.error!,
-                style: AppTheme.bodyStyle.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                style: AppTheme.bodyStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTheme.lgSpacing),
@@ -1084,24 +941,16 @@ class _SearchScreenDualState extends State<SearchScreenDual>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.search_off,
-                size: 64,
-                color: AppTheme.secondaryTextColor,
-              ),
+              Icon(Icons.search_off, size: 64, color: AppTheme.secondaryTextColor),
               const SizedBox(height: AppTheme.mdSpacing),
               Text(
                 'No creators found',
-                style: AppTheme.titleStyle.copyWith(
-                  color: AppTheme.primaryTextColor,
-                ),
+                style: AppTheme.titleStyle.copyWith(color: AppTheme.primaryTextColor),
               ),
               const SizedBox(height: AppTheme.smSpacing),
               Text(
                 'Try different keywords or check spelling',
-                style: AppTheme.bodyStyle.copyWith(
-                  color: AppTheme.secondaryTextColor,
-                ),
+                style: AppTheme.bodyStyle.copyWith(color: AppTheme.secondaryTextColor),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1112,10 +961,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     return _buildNameSearchResults(context, provider);
   }
 
-  Widget _buildIdSearchContent(
-    BuildContext context,
-    CreatorsProvider provider,
-  ) {
+  Widget _buildIdSearchContent(BuildContext context, CreatorsProvider provider) {
     if (provider.isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.all(AppTheme.mdPadding),
@@ -1135,16 +981,12 @@ class _SearchScreenDualState extends State<SearchScreenDual>
               const SizedBox(height: AppTheme.mdSpacing),
               Text(
                 'Search Error',
-                style: AppTheme.titleStyle.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                style: AppTheme.titleStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: AppTheme.smSpacing),
               Text(
                 provider.error!,
-                style: AppTheme.bodyStyle.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                style: AppTheme.bodyStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTheme.mdSpacing),
@@ -1170,24 +1012,16 @@ class _SearchScreenDualState extends State<SearchScreenDual>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.search_off,
-                size: 64,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+              Icon(Icons.search_off, size: 64, color: Theme.of(context).colorScheme.onSurface),
               const SizedBox(height: AppTheme.mdSpacing),
               Text(
                 'No creators found',
-                style: AppTheme.titleStyle.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                style: AppTheme.titleStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(height: AppTheme.smSpacing),
               Text(
                 'Try different creator ID or check spelling',
-                style: AppTheme.bodyStyle.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                style: AppTheme.bodyStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1245,10 +1079,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                 errorWidget: (context, url, error) => Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        serviceColor.withValues(alpha: 0.4),
-                        Colors.black,
-                      ],
+                      colors: [serviceColor.withValues(alpha: 0.4), Colors.black],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1286,9 +1117,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                         height: 50,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
@@ -1296,10 +1125,8 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                             imageUrl: iconUrl,
                             httpHeaders: _getCoomerHeaders(iconUrl),
                             fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => Icon(
-                              Icons.person,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
+                            errorWidget: (context, url, error) =>
+                                Icon(Icons.person, color: Colors.white.withValues(alpha: 0.7)),
                           ),
                         ),
                       ),
@@ -1324,10 +1151,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: serviceColor.withValues(alpha: 0.8),
                                     borderRadius: BorderRadius.circular(4),
@@ -1354,11 +1178,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                           ],
                         ),
                       ),
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.white54,
-                        size: 14,
-                      ),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 14),
                     ],
                   ),
                 ),
@@ -1382,10 +1202,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     );
   }
 
-  Widget _buildNameSearchResults(
-    BuildContext context,
-    CreatorSearchProvider provider,
-  ) {
+  Widget _buildNameSearchResults(BuildContext context, CreatorSearchProvider provider) {
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Column(
@@ -1426,15 +1243,8 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                     itemCount: provider.nameSearchResults.length,
                     itemBuilder: (context, index) {
                       final searchResult = provider.nameSearchResults[index];
-                      final creator = provider.searchResultToCreator(
-                        searchResult,
-                      );
-                      return _buildCreatorSearchResultTile(
-                        context,
-                        searchResult,
-                        creator,
-                        index,
-                      );
+                      final creator = provider.searchResultToCreator(searchResult);
+                      return _buildCreatorSearchResultTile(context, searchResult, creator, index);
                     },
                   ),
           ),
@@ -1451,8 +1261,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
   ) {
     final service = searchResult.service.toLowerCase();
     final bannerUrl = _buildCreatorBannerUrl(service, searchResult.id);
-    final iconUrl =
-        searchResult.avatar != null && searchResult.avatar!.isNotEmpty
+    final iconUrl = searchResult.avatar != null && searchResult.avatar!.isNotEmpty
         ? searchResult.avatar!
         : _buildCreatorIconUrl(service, searchResult.id);
     final serviceColor = _getServiceColor(searchResult.service);
@@ -1486,10 +1295,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                   errorWidget: (context, url, error) => Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          serviceColor.withValues(alpha: 0.4),
-                          Colors.black,
-                        ],
+                        colors: [serviceColor.withValues(alpha: 0.4), Colors.black],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -1519,18 +1325,12 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                 top: 12,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: serviceColor.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                      ),
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4),
                     ],
                   ),
                   child: Text(
@@ -1555,9 +1355,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                     }
                     if (creator != null) {
                       HapticFeedback.lightImpact();
-                      Navigator.of(
-                        context,
-                      ).pushNamed('/creator', arguments: creator);
+                      Navigator.of(context).pushNamed('/creator', arguments: creator);
                     }
                   },
                   child: Padding(
@@ -1576,10 +1374,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                               width: 2,
                             ),
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 10,
-                              ),
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 10),
                             ],
                           ),
                           child: ClipRRect(
@@ -1588,11 +1383,8 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                               imageUrl: iconUrl,
                               httpHeaders: _getCoomerHeaders(iconUrl),
                               fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => const Icon(
-                                Icons.person,
-                                color: Colors.white70,
-                                size: 30,
-                              ),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.person, color: Colors.white70, size: 30),
                             ),
                           ),
                         ),
@@ -1678,30 +1470,23 @@ class _SearchScreenDualState extends State<SearchScreenDual>
 
   ApiSource _apiSourceForService(String service) {
     const coomerServices = {'onlyfans', 'fansly', 'candfans'};
-    return coomerServices.contains(service.toLowerCase())
-        ? ApiSource.coomer
-        : ApiSource.kemono;
+    return coomerServices.contains(service.toLowerCase()) ? ApiSource.coomer : ApiSource.kemono;
   }
 
   String _buildCreatorBannerUrl(String service, String creatorId) {
     final apiSource = _apiSourceForService(service);
-    final base = apiSource == ApiSource.coomer
-        ? 'https://img.coomer.st'
-        : 'https://img.kemono.cr';
+    final base = apiSource == ApiSource.coomer ? 'https://img.coomer.st' : 'https://img.kemono.cr';
     return '$base/banners/$service/$creatorId';
   }
 
   String _buildCreatorIconUrl(String service, String creatorId) {
     final apiSource = _apiSourceForService(service);
-    final base = apiSource == ApiSource.coomer
-        ? 'https://img.coomer.st'
-        : 'https://img.kemono.cr';
+    final base = apiSource == ApiSource.coomer ? 'https://img.coomer.st' : 'https://img.kemono.cr';
     return '$base/icons/$service/$creatorId';
   }
 
   Map<String, String>? _getCoomerHeaders(String url) {
-    final isCoomerDomain =
-        url.contains('coomer.st') || url.contains('img.coomer.st');
+    final isCoomerDomain = url.contains('coomer.st') || url.contains('img.coomer.st');
     if (!isCoomerDomain) return null;
     return const {
       'User-Agent':
@@ -1723,24 +1508,16 @@ class _SearchScreenDualState extends State<SearchScreenDual>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            Icon(Icons.search_off, size: 64, color: Theme.of(context).colorScheme.onSurface),
             const SizedBox(height: AppTheme.mdSpacing),
             Text(
               'No creators found',
-              style: AppTheme.titleStyle.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+              style: AppTheme.titleStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: AppTheme.smSpacing),
             Text(
               'Try different keywords or check spelling',
-              style: AppTheme.bodyStyle.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+              style: AppTheme.bodyStyle.copyWith(color: Theme.of(context).colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1758,10 +1535,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
           'Use "By Name" for indexed creator search, or "By ID" when you already know creator ID and service.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('OK'),
-          ),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('OK')),
         ],
       ),
     );
