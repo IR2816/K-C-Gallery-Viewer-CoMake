@@ -53,7 +53,7 @@ class _SavedScreenState extends State<SavedScreen>
         // Creators tab - refresh favorite creators
         _refreshFavoriteCreators();
       } else if (_tabController.index == 2) {
-        // Bookmarks tab - ensure provider is initialised
+        // Bookmarks tab - ensure provider is initialized
         context.read<BookmarkProvider>().initialize();
       }
     });

@@ -41,7 +41,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
   @override
   void initState() {
     super.initState();
-    // Ensure provider is initialised
+    // Ensure provider is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BookmarkProvider>().initialize();
     });
