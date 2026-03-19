@@ -14,6 +14,7 @@ import '../../domain/entities/discord_server.dart';
 import '../providers/creator_search_provider.dart';
 import '../providers/creators_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/search_history_provider.dart';
 
 // Services
 import '../services/creator_index_manager.dart';
@@ -226,6 +227,12 @@ class _SearchScreenDualState extends State<SearchScreenDual>
     _nameSearchDebounce = Timer(const Duration(milliseconds: 350), () {
       final currentQuery = _nameSearchController.text.trim();
       if (currentQuery != query) return;
+      if (currentQuery.isNotEmpty) {
+        context.read<SearchHistoryProvider>().trackSearch(
+          currentQuery,
+          type: 'creator',
+        );
+      }
       _handleNameQuery(currentQuery);
     });
   }
@@ -246,7 +253,10 @@ class _SearchScreenDualState extends State<SearchScreenDual>
       if (currentQuery.length < 3) return;
 
       _searchCreatorsById(currentQuery);
-      context.read<SettingsProvider>().addToSearchHistory(currentQuery);
+      context.read<SearchHistoryProvider>().trackSearch(
+        currentQuery,
+        type: 'creator',
+      );
     });
   }
 
@@ -620,8 +630,13 @@ class _SearchScreenDualState extends State<SearchScreenDual>
   }
 
   Widget _buildNameSearchTab(BuildContext context) {
-    return Consumer<CreatorSearchProvider>(
-      builder: (context, provider, _) {
+    return Consumer2<CreatorSearchProvider, SearchHistoryProvider>(
+      builder: (context, provider, searchHistory, _) {
+        final history = searchHistory.getSearchHistory(
+          type: 'creator',
+          limit: 10,
+        );
+
         return Column(
           children: [
             // Search Bar
@@ -696,7 +711,68 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            // Show Recent Searches and Recently Viewed when search is empty
+            if (_nameSearchController.text.trim().isEmpty && history.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Quick Searches',
+                          style: AppTheme.captionStyle.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: searchHistory.clearSearchHistory,
+                          child: Text(
+                            'Clear',
+                            style: AppTheme.captionStyle.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: history.take(6).map((entry) {
+                        final label = entry.frequency > 1
+                            ? '${entry.query} (${entry.frequency})'
+                            : entry.query;
+                        return InputChip(
+                          label: Text(label),
+                          onPressed: () {
+                            _nameSearchController.text = entry.query;
+                            _onNameSearchChanged();
+                            _nameFocusNode.unfocus();
+                            setState(() {});
+                          },
+                          onDeleted: () =>
+                              searchHistory.removeFromHistory(entry.query, type: entry.type),
+                          deleteIcon: Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.65),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 4),
 
             // Content
             Expanded(child: _buildNameSearchContent(context, provider)),
@@ -707,13 +783,16 @@ class _SearchScreenDualState extends State<SearchScreenDual>
   }
 
   Widget _buildIdSearchTab(BuildContext context) {
-    return Consumer2<CreatorsProvider, SettingsProvider>(
-      builder: (context, provider, settingsProvider, _) {
+    return Consumer2<CreatorsProvider, SearchHistoryProvider>(
+      builder: (context, provider, searchHistory, _) {
         final currentServices = _getCurrentServices();
         final services = currentServices
             .map((service) => service['id'] as String)
             .toList();
-        final history = settingsProvider.searchHistory;
+        final history = searchHistory.getSearchHistory(
+          type: 'creator',
+          limit: 10,
+        );
 
         return Column(
           children: [
@@ -867,7 +946,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                     final query = value.trim();
                     if (query.length >= 3) {
                       _searchCreatorsById(query);
-                      settingsProvider.addToSearchHistory(query);
+                      searchHistory.trackSearch(query, type: 'creator');
                     }
                   },
                 ),
@@ -890,7 +969,7 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                           ),
                         ),
                         TextButton(
-                          onPressed: settingsProvider.clearSearchHistory,
+                          onPressed: searchHistory.clearSearchHistory,
                           child: Text(
                             'Clear',
                             style: AppTheme.captionStyle.copyWith(
@@ -904,17 +983,20 @@ class _SearchScreenDualState extends State<SearchScreenDual>
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
-                      children: history.take(6).map((query) {
+                      children: history.take(8).map((entry) {
+                        final label = entry.frequency > 1
+                            ? '${entry.query} (${entry.frequency})'
+                            : entry.query;
                         return InputChip(
-                          label: Text(query),
+                          label: Text(label),
                           onPressed: () {
-                            _idSearchController.text = query;
+                            _idSearchController.text = entry.query;
                             _onIdSearchChanged();
                             _idFocusNode.unfocus();
                             setState(() {});
                           },
                           onDeleted: () =>
-                              settingsProvider.removeFromSearchHistory(query),
+                              searchHistory.removeFromHistory(entry.query, type: entry.type),
                           deleteIcon: Icon(
                             Icons.close_rounded,
                             size: 14,

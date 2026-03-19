@@ -7,6 +7,7 @@ import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/tag_filter_provider.dart';
 import '../providers/data_usage_tracker.dart';
+import '../providers/search_history_provider.dart';
 
 // Theme
 import '../theme/app_theme.dart';
@@ -1029,6 +1030,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   child: const Text('CLEAR'),
+                ),
+              ),
+
+              const Divider(height: 1, indent: 56),
+
+              // Search History Tracking
+              ListTile(
+                leading: const Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: Colors.purpleAccent,
+                ),
+                title: const Text(
+                  'Search History',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('Enable local tracking of searches'),
+              ),
+              ListTile(
+                dense: true,
+                trailing: Consumer<SearchHistoryProvider>(
+                  builder: (context, searchHistory, _) {
+                    return Switch(
+                      value: searchHistory.enabled,
+                      activeColor: AppTheme.primaryColor,
+                      onChanged: (bool value) {
+                        searchHistory.setEnabled(value);
+                      },
+                    );
+                  },
+                ),
+              ),
+              ListTile(
+                dense: true,
+                trailing: Consumer<SearchHistoryProvider>(
+                  builder: (context, searchHistory, _) {
+                    return TextButton(
+                      onPressed: searchHistory.enabled
+                          ? () => searchHistory.clearSearchHistory()
+                          : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                      child: const Text('Clear Search History'),
+                    );
+                  },
                 ),
               ),
             ],

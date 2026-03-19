@@ -37,7 +37,9 @@ class _ApiCache {
   void set(String key, dynamic data) {
     if (_cache.length > 100) {
       final keysToRemove = _cache.keys.take(20).toList();
-      for (final k in keysToRemove) _cache.remove(k);
+      for (final k in keysToRemove) {
+        _cache.remove(k);
+      }
     }
     _cache[key] = _ApiCacheEntry(data, DateTime.now());
   }

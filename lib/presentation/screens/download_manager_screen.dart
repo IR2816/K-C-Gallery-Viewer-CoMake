@@ -1074,7 +1074,9 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
   IconData _fileTypeIcon(String fileName) {
     final ext = fileName.toLowerCase().split('.').last;
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg']
-        .contains(ext)) return Icons.image_rounded;
+        .contains(ext)) {
+      return Icons.image_rounded;
+    }
     if (['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'wmv'].contains(ext)) {
       return Icons.videocam_rounded;
     }
@@ -1093,7 +1095,9 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
   Color _fileTypeColor(String fileName) {
     final ext = fileName.toLowerCase().split('.').last;
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg']
-        .contains(ext)) return Colors.blue;
+        .contains(ext)) {
+      return Colors.blue;
+    }
     if (['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'wmv'].contains(ext)) {
       return Colors.red;
     }

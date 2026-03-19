@@ -9,7 +9,6 @@ import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_state_widgets.dart';
 import 'post_detail_screen.dart';
-import '../../domain/entities/api_source.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/entities/post_file.dart';
 
