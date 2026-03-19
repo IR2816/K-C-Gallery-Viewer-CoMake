@@ -3856,14 +3856,24 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     final hasPermission = await _requestStoragePermission();
     if (!hasPermission) return;
 
+    // Populate media caches so gallery items are included in the download.
+    _ensureMediaCache();
+
     final links = collectAllLinks();
-    if (links.isEmpty) {
+    final allMediaItems = [
+      ..._cachedMediaItems,
+      ..._cachedVideoItems,
+      ..._cachedAudioItems,
+    ];
+    final totalCount = links.length + allMediaItems.length;
+
+    if (totalCount == 0) {
       _showSnackBar('No files found to download.', Colors.orange);
       return;
     }
 
     _showSnackBar(
-      'Starting batch download for ${links.length} files...',
+      'Starting batch download for $totalCount files...',
       Colors.blue,
     );
 
@@ -3922,6 +3932,38 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           failCount++;
           AppLogger.warning(
             'Failed batch download for ${link.url}',
+            tag: 'Downloader',
+            error: e,
+          );
+        }
+      }
+
+      for (final item in allMediaItems) {
+        try {
+          final url = item['url'] as String;
+          String fileName = (item['name'] as String?) ??
+              url
+                  .split('/')
+                  .lastWhere(
+                    (e) => e.isNotEmpty,
+                    orElse: () => 'download_file',
+                  );
+          if (fileName.contains('?')) {
+            fileName = fileName.split('?').first;
+          }
+          final savePath = '${downloadsDirectory.path}/$fileName';
+
+          downloadProvider.addDownload(
+            name: fileName,
+            url: url,
+            savePath: savePath,
+            referer: referer,
+          );
+          queuedCount++;
+        } catch (e) {
+          failCount++;
+          AppLogger.warning(
+            'Failed batch download for ${item['url']}',
             tag: 'Downloader',
             error: e,
           );
