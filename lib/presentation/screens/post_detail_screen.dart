@@ -1539,6 +1539,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             mediaItems: _collectAndSortMedia(),
             initialIndex: index,
             apiSource: _activeApiSource,
+            postCreator: _sanitizePathComponent(_currentPost.user),
+            postDate: _formatPostDate(_currentPost.published),
+            postTitle: _sanitizePathComponent(_currentPost.title),
           ),
         ),
       );
@@ -1790,6 +1793,43 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     return false;
   }
 
+  /// Sanitize a string for use as a filesystem path component.
+  /// Removes characters not allowed in directory/file names.
+  String _sanitizePathComponent(String name) {
+    var result = name
+        .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1F]'), '_')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'[. ]+$'), ''); // strip trailing dots/spaces
+    return result.isEmpty ? 'unknown' : result;
+  }
+
+  /// Format a DateTime as YYYY-MM-DD.
+  String _formatPostDate(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  /// Return the directory where files for the current post should be saved.
+  /// When "Organize by Creator" is enabled the structure is:
+  ///   {baseDir}/{creator}/{YYYY-MM-DD}_{title}/
+  /// Otherwise files land directly in {baseDir}.
+  Future<Directory> _resolvePostSaveDir(Directory baseDir) async {
+    final settings = context.read<SettingsProvider>();
+    if (!settings.organizeDownloads) return baseDir;
+
+    final creator = _sanitizePathComponent(_currentPost.user);
+    final date = _formatPostDate(_currentPost.published);
+    final title = _sanitizePathComponent(_currentPost.title);
+    final sub = Directory('${baseDir.path}/$creator/${date}_$title');
+    if (!await sub.exists()) {
+      await sub.create(recursive: true);
+    }
+    return sub;
+  }
+
   Future<void> _downloadSingleFile(PostLink link) async {
     // Check / request storage permission first.
     final hasPermission = await _requestStoragePermission();
@@ -1830,7 +1870,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
-      final savePath = '${downloadsDirectory.path}/$fileName';
+      final saveDir = await _resolvePostSaveDir(downloadsDirectory);
+      final savePath = '${saveDir.path}/$fileName';
 
       // Determine the correct referer for CDN anti-hotlink headers.
       final referer = _getRefererUrl();
@@ -3899,6 +3940,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         await downloadsDirectory.create(recursive: true);
       }
 
+      final saveDir = await _resolvePostSaveDir(downloadsDirectory);
       final referer = _getRefererUrl();
       if (!mounted) return;
       final downloadProvider = context.read<DownloadProvider>();
@@ -3919,7 +3961,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           if (fileName.contains('?')) {
             fileName = fileName.split('?').first;
           }
-          final savePath = '${downloadsDirectory.path}/$fileName';
+          final savePath = '${saveDir.path}/$fileName';
 
           downloadProvider.addDownload(
             name: fileName,
@@ -3951,7 +3993,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           if (fileName.contains('?')) {
             fileName = fileName.split('?').first;
           }
-          final savePath = '${downloadsDirectory.path}/$fileName';
+          final savePath = '${saveDir.path}/$fileName';
 
           downloadProvider.addDownload(
             name: fileName,

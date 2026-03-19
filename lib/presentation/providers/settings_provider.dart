@@ -37,6 +37,7 @@ class SettingsProvider with ChangeNotifier {
   // New Settings Properties
   bool get hideNsfw => _settings['hide_nsfw'] ?? false;
   bool get autoplayVideo => _settings['autoplay_video'] ?? false;
+  bool get organizeDownloads => _settings['organize_downloads'] ?? false;
   BoxFit get imageFitMode {
     final fitMode = _settings['image_fit_mode'] ?? 'cover';
     switch (fitMode) {
@@ -67,6 +68,10 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> setAutoplayVideo(bool value) async {
     await updateSetting('autoplay_video', value);
+  }
+
+  Future<void> setOrganizeDownloads(bool value) async {
+    await updateSetting('organize_downloads', value);
   }
 
   Future<void> setImageFitMode(BoxFit fit) async {
@@ -173,6 +178,7 @@ class SettingsProvider with ChangeNotifier {
       'image_fit_mode': 'cover',
       'latest_post_card_style': 'rich',
       'latest_posts_columns': 2,
+      'organize_downloads': false,
     };
     await repository.saveSettings(_settings);
     notifyListeners();

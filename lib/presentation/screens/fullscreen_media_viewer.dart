@@ -13,17 +13,26 @@ import 'video_player_screen.dart';
 import '../../utils/logger.dart';
 import '../widgets/app_video_player.dart';
 import '../providers/download_provider.dart';
+import '../providers/settings_provider.dart';
 
 class FullscreenMediaViewer extends StatefulWidget {
   final List<Map<String, dynamic>> mediaItems;
   final int initialIndex;
   final ApiSource apiSource;
 
+  /// Optional post context used when "Organize by Creator" is enabled.
+  final String? postCreator;
+  final String? postDate;
+  final String? postTitle;
+
   const FullscreenMediaViewer({
     super.key,
     required this.mediaItems,
     required this.initialIndex,
     required this.apiSource,
+    this.postCreator,
+    this.postDate,
+    this.postTitle,
   });
 
   @override
@@ -668,7 +677,23 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
         await downloadsDirectory.create(recursive: true);
       }
 
-      final savePath = '${downloadsDirectory.path}/$fileName';
+      // Optionally organize into {creator}/{date}_{title}/ subfolders.
+      Directory saveDir = downloadsDirectory;
+      final settings = context.read<SettingsProvider>();
+      if (settings.organizeDownloads &&
+          widget.postCreator != null &&
+          widget.postDate != null &&
+          widget.postTitle != null) {
+        final sub = Directory(
+          '${downloadsDirectory.path}/${widget.postCreator}/${widget.postDate}_${widget.postTitle}',
+        );
+        if (!await sub.exists()) {
+          await sub.create(recursive: true);
+        }
+        saveDir = sub;
+      }
+
+      final savePath = '${saveDir.path}/$fileName';
 
       // Use the correct CDN referer so the download provider sends the right
       // anti-hotlink header (fixes Kemono downloads that previously got 403).
