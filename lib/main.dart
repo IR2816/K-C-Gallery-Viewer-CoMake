@@ -9,6 +9,7 @@ import 'data/repositories/kemono_repository_impl.dart';
 import 'domain/repositories/kemono_repository.dart';
 import 'domain/entities/post.dart';
 import 'domain/entities/creator.dart';
+import 'domain/entities/api_source.dart';
 import 'presentation/providers/creators_provider.dart';
 import 'presentation/providers/posts_provider.dart';
 import 'presentation/providers/settings_provider.dart';
@@ -161,78 +162,82 @@ class MyApp extends StatelessWidget {
           // Initialize TrackedHttpClientFactory with DataUsageTracker
           TrackedHttpClientFactory.initialize(dataUsageTracker);
 
-          return Consumer<ThemeProvider>(
-            builder: (context, themeProvider, _) {
-              return Consumer<SettingsProvider>(
-                builder: (context, settingsProvider, _) {
-                  return MaterialApp(
-                    title: 'KC Gallery Viewer',
-                    theme: AppTheme.lightTheme,
-                    darkTheme: AppTheme.darkTheme,
-                    themeMode: themeProvider.themeMode,
-                    debugShowCheckedModeBanner: false,
-                    builder: (context, child) {
-                      final mediaQuery = MediaQuery.of(context);
-                      return MediaQuery(
-                        data: mediaQuery.copyWith(
-                          textScaler: TextScaler.linear(themeProvider.textScale),
-                        ),
-                        child: _DataUsageAlertOverlay(child: child ?? const SizedBox.shrink()),
-                      );
-                    },
-                    home: MainNavigationScreen(),
-                    onGenerateRoute: (settings) {
-                      switch (settings.name) {
-                        case '/':
-                          return MaterialPageRoute(builder: (context) => MainNavigationScreen());
-                        case '/home':
-                          return MaterialPageRoute(builder: (context) => const HomeScreen());
-                        case '/search':
-                          return MaterialPageRoute(builder: (context) => const SearchScreenDual());
-                        case '/settings':
-                          return MaterialPageRoute(builder: (context) => const SettingsScreen());
-                        // 🚀 NEW: Discord routes
-                        case '/discord':
-                          return MaterialPageRoute(
-                            builder: (context) => const DiscordServerScreen(),
-                          );
-                        case '/discord-search':
-                          return MaterialPageRoute(
-                            builder: (context) => const DiscordSearchScreen(),
-                          );
-                        case '/post':
-                          final Post? post = settings.arguments as Post?;
-                          if (post != null) {
-                            return MaterialPageRoute(
-                              builder: (context) => PostDetailScreen(
-                                post: post,
-                                apiSource: settingsProvider.defaultApiSource,
-                              ),
-                            );
-                          }
-                          return MaterialPageRoute(
-                            builder: (context) => const MainNavigationScreen(),
-                          );
-                        case '/creator':
-                          final Creator? creator = settings.arguments as Creator?;
-                          if (creator != null) {
-                            return MaterialPageRoute(
-                              builder: (context) => CreatorDetailScreen(
-                                creator: creator,
-                                apiSource: settingsProvider.defaultApiSource,
-                              ),
-                            );
-                          }
-                          return MaterialPageRoute(
-                            builder: (context) => const MainNavigationScreen(),
-                          );
-                        default:
-                          return MaterialPageRoute(builder: (context) => MainNavigationScreen());
-                      }
-                    },
-                  );
-                },
+          // Use select() so that only the specific fields consumed here trigger
+          // a rebuild of MaterialApp, instead of any change to these providers.
+          final themeMode = context.select<ThemeProvider, ThemeMode>(
+            (p) => p.themeMode,
+          );
+          final textScale = context.select<ThemeProvider, double>(
+            (p) => p.textScale,
+          );
+          final currentApiSource = context.select<SettingsProvider, ApiSource>(
+            (p) => p.defaultApiSource,
+          );
+
+          return MaterialApp(
+            title: 'KC Gallery Viewer',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeMode,
+            debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  textScaler: TextScaler.linear(textScale),
+                ),
+                child: _DataUsageAlertOverlay(child: child ?? const SizedBox.shrink()),
               );
+            },
+            home: MainNavigationScreen(),
+            onGenerateRoute: (settings) {
+              switch (settings.name) {
+                case '/':
+                  return MaterialPageRoute(builder: (context) => MainNavigationScreen());
+                case '/home':
+                  return MaterialPageRoute(builder: (context) => const HomeScreen());
+                case '/search':
+                  return MaterialPageRoute(builder: (context) => const SearchScreenDual());
+                case '/settings':
+                  return MaterialPageRoute(builder: (context) => const SettingsScreen());
+                // 🚀 NEW: Discord routes
+                case '/discord':
+                  return MaterialPageRoute(
+                    builder: (context) => const DiscordServerScreen(),
+                  );
+                case '/discord-search':
+                  return MaterialPageRoute(
+                    builder: (context) => const DiscordSearchScreen(),
+                  );
+                case '/post':
+                  final Post? post = settings.arguments as Post?;
+                  if (post != null) {
+                    return MaterialPageRoute(
+                      builder: (context) => PostDetailScreen(
+                        post: post,
+                        apiSource: currentApiSource,
+                      ),
+                    );
+                  }
+                  return MaterialPageRoute(
+                    builder: (context) => const MainNavigationScreen(),
+                  );
+                case '/creator':
+                  final Creator? creator = settings.arguments as Creator?;
+                  if (creator != null) {
+                    return MaterialPageRoute(
+                      builder: (context) => CreatorDetailScreen(
+                        creator: creator,
+                        apiSource: currentApiSource,
+                      ),
+                    );
+                  }
+                  return MaterialPageRoute(
+                    builder: (context) => const MainNavigationScreen(),
+                  );
+                default:
+                  return MaterialPageRoute(builder: (context) => MainNavigationScreen());
+              }
             },
           );
         },

@@ -13,7 +13,8 @@ import '../../presentation/providers/tracked_http_client.dart';
 class _ApiCacheEntry {
   final dynamic data;
   final DateTime timestamp;
-  _ApiCacheEntry(this.data, this.timestamp);
+  DateTime lastAccessed;
+  _ApiCacheEntry(this.data, this.timestamp) : lastAccessed = timestamp;
   bool get isExpired => DateTime.now().difference(timestamp).inMinutes > 5;
 }
 
@@ -28,6 +29,7 @@ class _ApiCache {
   dynamic get(String key) {
     final entry = _cache[key];
     if (entry != null && !entry.isExpired) {
+      entry.lastAccessed = DateTime.now();
       return entry.data;
     }
     _cache.remove(key);
@@ -35,11 +37,17 @@ class _ApiCache {
   }
 
   void set(String key, dynamic data) {
-    if (_cache.length > 100) {
-      final keysToRemove = _cache.keys.take(20).toList();
-      for (final k in keysToRemove) {
-        _cache.remove(k);
+    if (_cache.length >= 100) {
+      // LRU eviction: remove the single least-recently-used entry
+      String? lruKey;
+      DateTime? oldest;
+      for (final e in _cache.entries) {
+        if (oldest == null || e.value.lastAccessed.isBefore(oldest)) {
+          oldest = e.value.lastAccessed;
+          lruKey = e.key;
+        }
       }
+      if (lruKey != null) _cache.remove(lruKey);
     }
     _cache[key] = _ApiCacheEntry(data, DateTime.now());
   }
@@ -52,12 +60,21 @@ class _ApiCache {
 }
 
 class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
+  // Pre-compiled regex for JSON extraction – compiled once at class level.
+  static final RegExp _jsonPattern = RegExp(r'\[.*?\]|\{.*?\}', dotAll: true);
+
+  // Maximum bytes to scan when searching for embedded JSON in a CSS response.
+  static const int _jsonScanLimit = 5120; // 5 KB
+
   final http.Client client;
 
   KemonoRemoteDataSourceImpl({http.Client? client})
     : client = client ?? TrackedHttpClientFactory.getTrackedClient();
 
   String? _lastSuccessfulDomain; // Track last successful domain
+
+  // Per-domain cache of the header variant index that last succeeded.
+  final Map<String, int> _successfulHeaderVariantIndex = {};
 
   // Get last successful domain
   String? get lastSuccessfulDomain => _lastSuccessfulDomain;
@@ -495,11 +512,18 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     final endpoint = '/v1/$service/user/$creatorId/post/$postId/comments';
     AppLogger.debug('🔍 DEBUG: Using relative endpoint: $endpoint');
 
-    // Try different header combinations
+    // Header variants ordered by success likelihood (most likely first).
+    // Variant 3 (application/json) and Variant 4 (plain API headers) are tried
+    // before the CSS-specific variants because modern REST endpoints respond
+    // better to standard Accept headers.
     final headerVariants = [
-      // Variant 1: CSS header + standard headers
+      // Variant 1: JSON Accept header – most likely to succeed on a JSON API
+      {...ApiHeaderService.getApiHeaders(), 'Accept': 'application/json'},
+      // Variant 2: No special Accept header
+      ApiHeaderService.getApiHeaders(),
+      // Variant 3: CSS header + standard headers
       {...ApiHeaderService.getApiHeaders(), 'Accept': 'text/css'},
-      // Variant 2: CSS header + browser-like User-Agent
+      // Variant 4: CSS header + browser-like User-Agent
       {
         'Accept': 'text/css',
         'User-Agent':
@@ -513,13 +537,22 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         'Sec-Fetch-Site': 'none',
         'Cache-Control': 'max-age=0',
       },
-      // Variant 3: JSON Accept header (just in case)
-      {...ApiHeaderService.getApiHeaders(), 'Accept': 'application/json'},
-      // Variant 4: No special Accept header
-      ApiHeaderService.getApiHeaders(),
     ];
 
-    for (int i = 0; i < headerVariants.length; i++) {
+    // Determine the starting variant based on prior success for this domain.
+    final domainKey = (_lastSuccessfulDomain ?? 'default');
+    final cachedVariant = _successfulHeaderVariantIndex[domainKey];
+
+    // Build iteration order: try the cached winner first, then others.
+    final Iterable<int> order = cachedVariant != null
+        ? [
+            cachedVariant,
+            for (int j = 0; j < headerVariants.length; j++)
+              if (j != cachedVariant) j,
+          ]
+        : List.generate(headerVariants.length, (j) => j);
+
+    for (final i in order) {
       final headers = headerVariants[i];
       AppLogger.debug(
         '🔍 DEBUG: Trying header variant ${i + 1}/${headerVariants.length}',
@@ -538,6 +571,8 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
         if (response.statusCode == 200) {
           AppLogger.debug('🔍 DEBUG: SUCCESS! Header variant ${i + 1} worked');
+          // Cache the winning variant index for this domain.
+          _successfulHeaderVariantIndex[domainKey] = i;
           return _parseCssResponse(response.body);
         } else if (response.statusCode == 404) {
           AppLogger.debug('🔍 DEBUG: Header variant ${i + 1} returned 404');
@@ -596,11 +631,17 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
     // Try to extract JSON from CSS response (fallback)
     try {
-      // Look for JSON patterns in the response
-      final jsonPattern = RegExp(r'\[.*?\]|\{.*?\}', dotAll: true);
-      final matches = jsonPattern.allMatches(responseBody);
+      // Scan the first _jsonScanLimit characters using allMatches(str, start)
+      // to avoid allocating a substring. Returns early on the first valid JSON.
+      final scanEnd = responseBody.length < _jsonScanLimit
+          ? responseBody.length
+          : _jsonScanLimit;
+      final matches = _jsonPattern.allMatches(responseBody, 0);
 
       for (final match in matches) {
+        // Stop scanning once we exceed the initial limit.
+        if (match.start >= scanEnd) break;
+
         final potentialJson = match.group(0)!;
         AppLogger.debug(
           '🔍 DEBUG: Found potential JSON: ${potentialJson.substring(0, potentialJson.length > 100 ? 100 : potentialJson.length)}...',
@@ -620,6 +661,27 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         } catch (e) {
           AppLogger.debug('🔍 DEBUG: Failed to parse potential JSON: $e');
           continue;
+        }
+      }
+
+      // Fallback: scan the remainder of the body beyond the initial limit.
+      if (responseBody.length > _jsonScanLimit) {
+        final remainderMatches = _jsonPattern.allMatches(
+          responseBody,
+          _jsonScanLimit,
+        );
+        for (final match in remainderMatches) {
+          final potentialJson = match.group(0)!;
+          try {
+            final dynamic decoded = json.decode(potentialJson);
+            if (decoded is List) {
+              return decoded;
+            } else if (decoded is Map<String, dynamic>) {
+              return [decoded];
+            }
+          } catch (_) {
+            continue;
+          }
         }
       }
 

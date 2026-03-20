@@ -75,14 +75,33 @@ class SmartBookmarkProvider with ChangeNotifier {
   final Map<String, dynamic> _bookmarkedPosts = {};
   bool _isInitialized = false;
 
+  // Cached filtered lists – invalidated whenever _bookmarks changes.
+  List<Bookmark>? _cachedCreatorBookmarks;
+  List<Bookmark>? _cachedPostBookmarks;
+
   List<Bookmark> get bookmarks => List.unmodifiable(_bookmarks);
   bool get isInitialized => _isInitialized;
 
-  // Get bookmarks by type
-  List<Bookmark> get creatorBookmarks =>
-      _bookmarks.where((b) => b.type == BookmarkType.creator).toList();
-  List<Bookmark> get postBookmarks =>
-      _bookmarks.where((b) => b.type == BookmarkType.post).toList();
+  // Get bookmarks by type (cached)
+  List<Bookmark> get creatorBookmarks {
+    _cachedCreatorBookmarks ??= List.unmodifiable(
+      _bookmarks.where((b) => b.type == BookmarkType.creator),
+    );
+    return _cachedCreatorBookmarks!;
+  }
+
+  List<Bookmark> get postBookmarks {
+    _cachedPostBookmarks ??= List.unmodifiable(
+      _bookmarks.where((b) => b.type == BookmarkType.post),
+    );
+    return _cachedPostBookmarks!;
+  }
+
+  /// Invalidate the filtered-list caches. Call whenever _bookmarks is mutated.
+  void _invalidateFilterCache() {
+    _cachedCreatorBookmarks = null;
+    _cachedPostBookmarks = null;
+  }
 
   /// Initialize provider and load bookmarks from storage
   Future<void> initialize() async {
@@ -95,6 +114,7 @@ class SmartBookmarkProvider with ChangeNotifier {
       _bookmarks.clear();
       _bookmarkedCreators.clear();
       _bookmarkedPosts.clear();
+      _invalidateFilterCache();
 
       List<String> bookmarksJson = [];
 
@@ -225,6 +245,7 @@ class SmartBookmarkProvider with ChangeNotifier {
       _bookmarkedPosts[postId] = bookmark;
     }
 
+    _invalidateFilterCache();
     _saveBookmarks();
     notifyListeners();
 
@@ -258,6 +279,7 @@ class SmartBookmarkProvider with ChangeNotifier {
       _bookmarkedPosts[bookmark.postId!] = bookmark;
     }
 
+    _invalidateFilterCache();
     _saveBookmarks();
     notifyListeners();
 
@@ -278,6 +300,7 @@ class SmartBookmarkProvider with ChangeNotifier {
       _bookmarkedPosts.remove(bookmark.postId);
     }
 
+    _invalidateFilterCache();
     _saveBookmarks();
     notifyListeners();
 
@@ -297,6 +320,7 @@ class SmartBookmarkProvider with ChangeNotifier {
     _bookmarks.clear();
     _bookmarkedCreators.clear();
     _bookmarkedPosts.clear();
+    _invalidateFilterCache();
 
     _saveBookmarks();
     notifyListeners();
