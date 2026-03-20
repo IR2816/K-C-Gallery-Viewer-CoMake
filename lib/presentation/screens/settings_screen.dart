@@ -18,6 +18,10 @@ import '../../domain/entities/api_source.dart';
 
 // Screens
 import 'data_usage_dashboard.dart';
+import 'domain_settings_dialog.dart';
+
+// Widgets
+import '../widgets/domain_status_badge.dart';
 
 /// 🎯 Settings Screen - Kontrol & Kenyamanan User
 ///
@@ -158,6 +162,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
                 _buildSectionTitle('Media & Playback'),
                 _buildMediaPlaybackSection(),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Domain Settings'),
+                _buildDomainSettingsSection(),
                 const SizedBox(height: 24),
                 _buildSectionTitle('Download Settings'),
                 _buildDownloadSettingsSection(),
@@ -555,6 +562,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     DropdownMenuItem(value: BoxFit.fill, child: Text('Fill')),
                   ],
                 ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDomainSettingsSection() {
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, _) {
+        return _buildSettingsCard(
+          context,
+          Column(
+            children: [
+              // Kemono domain row
+              ListTile(
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.language_rounded,
+                    color: Color(0xFF2196F3),
+                    size: 18,
+                  ),
+                ),
+                title: const Text(
+                  'Kemono Domain',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('Primary source domain'),
+                trailing: DomainStatusBadge(
+                  apiSource: 'kemono',
+                  compact: true,
+                ),
+              ),
+
+              const Divider(height: 1, indent: 56),
+
+              // Coomer domain row
+              ListTile(
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.language_rounded,
+                    color: Color(0xFFFF6B6B),
+                    size: 18,
+                  ),
+                ),
+                title: const Text(
+                  'Coomer Domain',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('Secondary source domain'),
+                trailing: DomainStatusBadge(
+                  apiSource: 'coomer',
+                  compact: true,
+                ),
+              ),
+
+              const Divider(height: 1, indent: 56),
+
+              // Change domain button
+              ListTile(
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    color: AppTheme.primaryColor,
+                    size: 18,
+                  ),
+                ),
+                title: const Text(
+                  'Change Domains',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('Update Kemono / Coomer domain URLs'),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                onTap: () => showDomainSettingsDialog(context),
               ),
             ],
           ),

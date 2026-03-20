@@ -18,6 +18,7 @@ import 'creator_detail_screen.dart';
 import 'download_manager_screen.dart';
 import '../widgets/post_card.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/domain_status_badge.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../utils/logger.dart';
 
@@ -55,6 +56,13 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   // UI state
   bool _isRecentlyViewedExpanded = true; // Collapsible section state
 
+  // Staggered grid animation key – increment to re-trigger entry animations
+  int _gridAnimationEpoch = 0;
+
+  // Track domain values to detect changes
+  String _lastKnownKemonoDomain = '';
+  String _lastKnownCoomerDomain = '';
+
   // Memory management simplified (Image cache naturally manages its own memory)
   @override
   bool get wantKeepAlive => _posts.length < 100; // Limit keep alive to prevent memory bloat
@@ -67,6 +75,12 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     _settingsProvider = context.read<SettingsProvider>();
     _tagFilterProvider = context.read<TagFilterProvider>();
     _postSearchProvider = context.read<PostSearchProvider>();
+
+    // Capture initial domain values for change detection
+    if (_settingsProvider != null) {
+      _lastKnownKemonoDomain = _settingsProvider!.cleanKemonoDomain;
+      _lastKnownCoomerDomain = _settingsProvider!.cleanCoomerDomain;
+    }
 
     // Initialize search controllers
     _postSearchController = TextEditingController();
@@ -138,13 +152,32 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       if (mounted) {
         setState(() {
           _isSwitchingSource = false;
+          // Bump epoch to trigger staggered thumbnail re-animation
+          _gridAnimationEpoch++;
         });
+        // Keep domain tracking in sync after reload
+        _lastKnownKemonoDomain = settingsProvider.cleanKemonoDomain;
+        _lastKnownCoomerDomain = settingsProvider.cleanCoomerDomain;
       }
     } else {
-      // API source hasn't changed, just update tag filters
+      // API source hasn't changed.
+      // Check if only the domain URL changed (triggers thumbnail refresh animation).
+      final domainChanged =
+          settingsProvider.cleanKemonoDomain != _lastKnownKemonoDomain ||
+          settingsProvider.cleanCoomerDomain != _lastKnownCoomerDomain;
+
+      _lastKnownKemonoDomain = settingsProvider.cleanKemonoDomain;
+      _lastKnownCoomerDomain = settingsProvider.cleanCoomerDomain;
+
       setState(() {
         _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
         _posts = _getFilteredPosts(postsProvider.posts);
+        if (domainChanged) {
+          // Clear cached images so thumbnails reload from the new domain
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
+          _gridAnimationEpoch++;
+        }
       });
     }
   }
@@ -551,7 +584,6 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       titleSpacing: 16,
       title: Consumer<PostsProvider>(
         builder: (context, postsProvider, _) {
-          final currentApiSource = postsProvider.currentApiSourceDisplayName;
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,31 +605,11 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // API Source Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: currentApiSource == 'COOMER'
-                          ? const Color(0xFF00BCD4).withValues(alpha: 0.15)
-                          : AppTheme.primaryColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: currentApiSource == 'COOMER'
-                            ? const Color(0xFF00BCD4).withValues(alpha: 0.5)
-                            : AppTheme.primaryColor.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      currentApiSource,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: currentApiSource == 'COOMER'
-                            ? const Color(0xFF00BCD4)
-                            : AppTheme.primaryColor,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                  // Active domain badge – shows current domain with color coding
+                  DomainStatusBadge(
+                    apiSource: postsProvider.currentApiSource?.name ??
+                        'kemono',
+                    compact: true,
                   ),
                 ],
               ),
@@ -1363,21 +1375,25 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       itemBuilder: (context, index) {
         final post = pagePosts[index];
         return RepaintBoundary(
-          child: PostCard(
-            post: post,
-            isSingleColumn: isSingleColumn,
-            apiSource: settings.defaultApiSource,
-            onTap: () => _navigateToPostDetail(post),
-            onCreatorTap: () {
-              final creator = Creator(
-                id: post.user,
-                name: post.user,
-                service: post.service,
-                indexed: 0,
-                updated: 0,
-              );
-              _navigateToCreatorDetail(creator);
-            },
+          child: _StaggeredFadeItem(
+            index: index,
+            epoch: _gridAnimationEpoch,
+            child: PostCard(
+              post: post,
+              isSingleColumn: isSingleColumn,
+              apiSource: settings.defaultApiSource,
+              onTap: () => _navigateToPostDetail(post),
+              onCreatorTap: () {
+                final creator = Creator(
+                  id: post.user,
+                  name: post.user,
+                  service: post.service,
+                  indexed: 0,
+                  updated: 0,
+                );
+                _navigateToCreatorDetail(creator);
+              },
+            ),
           ),
         );
       },
@@ -2316,5 +2332,91 @@ class _DomainTransitionOverlayState extends State<_DomainTransitionOverlay>
       default:
         return Icons.public;
     }
+  }
+}
+
+/// Staggered fade-in widget for grid items.
+///
+/// When [epoch] changes, the item restarts its entry animation with a delay
+/// proportional to [index] (capped at 15 items to keep it snappy).
+class _StaggeredFadeItem extends StatefulWidget {
+  final int index;
+  final int epoch;
+  final Widget child;
+
+  const _StaggeredFadeItem({
+    required this.index,
+    required this.epoch,
+    required this.child,
+  });
+
+  @override
+  State<_StaggeredFadeItem> createState() => _StaggeredFadeItemState();
+}
+
+class _StaggeredFadeItemState extends State<_StaggeredFadeItem>
+    with SingleTickerProviderStateMixin {
+  static const int _maxStaggeredItems = 14;
+  static const int _delayPerItemMs = 40;
+
+  late AnimationController _ctrl;
+  late Animation<double> _opacity;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _opacity =
+        Tween<double>(begin: 0, end: 1).animate(
+          CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+        );
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    _scheduleAnimation();
+  }
+
+  @override
+  void didUpdateWidget(_StaggeredFadeItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.epoch != widget.epoch) {
+      _scheduleAnimation();
+    }
+  }
+
+  void _scheduleAnimation() {
+    if (!mounted) return;
+    _ctrl.reset();
+    final delay = Duration(
+      milliseconds: (widget.index.clamp(0, _maxStaggeredItems) * _delayPerItemMs),
+    );
+    Future.delayed(delay, () {
+      if (mounted) {
+        _ctrl.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _slide,
+        child: widget.child,
+      ),
+    );
   }
 }
