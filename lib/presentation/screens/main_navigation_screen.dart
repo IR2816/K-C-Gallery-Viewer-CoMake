@@ -8,7 +8,6 @@ import 'search_screen_dual.dart';
 import 'saved_screen.dart';
 import 'settings_screen.dart';
 import 'discord_server_screen.dart';
-import 'creators_list_screen.dart';
 
 // Theme
 import '../theme/app_theme.dart';
@@ -40,11 +39,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       icon: Icons.home_rounded,
       label: 'Home',
       color: AppTheme.primaryColor,
-    ),
-    _NavItem(
-      icon: Icons.people_rounded,
-      label: 'Creators',
-      color: AppTheme.successColor,
     ),
     _NavItem(
       icon: Icons.search_rounded,
@@ -126,7 +120,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         },
         children: [
           const LatestPostsScreen(),
-          const CreatorsListScreen(),
           const SearchScreenDual(),
           const DiscordServerScreen(),
           SavedScreen(),

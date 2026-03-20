@@ -9,7 +9,6 @@ import 'latest_posts_screen.dart';
 import 'search_screen_dual.dart';
 import 'saved_screen.dart';
 import 'settings_screen.dart';
-import 'creators_list_screen.dart';
 
 /// 🎯 HomeScreen - Main Navigation Hub
 ///
@@ -34,11 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
       label: 'Home',
-    ),
-    _NavTab(
-      icon: Icons.people_outline_rounded,
-      activeIcon: Icons.people_rounded,
-      label: 'Creators',
     ),
     _NavTab(
       icon: Icons.search_rounded,
@@ -96,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         children: [
           const LatestPostsScreen(),
-          const CreatorsListScreen(),
           const SearchScreenDual(),
           SavedScreen(),
           const SettingsScreen(),
