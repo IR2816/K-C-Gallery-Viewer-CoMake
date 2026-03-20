@@ -107,6 +107,14 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
         await settings.setCoomerDomain(newCoomer);
       }
 
+      // Eagerly clear the image cache so stale thumbnails are evicted
+      // immediately, regardless of which screen is currently mounted.
+      if ((newKemono.isNotEmpty && newKemono != oldKemono) ||
+          (newCoomer.isNotEmpty && newCoomer != oldCoomer)) {
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
+      }
+
       if (!mounted) return;
       Navigator.of(context).pop(true);
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -45,7 +46,6 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   List<String> _blockedTags = [];
   TagFilterProvider? _tagFilterProvider;
   int _currentPage = 1;
-  static const int _pageSize = 24;
 
   // Post search state
   late PostSearchProvider _postSearchProvider;
@@ -88,12 +88,14 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
     _settingsProvider?.addListener(_onSettingsChanged);
     _tagFilterProvider?.addListener(_onSettingsChanged);
+    _scrollController.addListener(_onScrollChanged);
   }
 
   @override
   void dispose() {
     _settingsProvider?.removeListener(_onSettingsChanged);
     _tagFilterProvider?.removeListener(_onSettingsChanged);
+    _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
 
     // Clean up search resources
@@ -107,6 +109,17 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     // Clear posts list to free memory
     _posts.clear();
     super.dispose();
+  }
+
+  /// Scroll listener that triggers infinite-scroll loading when the user
+  /// scrolls within 200 px of the bottom while scrolling downward.
+  void _onScrollChanged() {
+    if (!_scrollController.hasClients || _isLoadingMore || _isLoading || !_hasMore) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200 &&
+        pos.userScrollDirection == ScrollDirection.reverse) {
+      _loadMorePosts();
+    }
   }
 
   Future<void> _onSettingsChanged() async {
@@ -162,12 +175,25 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     } else {
       // API source hasn't changed.
       // Check if only the domain URL changed (triggers thumbnail refresh animation).
+      final oldKemono = _lastKnownKemonoDomain;
+      final oldCoomer = _lastKnownCoomerDomain;
       final domainChanged =
-          settingsProvider.cleanKemonoDomain != _lastKnownKemonoDomain ||
-          settingsProvider.cleanCoomerDomain != _lastKnownCoomerDomain;
+          settingsProvider.cleanKemonoDomain != oldKemono ||
+          settingsProvider.cleanCoomerDomain != oldCoomer;
 
       _lastKnownKemonoDomain = settingsProvider.cleanKemonoDomain;
       _lastKnownCoomerDomain = settingsProvider.cleanCoomerDomain;
+
+      if (domainChanged) {
+        // Show visual feedback for the domain switch
+        final fromDomain = postsProvider.currentApiSource == ApiSource.kemono
+            ? oldKemono
+            : oldCoomer;
+        final toDomain = postsProvider.currentApiSource == ApiSource.kemono
+            ? settingsProvider.cleanKemonoDomain
+            : settingsProvider.cleanCoomerDomain;
+        _showDomainTransitionAnimation(fromDomain, toDomain);
+      }
 
       setState(() {
         _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
@@ -179,6 +205,11 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
           _gridAnimationEpoch++;
         }
       });
+
+      // Reload posts from the new domain URL
+      if (domainChanged) {
+        await _loadInitialPosts();
+      }
     }
   }
 
@@ -1218,57 +1249,6 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     );
   }
 
-  List<Post> _getPagePosts() {
-    final startIndex = (_currentPage - 1) * _pageSize;
-    if (startIndex >= _posts.length) {
-      return const <Post>[];
-    }
-    final endIndex = (startIndex + _pageSize).clamp(0, _posts.length);
-    return _posts.sublist(startIndex, endIndex);
-  }
-
-  Future<void> _goToPage(int page) async {
-    if (page < 1) return;
-    if (page == _currentPage) return;
-
-    if (mounted) {
-      setState(() => _isFadingPage = true);
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _currentPage = page;
-    });
-
-    await _ensurePageLoaded(page);
-
-    if (_scrollController.hasClients) {
-      _scrollController.jumpTo(0);
-    }
-
-    if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 50));
-      setState(() => _isFadingPage = false);
-    }
-  }
-
-  Future<void> _ensurePageLoaded(int page) async {
-    final needed = page * _pageSize;
-    while (_posts.length < needed && _hasMore) {
-      if (_isLoading || _isLoadingMore) return;
-      await _loadMorePosts();
-    }
-
-    if (!_hasMore && _posts.length < needed && mounted) {
-      final lastPage = (_posts.length / _pageSize).ceil().clamp(1, 9999);
-      setState(() {
-        _currentPage = lastPage;
-      });
-    }
-  }
-
   Widget _buildSwitchingSourceIndicator() {
     return Center(
       child: Column(
@@ -1343,22 +1323,11 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     final settings = context.watch<SettingsProvider>();
     final int columnCount = settings.latestPostsColumns.clamp(1, 3);
     final bool isSingleColumn = columnCount == 1;
-    final pagePosts = _getPagePosts();
 
-    if (pagePosts.isEmpty && _isLoadingMore) {
-      return MasonryGridView.builder(
-        padding: isSingleColumn 
-            ? const EdgeInsets.symmetric(vertical: 4) 
-            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columnCount,
-        ),
-        mainAxisSpacing: isSingleColumn ? 32 : 12,
-        crossAxisSpacing: isSingleColumn ? 0 : 12,
-        itemCount: 6, // Show 6 skeleton items
-        itemBuilder: (context, index) => const PostGridSkeleton(),
-      );
-    }
+    // Show all loaded posts for infinite scroll; append skeleton rows at
+    // the bottom while the next page is being fetched.
+    final skeletonCount = _isLoadingMore ? columnCount : 0;
+    final totalItemCount = _posts.length + skeletonCount;
 
     return MasonryGridView.builder(
       controller: _scrollController,
@@ -1371,9 +1340,13 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       mainAxisSpacing: isSingleColumn ? 32 : 12,
       crossAxisSpacing: isSingleColumn ? 0 : 12,
       addAutomaticKeepAlives: false,
-      itemCount: pagePosts.length,
+      itemCount: totalItemCount,
       itemBuilder: (context, index) {
-        final post = pagePosts[index];
+        // Skeleton placeholder rows at the bottom
+        if (index >= _posts.length) {
+          return const PostGridSkeleton();
+        }
+        final post = _posts[index];
         return RepaintBoundary(
           child: _StaggeredFadeItem(
             index: index,
@@ -1462,13 +1435,11 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
   Widget _buildPaginationBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final totalLoadedPages = (_posts.length / _pageSize).ceil().clamp(1, 9999);
-    final canGoPrev = _currentPage > 1;
-    final canGoNext = _hasMore || _currentPage < totalLoadedPages;
+    final totalLoaded = _posts.length;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 108),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -1496,140 +1467,33 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         ],
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildPageButton(
-            icon: Icons.chevron_left_rounded,
-            label: 'Prev',
-            enabled: canGoPrev,
-            onTap: () => _goToPage(_currentPage - 1),
-          ),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Page $_currentPage',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_isLoadingMore) ...[
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: AppSkeleton(
-                           width: 14, 
-                           height: 14, 
-                           shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                    ],
-                    Text(
-                      _hasMore
-                          ? '$totalLoadedPages+ loaded'
-                          : '$totalLoadedPages total',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.getSecondaryTextColor(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          if (_isLoadingMore) ...[
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: AppSkeleton(
+                width: 14,
+                height: 14,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
-          _buildPageButton(
-            icon: Icons.chevron_right_rounded,
-            label: _hasMore ? 'Next' : 'End',
-            enabled: canGoNext,
-            isNext: true,
-            onTap: () => _goToPage(_currentPage + 1),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            _isLoadingMore
+                ? 'Loading more…'
+                : (_hasMore
+                    ? '$totalLoaded loaded · scroll for more'
+                    : '$totalLoaded posts · all loaded'),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.getSecondaryTextColor(context),
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPageButton({
-    required IconData icon,
-    required String label,
-    required bool enabled,
-    required VoidCallback onTap,
-    bool isNext = false,
-  }) {
-    final color = enabled
-        ? (isNext ? Colors.white : AppTheme.primaryColor)
-        : AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.52);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 92),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: enabled && isNext
-                ? const LinearGradient(
-                    colors: [AppTheme.primaryColor, AppTheme.primaryDarkColor],
-                  )
-                : null,
-            color: enabled
-                ? (isNext
-                      ? null
-                      : AppTheme.primaryColor.withValues(alpha: 0.15))
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: enabled
-                  ? (isNext
-                        ? AppTheme.primaryColor.withValues(alpha: 0.65)
-                        : AppTheme.primaryColor.withValues(alpha: 0.36))
-                  : Colors.transparent,
-            ),
-            boxShadow: enabled && isNext
-                ? [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.33),
-                      blurRadius: 14,
-                      spreadRadius: -9,
-                      offset: const Offset(0, 7),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!isNext) ...[
-                Icon(icon, color: color, size: 18),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12.5,
-                ),
-              ),
-              if (isNext) ...[
-                const SizedBox(width: 4),
-                Icon(icon, color: color, size: 18),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }
