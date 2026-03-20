@@ -13,4 +13,17 @@ class DomainChangeNotifier extends ChangeNotifier {
             gravity: ToastGravity.BOTTOM,
         );
     }
+
+    static void show(
+        BuildContext context, {
+        required String oldDomain,
+        required String newDomain,
+        required String apiSource,
+    }) {
+        Fluttertoast.showToast(
+            msg: "$apiSource domain changed from $oldDomain to $newDomain",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+        );
+    }
 }
