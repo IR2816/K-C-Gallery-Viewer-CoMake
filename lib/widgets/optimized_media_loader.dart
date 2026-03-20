@@ -15,6 +15,7 @@ class OptimizedMediaLoader {
     bool isThumbnail = false,
     String? apiSource,
     String quality = 'medium',
+    String? domain,
   }) {
     if (path == null || path.isEmpty) return '';
 
@@ -29,29 +30,31 @@ class OptimizedMediaLoader {
     final isLowQuality = quality == 'low';
     final isHighQuality = quality == 'high';
 
-    // Determine domain based on API source
-    String domain;
-    if (apiSource == 'coomer') {
-      domain = DomainConfig.defaultCoomerDomain;
+    // Determine domain based on API source or provided domain
+    String finalDomain;
+    if (domain != null && domain.isNotEmpty) {
+      finalDomain = domain;
+    } else if (apiSource == 'coomer') {
+      finalDomain = DomainConfig.defaultCoomerDomain;
     } else {
-      domain = DomainConfig.defaultKemonoDomain;
+      finalDomain = DomainConfig.defaultKemonoDomain;
     }
 
     if (isHighQuality && !isThumbnail) {
       // Use high-quality data domain
-      final cdnDomain = (apiSource == 'coomer') ? 'n4.coomer.st' : 'n4.kemono.cr';
+      final cdnDomain = finalDomain.contains('coomer') ? 'n4.$finalDomain' : 'n4.$finalDomain';
       return 'https://$cdnDomain/data/$cleanPath';
     }
 
     if (isThumbnail || isLowQuality) {
       // Use thumbnail domain
-      final thumbDomain = (apiSource == 'coomer') ? 'img.coomer.st' : 'img.kemono.cr';
+      final thumbDomain = finalDomain.contains('coomer') ? 'img.$finalDomain' : 'img.$finalDomain';
       final stripped = cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
       return 'https://$thumbDomain/thumbnail/data/$stripped';
     }
 
     // Default: medium quality (usually n4 subdomain)
-    final cdnDomain = (apiSource == 'coomer') ? 'n4.coomer.st' : 'n4.kemono.cr';
+    final cdnDomain = finalDomain.contains('coomer') ? 'n4.$finalDomain' : 'n4.$finalDomain';
     final url = 'https://$cdnDomain/data/$cleanPath';
 
     AppLogger.mediaUrl(
@@ -59,7 +62,7 @@ class OptimizedMediaLoader {
       path,
       url,
       apiSource: apiSource,
-      domain: domain,
+      domain: finalDomain,
     );
 
     return url;
@@ -70,6 +73,7 @@ class OptimizedMediaLoader {
     String? path, {
     bool isThumbnail = false,
     String? apiSource,
+    String? domain,
   }) {
     if (path == null || path.isEmpty) return [];
 
@@ -80,35 +84,39 @@ class OptimizedMediaLoader {
     // Remove leading slash if present
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
 
+    // Determine if coomer based on apiSource or domain
+    final isCoomer = apiSource == 'coomer' || (domain != null && domain.contains('coomer'));
+    final finalDomain = domain ?? (isCoomer ? 'coomer.st' : 'kemono.cr');
+
     // Return all possible URL formats except the first one (already tried)
     List<String> fallbackUrls = [];
 
     if (isThumbnail) {
       if (cleanPath.startsWith('data/')) {
         final stripped = cleanPath.substring(5);
-        if (apiSource == 'coomer') {
+        if (isCoomer) {
           fallbackUrls.addAll([
             'https://coomer.st/thumbnails/data/$stripped',
-            'https://img.coomer.st/thumbnail/data/$stripped',
+            'https://img.$finalDomain/thumbnail/data/$stripped',
             'https://coomer.st/thumbnail/data/$stripped',
           ]);
         } else {
           fallbackUrls.addAll([
-            'https://img.kemono.cr/thumbnails/data/$stripped',
+            'https://img.$finalDomain/thumbnails/data/$stripped',
             'https://kemono.cr/thumbnail/data/$stripped',
             'https://kemono.cr/thumbnails/data/$stripped',
           ]);
         }
       } else {
-        if (apiSource == 'coomer') {
+        if (isCoomer) {
           fallbackUrls.addAll([
             'https://coomer.st/thumbnails/data/$cleanPath',
-            'https://img.coomer.st/thumbnail/data/$cleanPath',
+            'https://img.$finalDomain/thumbnail/data/$cleanPath',
             'https://coomer.st/thumbnail/data/$cleanPath',
           ]);
         } else {
           fallbackUrls.addAll([
-            'https://img.kemono.cr/thumbnails/data/$cleanPath',
+            'https://img.$finalDomain/thumbnails/data/$cleanPath',
             'https://kemono.cr/thumbnail/data/$cleanPath',
             'https://kemono.cr/thumbnails/data/$cleanPath',
           ]);
@@ -116,38 +124,38 @@ class OptimizedMediaLoader {
       }
     } else {
       if (cleanPath.startsWith('data/')) {
-        if (apiSource == 'coomer') {
+        if (isCoomer) {
           fallbackUrls.addAll([
             'https://coomer.st/data/$cleanPath',
-            'https://cdn.coomer.st/$cleanPath',
-            'https://files.coomer.st/$cleanPath',
-            'https://n2.coomer.st/$cleanPath',
-            'https://img.coomer.st/data/$cleanPath',
-            'https://media.coomer.st/data/$cleanPath',
+            'https://cdn.$finalDomain/$cleanPath',
+            'https://files.$finalDomain/$cleanPath',
+            'https://n2.$finalDomain/$cleanPath',
+            'https://img.$finalDomain/data/$cleanPath',
+            'https://media.$finalDomain/data/$cleanPath',
           ]);
         } else {
           fallbackUrls.addAll([
             'https://kemono.cr/data/$cleanPath',
-            'https://cdn.kemono.cr/$cleanPath',
-            'https://files.kemono.cr/$cleanPath',
-            'https://n2.kemono.cr/$cleanPath',
+            'https://cdn.$finalDomain/$cleanPath',
+            'https://files.$finalDomain/$cleanPath',
+            'https://n2.$finalDomain/$cleanPath',
           ]);
         }
       } else {
-        if (apiSource == 'coomer') {
+        if (isCoomer) {
           fallbackUrls.addAll([
             'https://coomer.st/data/$cleanPath',
-            'https://cdn.coomer.st/$cleanPath',
-            'https://files.coomer.st/$cleanPath',
-            'https://n2.coomer.st/$cleanPath',
-            'https://img.coomer.st/data/$cleanPath',
-            'https://media.coomer.st/data/$cleanPath',
+            'https://cdn.$finalDomain/$cleanPath',
+            'https://files.$finalDomain/$cleanPath',
+            'https://n2.$finalDomain/$cleanPath',
+            'https://img.$finalDomain/data/$cleanPath',
+            'https://media.$finalDomain/data/$cleanPath',
           ]);
         } else {
           fallbackUrls.addAll([
             'https://kemono.cr/data/$cleanPath',
-            'https://cdn.kemono.cr/$cleanPath',
-            'https://files.kemono.cr/$cleanPath',
+            'https://cdn.$finalDomain/$cleanPath',
+            'https://files.$finalDomain/$cleanPath',
             'https://n2.kemono.cr/$cleanPath',
           ]);
         }
@@ -202,6 +210,7 @@ class FallbackImage extends StatefulWidget {
   final String? apiSource;
   final bool allowFallback;
   final String quality;
+  final String? domain; // Add domain parameter for proper headers
 
   const FallbackImage({
     super.key,
@@ -215,6 +224,7 @@ class FallbackImage extends StatefulWidget {
     this.apiSource,
     this.allowFallback = true,
     this.quality = 'medium',
+    this.domain,
   });
 
   @override
@@ -227,6 +237,12 @@ class _FallbackImageState extends State<FallbackImage> {
   bool _hasError = false;
 
   Map<String, String> get _mediaHeaders {
+    // First try to use domain parameter from settings
+    if (widget.domain != null && widget.domain!.isNotEmpty) {
+      return DomainConfig.getCdnHeaders(widget.domain!);
+    }
+    
+    // Fallback to apiSource-based headers
     final referer = widget.apiSource == 'coomer'
         ? 'https://coomer.st/'
         : 'https://kemono.cr/';
@@ -245,6 +261,7 @@ class _FallbackImageState extends State<FallbackImage> {
       isThumbnail: widget.isThumbnail,
       apiSource: widget.apiSource,
       quality: widget.quality,
+      domain: widget.domain,
     );
 
     _urls = [primaryUrl];
@@ -254,6 +271,7 @@ class _FallbackImageState extends State<FallbackImage> {
         widget.imagePath,
         isThumbnail: widget.isThumbnail,
         apiSource: widget.apiSource,
+        domain: widget.domain,
       );
       _urls.addAll(fallbackUrls);
     }

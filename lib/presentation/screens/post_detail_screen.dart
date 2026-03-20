@@ -804,8 +804,14 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             ),
             ElevatedButton(
               onPressed: () async {
+                final settings = ctx.read<SettingsProvider>();
+                final kemonoDomain = settings.cleanKemonoDomain;
+                final coomerDomain = settings.cleanCoomerDomain;
+                
                 final thumbnailUrl = _currentPost.getThumbnailUrl(
                   _activeApiSource,
+                  kemonoDomain: kemonoDomain,
+                  coomerDomain: coomerDomain,
                 );
                 await provider.addBookmark(
                   _currentPost,

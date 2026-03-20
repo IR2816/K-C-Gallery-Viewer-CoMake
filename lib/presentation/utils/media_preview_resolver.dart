@@ -8,7 +8,12 @@ class MediaPreviewResolver {
   /// Get thumbnail URL from RAW path (not from full URL)
   /// Example kemono thumbnail: https://img.kemono.cr/thumbnail/data/a4/41/a441621b83f7bf93d7ff1972fb7848233ac5e253c93365e451c0f00022d502a0.jpg
   /// Example coomer thumbnail: https://img.coomer.st/thumbnail/data/56/0b/560b7d65dc462caebf9a1530d95bd47374a0fdf2e40a585c83f3046b4ab1ba1e.jpg
-  static String getThumbnailUrlFromPath(String rawPath, String apiSource) {
+  static String getThumbnailUrlFromPath(
+    String rawPath,
+    String apiSource, {
+    String? kemonoDomain,
+    String? coomerDomain,
+  }) {
     if (rawPath.isEmpty) {
       AppLogger.debug('🔍 DEBUG: Empty raw path for thumbnail');
       return '';
@@ -27,12 +32,14 @@ class MediaPreviewResolver {
     // Ambil bagian setelah '/data/' untuk thumbnail path
     final dataPath = cleanPath.substring(dataIndex + 1);
 
-    // Bangun URL thumbnail berdasarkan apiSource
+    // Bangun URL thumbnail berdasarkan apiSource dan domain parameter
     String thumbnailUrl;
     if (apiSource == 'coomer') {
-      thumbnailUrl = 'https://img.coomer.st/thumbnail/$dataPath';
+      final domain = coomerDomain ?? 'coomer.st';
+      thumbnailUrl = 'https://img.$domain/thumbnail/$dataPath';
     } else {
-      thumbnailUrl = 'https://img.kemono.cr/thumbnail/$dataPath';
+      final domain = kemonoDomain ?? 'kemono.cr';
+      thumbnailUrl = 'https://img.$domain/thumbnail/$dataPath';
     }
 
     AppLogger.debug('🔍 DEBUG: Raw Path: $rawPath');

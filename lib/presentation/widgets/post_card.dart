@@ -235,7 +235,17 @@ class PostCard extends StatelessWidget {
     return Consumer<SettingsProvider>(
       builder: (context, settings, _) {
         final quality = settings.imageQuality;
-        final thumbnailUrl = post.getBestThumbnailUrl(apiSource, quality: quality);
+        
+        // Get proper domains from settings based on API source
+        final kemonoDomain = settings.cleanKemonoDomain;
+        final coomerDomain = settings.cleanCoomerDomain;
+        
+        final thumbnailUrl = post.getBestThumbnailUrl(
+          apiSource,
+          quality: quality,
+          kemonoDomain: kemonoDomain,
+          coomerDomain: coomerDomain,
+        );
 
         // Single column: 1:1 square (Instagram style), Grid: 4:3
         final aspectRatio = isSingleColumn ? 1.0 : 1.25;
@@ -256,6 +266,7 @@ class PostCard extends StatelessWidget {
                         apiSource: apiSource.name,
                         quality: quality,
                         allowFallback: quality != 'low',
+                        domain: apiSource == ApiSource.coomer ? coomerDomain : kemonoDomain,
                         errorWidget: _buildImagePlaceholder(context),
                       )
                     : _buildImagePlaceholder(context),

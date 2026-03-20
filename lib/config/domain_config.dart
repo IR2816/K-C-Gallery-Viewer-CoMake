@@ -103,4 +103,21 @@ class DomainConfig {
       'coomer.party',
     ];
   }
+
+  // Get HTTP headers for CDN requests based on domain
+  static Map<String, String> getCdnHeaders(String domain) {
+    final domainLower = domain.toLowerCase();
+    final isCoomer = domainLower.contains('coomer');
+    
+    return {
+      'Accept': 'image/*, video/*, */*',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': isCoomer ? 'https://coomer.st/' : 'https://kemono.cr/',
+      'Origin': isCoomer ? 'https://coomer.st' : 'https://kemono.cr',
+      'Accept-Encoding': 'gzip, deflate',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'DNT': '1',
+      'Connection': 'keep-alive',
+    };
+  }
 }
