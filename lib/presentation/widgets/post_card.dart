@@ -251,6 +251,7 @@ class PostCard extends StatelessWidget {
         final aspectRatio = isSingleColumn ? 1.0 : 1.25;
 
         return GestureDetector(
+          key: ValueKey('thumbnail_${post.id}_${coomerDomain}_${kemonoDomain}'),
           onDoubleTap: onTap,
           child: AspectRatio(
             aspectRatio: aspectRatio,
