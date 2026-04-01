@@ -8,6 +8,7 @@ import '../../domain/entities/creator.dart';
 import '../theme/app_theme.dart';
 import '../screens/creator_detail_screen.dart';
 import 'skeleton_loader.dart';
+import '../../data/utils/domain_resolver.dart';
 
 /// Popular Creators Section with Service Selection
 class PopularCreatorsSection extends StatefulWidget {
@@ -425,7 +426,7 @@ class _PopularCreatorsSectionState extends State<PopularCreatorsSection> {
               MaterialPageRoute(
                 builder: (context) => CreatorDetailScreen(
                   creator: creator,
-                  apiSource: popularProvider.currentService,
+                  apiSource: DomainResolver.apiSourceForService(creator.service),
                 ),
               ),
             );

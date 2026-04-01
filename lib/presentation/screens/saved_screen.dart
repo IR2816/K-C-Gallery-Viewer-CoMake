@@ -19,6 +19,7 @@ import '../../domain/entities/creator.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/entities/post_bookmark.dart';
 import '../../domain/entities/post_file.dart';
+import '../../data/utils/domain_resolver.dart';
 
 class SavedScreen extends StatefulWidget {
   const SavedScreen({super.key});
@@ -651,7 +652,7 @@ class _SavedPostsTabState extends State<SavedPostsTab>
                 MaterialPageRoute(
                   builder: (_) => PostDetailScreen(
                     post: post,
-                    apiSource: settings.defaultApiSource,
+                    apiSource: DomainResolver.apiSourceForService(post.service),
                     isFromSavedPosts: true,
                   ),
                 ),
@@ -891,13 +892,12 @@ class _SavedPostsTabState extends State<SavedPostsTab>
                     ),
                     onTap: () {
                       Navigator.pop(context);
-                      final settings = context.read<SettingsProvider>();
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => PostDetailScreen(
                             post: post,
-                            apiSource: settings.defaultApiSource,
+                            apiSource: DomainResolver.apiSourceForService(post.service),
                             isFromSavedPosts: true,
                           ),
                         ),
@@ -1375,7 +1375,7 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
                       MaterialPageRoute(
                         builder: (_) => CreatorDetailScreen(
                           creator: creator,
-                          apiSource: _detectApiSourceForCreator(creator),
+                          apiSource: DomainResolver.apiSourceForService(creator.service),
                         ),
                       ),
                     );
@@ -1512,7 +1512,7 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
                         MaterialPageRoute(
                           builder: (_) => CreatorDetailScreen(
                             creator: creator,
-                            apiSource: _detectApiSourceForCreator(creator),
+                            apiSource: DomainResolver.apiSourceForService(creator.service),
                           ),
                         ),
                       );
@@ -1711,7 +1711,7 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
                       MaterialPageRoute(
                         builder: (_) => CreatorDetailScreen(
                           creator: creator,
-                          apiSource: _detectApiSourceForCreator(creator),
+                          apiSource: DomainResolver.apiSourceForService(creator.service),
                         ),
                       ),
                     );
@@ -2430,7 +2430,6 @@ class _BookmarksScreenState extends State<BookmarksScreen>
   // ── Actions ────────────────────────────────────────────────────────────────
 
   void _openPost(BuildContext context, PostBookmark bm) {
-    final settings = context.read<SettingsProvider>();
     // Reconstruct a minimal Post object from bookmark data
     final post = Post(
       id: bm.postId,
@@ -2461,7 +2460,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
       MaterialPageRoute(
         builder: (_) => PostDetailScreen(
           post: post,
-          apiSource: settings.defaultApiSource,
+          apiSource: DomainResolver.apiSourceForService(post.service),
         ),
       ),
     );

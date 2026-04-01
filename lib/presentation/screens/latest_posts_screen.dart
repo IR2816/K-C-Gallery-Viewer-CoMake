@@ -22,6 +22,7 @@ import '../widgets/skeleton_loader.dart';
 import '../widgets/domain_status_badge.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../utils/logger.dart';
+import '../../data/utils/domain_resolver.dart';
 
 /// Latest Posts Screen - Quick Update Feed
 class LatestPostsScreen extends StatefulWidget {
@@ -347,21 +348,23 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       ApiSource.values.firstWhere((a) => a.name == _selectedService);
 
   void _navigateToPostDetail(Post post) {
+    final apiSource = DomainResolver.apiSourceForService(post.service);
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) =>
-            PostDetailScreen(post: post, apiSource: _currentApiSource),
+            PostDetailScreen(post: post, apiSource: apiSource),
       ),
     );
   }
 
   void _navigateToCreatorDetail(Creator creator) {
+    final apiSource = DomainResolver.apiSourceForService(creator.service);
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) =>
-            CreatorDetailScreen(creator: creator, apiSource: _currentApiSource),
+            CreatorDetailScreen(creator: creator, apiSource: apiSource),
       ),
     );
   }

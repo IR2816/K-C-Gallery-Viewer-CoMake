@@ -9,7 +9,6 @@ import 'data/repositories/kemono_repository_impl.dart';
 import 'domain/repositories/kemono_repository.dart';
 import 'domain/entities/post.dart';
 import 'domain/entities/creator.dart';
-import 'domain/entities/api_source.dart';
 import 'presentation/providers/creators_provider.dart';
 import 'presentation/providers/posts_provider.dart';
 import 'presentation/providers/settings_provider.dart';
@@ -38,6 +37,7 @@ import 'presentation/theme/app_theme.dart';
 import 'data/datasources/creator_index_datasource_impl.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/main_navigation_screen.dart';
+import 'data/utils/domain_resolver.dart';
 import 'presentation/screens/search_screen_dual.dart';
 import 'presentation/screens/creator_detail_screen.dart';
 import 'presentation/screens/post_detail_screen.dart';
@@ -172,10 +172,6 @@ class MyApp extends StatelessWidget {
           final textScale = context.select<ThemeProvider, double>(
             (p) => p.textScale,
           );
-          final currentApiSource = context.select<SettingsProvider, ApiSource>(
-            (p) => p.defaultApiSource,
-          );
-
           return MaterialApp(
             title: 'KC Gallery Viewer',
             theme: AppTheme.lightTheme,
@@ -217,7 +213,7 @@ class MyApp extends StatelessWidget {
                     return MaterialPageRoute(
                       builder: (context) => PostDetailScreen(
                         post: post,
-                        apiSource: currentApiSource,
+                        apiSource: DomainResolver.apiSourceForService(post.service),
                       ),
                     );
                   }
@@ -230,7 +226,7 @@ class MyApp extends StatelessWidget {
                     return MaterialPageRoute(
                       builder: (context) => CreatorDetailScreen(
                         creator: creator,
-                        apiSource: currentApiSource,
+                        apiSource: DomainResolver.apiSourceForService(creator.service),
                       ),
                     );
                   }

@@ -80,7 +80,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   @override
   void initState() {
     super.initState();
-    _activeApiSource = widget.apiSource;
+    // Force the API source to match the creator's service to avoid hitting the wrong backend.
+    _activeApiSource = _apiSourceForService(widget.creator.service);
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
     _loadCreatorPosts();
@@ -139,6 +140,9 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       postsProvider.clearPosts();
       _cachedMediaItems = [];
       _mediaCacheKey = null;
+
+      // Ensure the active API source is aligned with the creator's service before loading.
+      _activeApiSource = _apiSourceForService(widget.creator.service);
 
       await postsProvider.loadCreatorPosts(
         widget.creator.service,

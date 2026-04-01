@@ -20,6 +20,7 @@ import '../../domain/entities/comment.dart';
 import '../../domain/entities/creator.dart';
 import '../../utils/logger.dart';
 import '../../utils/download_path_builder.dart';
+import '../../data/utils/domain_resolver.dart';
 import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/comments_provider.dart';
@@ -4288,8 +4289,10 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            CreatorDetailScreen(creator: creator, apiSource: _activeApiSource),
+        builder: (context) => CreatorDetailScreen(
+          creator: creator,
+          apiSource: DomainResolver.apiSourceForService(_currentPost.service),
+        ),
       ),
     );
   }

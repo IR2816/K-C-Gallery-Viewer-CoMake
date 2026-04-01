@@ -17,6 +17,7 @@ import '../providers/search_history_provider.dart';
 
 // Data
 import '../../data/models/creator_search_result.dart';
+import '../../data/utils/domain_resolver.dart';
 
 // Theme
 import '../theme/app_theme.dart';
@@ -265,13 +266,16 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
     context.read<SettingsProvider>().setDefaultApiSource(apiSource);
   }
 
-  void _navigateToCreatorDetail(Creator creator, {ApiSource? apiSource}) {
+  void _navigateToCreatorDetail(Creator creator) {
     HapticFeedback.lightImpact();
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) =>
-            CreatorDetailScreen(creator: creator, apiSource: apiSource ?? _selectedApiSource),
+            CreatorDetailScreen(
+          creator: creator,
+          apiSource: DomainResolver.apiSourceForService(creator.service),
+        ),
       ),
     );
   }

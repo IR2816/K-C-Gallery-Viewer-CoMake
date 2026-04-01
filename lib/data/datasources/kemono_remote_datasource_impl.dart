@@ -9,6 +9,7 @@ import '../models/post_model.dart';
 import '../services/api_client.dart';
 import '../services/api_header_service.dart';
 import '../utils/api_response_utils.dart';
+import '../utils/domain_resolver.dart';
 import 'kemono_remote_datasource.dart';
 
 class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
@@ -23,6 +24,16 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
   KemonoRemoteDataSourceImpl({ApiClient? apiClient})
       : apiClient = apiClient ?? ApiClient();
+
+  ApiSource _resolveApiSource(String service, ApiSource provided) {
+    final resolved = DomainResolver.apiSourceForService(service);
+    if (resolved != provided) {
+      AppLogger.warning(
+        'DomainResolver override: service=$service prefers $resolved (was $provided)',
+      );
+    }
+    return resolved;
+  }
 
   @override
   Future<List<CreatorModel>> getCreators({
@@ -85,6 +96,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     String creatorId, {
     ApiSource apiSource = ApiSource.kemono,
   }) async {
+    final effectiveApiSource = _resolveApiSource(service, apiSource);
     final cleanCreatorId = creatorId.trim();
     final endpoint = '/v1/$service/user/$cleanCreatorId/profile';
     debugPrint(
@@ -93,8 +105,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     try {
       final jsonMap = await apiClient.getJsonObject(
         endpoint: endpoint,
-        apiSource: apiSource,
-        cacheKey: 'creator_${apiSource.name}_${service}_$creatorId',
+        apiSource: effectiveApiSource,
+        service: service,
+        cacheKey: 'creator_${effectiveApiSource.name}_${service}_$creatorId',
       );
 
       debugPrint(
@@ -114,6 +127,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     int offset = 0,
     ApiSource apiSource = ApiSource.kemono,
   }) async {
+    final effectiveApiSource = _resolveApiSource(service, apiSource);
     final cleanCreatorId = creatorId.trim();
     final endpoint = '/v1/$service/user/$cleanCreatorId/posts?o=$offset';
     debugPrint(
@@ -123,8 +137,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     try {
       final jsonList = await apiClient.getJsonList(
         endpoint: endpoint,
-        apiSource: apiSource,
-        cacheKey: '${apiSource.name}_$endpoint',
+        apiSource: effectiveApiSource,
+        service: service,
+        cacheKey: '${effectiveApiSource.name}_$endpoint',
         normalize: (body, decoded) => ApiResponseUtils.unwrapJsonList(
           decoded,
           listKeys: const ['posts'],
@@ -143,6 +158,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     String creatorId, {
     ApiSource apiSource = ApiSource.kemono,
   }) async {
+    final effectiveApiSource = _resolveApiSource(service, apiSource);
     final cleanCreatorId = creatorId.trim();
     final endpoint = '/v1/$service/user/$cleanCreatorId/links';
     debugPrint(
@@ -151,8 +167,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     try {
       final jsonList = await apiClient.getJsonList(
         endpoint: endpoint,
-        apiSource: apiSource,
-        cacheKey: 'creator_links_${apiSource.name}_${service}_$creatorId',
+        apiSource: effectiveApiSource,
+        service: service,
+        cacheKey: 'creator_links_${effectiveApiSource.name}_${service}_$creatorId',
         normalize: (body, decoded) {
           if (decoded is List) return decoded;
           if (decoded is Map<String, dynamic>) return [decoded];
@@ -172,10 +189,11 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     String postId, {
     ApiSource apiSource = ApiSource.kemono,
   }) async {
+    final effectiveApiSource = _resolveApiSource(service, apiSource);
     final cleanCreatorId = creatorId.trim();
     final cleanPostId = postId.trim();
     final endpoint = '/v1/$service/user/$cleanCreatorId/post/$cleanPostId';
-    final cacheKey = '${apiSource.name}_$endpoint';
+    final cacheKey = '${effectiveApiSource.name}_$endpoint';
 
     try {
       debugPrint(
@@ -183,7 +201,8 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       );
       final jsonMap = await apiClient.getJsonObject(
         endpoint: endpoint,
-        apiSource: apiSource,
+        apiSource: effectiveApiSource,
+        service: service,
         cacheKey: cacheKey,
       );
 
@@ -262,7 +281,8 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     try {
       final comments = await apiClient.getJsonList(
         endpoint: endpoint,
-        apiSource: ApiSource.kemono,
+        apiSource: DomainResolver.apiSourceForService(service),
+        service: service,
         headerVariants: headerVariants,
         normalize: (body, decoded) => _parseCssResponse(body, decoded),
       );

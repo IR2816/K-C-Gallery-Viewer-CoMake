@@ -7,6 +7,7 @@ import '../../domain/entities/api_source.dart';
 import '../../presentation/providers/tracked_http_client.dart';
 import '../../utils/logger.dart';
 import '../utils/api_response_utils.dart';
+import '../utils/domain_resolver.dart';
 import 'api_header_service.dart';
 
 class _ApiCacheEntry {
@@ -71,6 +72,7 @@ class ApiClient {
   Future<List<dynamic>> getJsonList({
     required String endpoint,
     required ApiSource apiSource,
+    String? service,
     Map<String, String>? headers,
     String? cacheKey,
     List<dynamic> Function(String body, dynamic decoded)? normalize,
@@ -86,6 +88,7 @@ class ApiClient {
     final response = await _tryWithFallback(
       endpoint: endpoint,
       apiSource: apiSource,
+    service: service,
       headers: headers,
       headerVariants: headerVariants,
     );
@@ -129,6 +132,7 @@ class ApiClient {
   Future<Map<String, dynamic>> getJsonObject({
     required String endpoint,
     required ApiSource apiSource,
+    String? service,
     Map<String, String>? headers,
     String? cacheKey,
     Map<String, dynamic> Function(String body, dynamic decoded)? normalize,
@@ -144,6 +148,7 @@ class ApiClient {
     final response = await _tryWithFallback(
       endpoint: endpoint,
       apiSource: apiSource,
+    service: service,
       headers: headers,
       headerVariants: headerVariants,
     );
@@ -182,10 +187,11 @@ class ApiClient {
   Future<http.Response> _tryWithFallback({
     required String endpoint,
     required ApiSource apiSource,
+    String? service,
     Map<String, String>? headers,
     List<Map<String, String>>? headerVariants,
   }) async {
-    final cacheKey = '${apiSource.name}_${endpoint}_${headerVariants?.length ?? 0}';
+    final cacheKey = '${apiSource.name}_${service ?? 'nosvc'}_${endpoint}_${headerVariants?.length ?? 0}';
 
     final inFlight = _cache.getInFlight(cacheKey);
     if (inFlight != null) {
@@ -196,6 +202,7 @@ class ApiClient {
     final requestFuture = _executeTryWithFallback(
       endpoint: endpoint,
       apiSource: apiSource,
+      service: service,
       headers: headers,
       headerVariants: headerVariants,
     );
@@ -206,10 +213,11 @@ class ApiClient {
   Future<http.Response> _executeTryWithFallback({
     required String endpoint,
     required ApiSource apiSource,
+    String? service,
     Map<String, String>? headers,
     List<Map<String, String>>? headerVariants,
   }) async {
-    final domains = _getDomains(apiSource);
+    final domains = _getDomainsWithService(apiSource, service: service);
     String? lastError;
 
     final defaultHeaders = ApiHeaderService.getApiHeaders();
@@ -294,9 +302,15 @@ class ApiClient {
         .toList();
   }
 
-  List<String> _getDomains(ApiSource apiSource) {
-    return apiSource == ApiSource.coomer
-        ? DomainConfig.coomerApiDomains
-        : DomainConfig.kemonoApiDomains;
+  List<String> _getDomainsWithService(ApiSource apiSource, {String? service}) {
+    final domains = DomainResolver.getApiDomains(
+      service: service,
+      apiSourceHint: apiSource,
+    );
+    return domains.isNotEmpty
+        ? domains
+        : (apiSource == ApiSource.coomer
+            ? DomainConfig.coomerApiDomains
+            : DomainConfig.kemonoApiDomains);
   }
 }
