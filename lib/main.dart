@@ -144,7 +144,9 @@ class MyApp extends StatelessWidget {
         // Data Usage Tracking
         ChangeNotifierProvider(create: (_) => DataUsageTracker()),
         // Download Provider
-        ChangeNotifierProvider(create: (_) => DownloadProvider()),
+        ChangeNotifierProvider(
+          create: (_) => DownloadProvider(downloadManager: downloadManager),
+        ),
         // Bookmark Provider
         ChangeNotifierProvider(create: (_) => BookmarkProvider()..initialize()),
         // Creator Quick Access (recent + local favorites)

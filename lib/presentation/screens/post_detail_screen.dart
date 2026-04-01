@@ -2087,6 +2087,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         url: url,
         savePath: savePath,
         referer: referer,
+        postId: _currentPost.id,
+        creatorName: _currentPost.user,
+        service: _currentPost.service,
       );
       _showSnackBar(
         'Download queued: $fileName — check Download Manager',
@@ -4192,6 +4195,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             url: url,
             savePath: savePath,
             referer: referer,
+            postId: _currentPost.id,
+            creatorName: _currentPost.user,
+            service: _currentPost.service,
           );
           queuedCount++;
         } catch (e) {
@@ -4229,6 +4235,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             url: url,
             savePath: savePath,
             referer: referer,
+            postId: _currentPost.id,
+            creatorName: _currentPost.user,
+            service: _currentPost.service,
           );
           queuedCount++;
         } catch (e) {

@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+
+import 'download_manager.dart';
 
 class DownloadItem {
   final String id;
@@ -12,6 +16,9 @@ class DownloadItem {
   final String? errorMessage;
   final String? savePath;
   final String? referer;
+  final String? postId;
+  final String? creatorName;
+  final String? service;
 
   DownloadItem({
     required this.id,
@@ -24,6 +31,9 @@ class DownloadItem {
     this.errorMessage,
     this.savePath,
     this.referer,
+    this.postId,
+    this.creatorName,
+    this.service,
   });
 
   DownloadItem copyWith({
@@ -35,6 +45,9 @@ class DownloadItem {
     String? errorMessage,
     String? savePath,
     String? referer,
+    String? postId,
+    String? creatorName,
+    String? service,
   }) {
     return DownloadItem(
       id: id,
@@ -47,10 +60,27 @@ class DownloadItem {
       errorMessage: errorMessage ?? this.errorMessage,
       savePath: savePath ?? this.savePath,
       referer: referer ?? this.referer,
+      postId: postId ?? this.postId,
+      creatorName: creatorName ?? this.creatorName,
+      service: service ?? this.service,
     );
   }
 
   double get progress => totalBytes > 0 ? downloadedBytes / totalBytes : 0.0;
+
+  DownloadedFile toDownloadedFile({double? fileSizeOverride}) {
+    final size = fileSizeOverride ?? downloadedBytes.toDouble();
+    return DownloadedFile(
+      id: id,
+      name: name,
+      postId: postId ?? id,
+      creatorName: creatorName ?? '',
+      service: service ?? '',
+      filePath: savePath ?? '',
+      downloadDate: startTime.millisecondsSinceEpoch,
+      fileSize: size,
+    );
+  }
 }
 
 enum DownloadStatus { pending, downloading, completed, failed, cancelled }
@@ -65,6 +95,10 @@ class DownloadProvider extends ChangeNotifier {
   final List<DownloadItem> _downloads = [];
   final Map<String, CancelToken> _cancelTokens = {};
   bool _disposed = false;
+  final DownloadManager _downloadManager;
+
+  DownloadProvider({required DownloadManager downloadManager})
+      : _downloadManager = downloadManager;
 
   List<DownloadItem> get downloads => List.unmodifiable(_downloads);
 
@@ -86,6 +120,9 @@ class DownloadProvider extends ChangeNotifier {
     required String savePath,
     int totalBytes = 0,
     String? referer,
+    String? postId,
+    String? creatorName,
+    String? service,
   }) {
     final id = '${DateTime.now().millisecondsSinceEpoch}_${++_idCounter}';
     final download = DownloadItem(
@@ -96,6 +133,9 @@ class DownloadProvider extends ChangeNotifier {
       startTime: DateTime.now(),
       savePath: savePath,
       referer: referer,
+      postId: postId,
+      creatorName: creatorName,
+      service: service,
     );
 
     _downloads.add(download);
@@ -150,8 +190,12 @@ class DownloadProvider extends ChangeNotifier {
         },
       );
 
-      // Download completed
+      final fileSize = download.savePath != null
+          ? await File(download.savePath!).length().catchError((_) => download.totalBytes)
+          : download.totalBytes;
+      _updateDownloadProgress(download.id, fileSize, fileSize);
       _updateDownloadStatus(download.id, DownloadStatus.completed);
+      await _persistDownload(download, fileSize);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
         _updateDownloadStatus(download.id, DownloadStatus.cancelled);
@@ -163,6 +207,14 @@ class DownloadProvider extends ChangeNotifier {
     } finally {
       _cancelTokens.remove(download.id);
     }
+  }
+
+  Future<void> _persistDownload(DownloadItem download, int? finalBytes) async {
+    if (download.savePath == null) return;
+    final record = download.toDownloadedFile(
+      fileSizeOverride: (finalBytes ?? download.totalBytes).toDouble(),
+    );
+    await _downloadManager.addToDownloads(record);
   }
 
   /// Cancel download
@@ -194,6 +246,9 @@ class DownloadProvider extends ChangeNotifier {
       startTime: DateTime.now(),
       savePath: download.savePath,
       referer: download.referer,
+      postId: download.postId,
+      creatorName: download.creatorName,
+      service: download.service,
     );
     _downloads[index] = retried;
     if (!_disposed) notifyListeners();

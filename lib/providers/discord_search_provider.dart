@@ -2,10 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../domain/entities/discord_server.dart';
+import '../presentation/providers/async_load_mixin.dart';
 
 /// Discord Search Provider untuk mengelola pencarian Discord servers
 /// Uses mbaharip API for search, Kemono API for data retrieval
-class DiscordSearchProvider with ChangeNotifier {
+class DiscordSearchProvider with ChangeNotifier, AsyncLoadMixin {
   late final Dio _dio;
 
   // State
@@ -39,82 +40,78 @@ class DiscordSearchProvider with ChangeNotifier {
   /// Load popular Discord servers using mbaharip API
   /// GET /kemono/discord (no keyword)
   Future<void> loadPopularServers() async {
-    _setLoading(true);
-    _error = null;
+    await runAsync(
+      () async {
+        _error = null;
 
-    try {
-      final response = await _dio.get(
-        '/kemono/discord',
-        options: Options(
-          validateStatus: (status) {
-            return status != null && status < 600;
-          },
-        ),
-      );
+        final response = await _dio.get(
+          '/kemono/discord',
+          options: Options(
+            validateStatus: (status) {
+              return status != null && status < 600;
+            },
+          ),
+        );
 
-      if (response.statusCode == 503) {
-        _error =
-            'Search service temporarily unavailable. Please try again later.';
-        _popularServers = [];
-        notifyListeners();
-        return;
-      }
-
-      if (response.statusCode != null &&
-          response.statusCode! >= 200 &&
-          response.statusCode! < 300) {
-        final dynamic data = response.data;
-        List<dynamic> serversData = [];
-
-        if (data is List) {
-          serversData = data;
-        } else if (data is Map<String, dynamic>) {
-          if (data['results'] is List) {
-            serversData = data['results'] as List;
-          } else if (data['data'] is List) {
-            serversData = data['data'] as List;
-          }
+        if (response.statusCode == 503) {
+          _error =
+              'Search service temporarily unavailable. Please try again later.';
+          _popularServers = [];
+          return;
         }
 
-        _popularServers = serversData
-            .whereType<Map<String, dynamic>>()
-            .where(
-              (json) => json['service']?.toString().toLowerCase() == 'discord',
-            )
-            .map(
-              (json) => DiscordServer(
-                id: json['id']?.toString() ?? '',
-                name: json['name']?.toString() ?? '',
-                indexed: DateTime.fromMillisecondsSinceEpoch(
-                  (json['indexed'] ?? 0) * 1000,
+        if (response.statusCode != null &&
+            response.statusCode! >= 200 &&
+            response.statusCode! < 300) {
+          final dynamic data = response.data;
+          List<dynamic> serversData = [];
+
+          if (data is List) {
+            serversData = data;
+          } else if (data is Map<String, dynamic>) {
+            if (data['results'] is List) {
+              serversData = data['results'] as List;
+            } else if (data['data'] is List) {
+              serversData = data['data'] as List;
+            }
+          }
+
+          _popularServers = serversData
+              .whereType<Map<String, dynamic>>()
+              .where(
+                (json) => json['service']?.toString().toLowerCase() == 'discord',
+              )
+              .map(
+                (json) => DiscordServer(
+                  id: json['id']?.toString() ?? '',
+                  name: json['name']?.toString() ?? '',
+                  indexed: DateTime.fromMillisecondsSinceEpoch(
+                    (json['indexed'] ?? 0) * 1000,
+                  ),
+                  updated: DateTime.fromMillisecondsSinceEpoch(
+                    (json['updated'] ?? 0) * 1000,
+                  ),
                 ),
-                updated: DateTime.fromMillisecondsSinceEpoch(
-                  (json['updated'] ?? 0) * 1000,
-                ),
-              ),
-            )
-            .toList();
-      } else {
-        _error = 'Search failed: ${response.statusCode}';
+              )
+              .toList();
+        } else {
+          _error = 'Search failed: ${response.statusCode}';
+          _popularServers = [];
+        }
+      },
+      setLoading: _setLoading,
+      onError: (e, _) {
+        if (e.toString().contains('503')) {
+          _error =
+              'Search service temporarily unavailable. Please try again later.';
+        } else if (e.toString().contains('SocketException')) {
+          _error = 'Network error. Please check your connection.';
+        } else {
+          _error = 'Search error: $e';
+        }
         _popularServers = [];
-      }
-
-      notifyListeners();
-    } catch (e) {
-      if (e.toString().contains('503')) {
-        _error =
-            'Search service temporarily unavailable. Please try again later.';
-      } else if (e.toString().contains('SocketException')) {
-        _error = 'Network error. Please check your connection.';
-      } else {
-        _error = 'Search error: $e';
-      }
-
-      _popularServers = [];
-      notifyListeners();
-    } finally {
-      _setLoading(false);
-    }
+      },
+    );
   }
 
   /// Search Discord servers using mbaharip API
@@ -126,97 +123,89 @@ class DiscordSearchProvider with ChangeNotifier {
     }
 
     _currentQuery = query.trim();
-    _setLoading(true);
-    _error = null;
 
-    try {
-      final response = await _dio.get(
-        '/kemono/discord',
-        queryParameters: {'keyword': _currentQuery},
-        options: Options(
-          validateStatus: (status) {
-            // Allow 503 to handle manually
-            return status != null && status < 600;
-          },
-        ),
-      );
+    await runAsync(
+      () async {
+        _error = null;
 
-      // Handle 503 Service Unavailable
-      if (response.statusCode == 503) {
-        _error =
-            'Search service temporarily unavailable. Please try again later.';
-        _searchResults = [];
-        notifyListeners();
-        return;
-      }
+        final response = await _dio.get(
+          '/kemono/discord',
+          queryParameters: {'keyword': _currentQuery},
+          options: Options(
+            validateStatus: (status) {
+              return status != null && status < 600;
+            },
+          ),
+        );
 
-      if (response.statusCode != null &&
-          response.statusCode! >= 200 &&
-          response.statusCode! < 300) {
-        final dynamic data = response.data;
-        List<dynamic> serversData = [];
-
-        // Handle different response formats
-        if (data is List) {
-          serversData = data;
-        } else if (data is Map<String, dynamic>) {
-          if (data['results'] is List) {
-            serversData = data['results'] as List;
-          } else if (data['data'] is List) {
-            serversData = data['data'] as List;
-          }
+        if (response.statusCode == 503) {
+          _error =
+              'Search service temporarily unavailable. Please try again later.';
+          _searchResults = [];
+          return;
         }
 
-        debugPrint(
-          'DiscordSearchProvider: Found ${serversData.length} servers for query: $_currentQuery',
-        );
+        if (response.statusCode != null &&
+            response.statusCode! >= 200 &&
+            response.statusCode! < 300) {
+          final dynamic data = response.data;
+          List<dynamic> serversData = [];
 
-        _searchResults = serversData
-            .whereType<Map<String, dynamic>>()
-            .where(
-              (json) => json['service']?.toString().toLowerCase() == 'discord',
-            ) // 🔍 Filter Discord only
-            .map(
-              (json) => DiscordServer(
-                id: json['id']?.toString() ?? '',
-                name: json['name']?.toString() ?? '',
-                indexed: DateTime.fromMillisecondsSinceEpoch(
-                  (json['indexed'] ?? 0) * 1000,
-                ),
-                updated: DateTime.fromMillisecondsSinceEpoch(
-                  (json['updated'] ?? 0) * 1000,
-                ),
-              ),
-            )
-            .toList();
+          if (data is List) {
+            serversData = data;
+          } else if (data is Map<String, dynamic>) {
+            if (data['results'] is List) {
+              serversData = data['results'] as List;
+            } else if (data['data'] is List) {
+              serversData = data['data'] as List;
+            }
+          }
 
-        debugPrint(
-          'DiscordSearchProvider: Filtered to ${_searchResults.length} Discord servers',
-        );
-      } else {
-        _error = 'Search failed: ${response.statusCode}';
+          debugPrint(
+            'DiscordSearchProvider: Found ${serversData.length} servers for query: $_currentQuery',
+          );
+
+          _searchResults = serversData
+              .whereType<Map<String, dynamic>>()
+              .where(
+                (json) => json['service']?.toString().toLowerCase() == 'discord',
+              )
+              .map(
+                (json) => DiscordServer(
+                  id: json['id']?.toString() ?? '',
+                  name: json['name']?.toString() ?? '',
+                  indexed: DateTime.fromMillisecondsSinceEpoch(
+                    (json['indexed'] ?? 0) * 1000,
+                  ),
+                  updated: DateTime.fromMillisecondsSinceEpoch(
+                    (json['updated'] ?? 0) * 1000,
+                  ),
+                ),
+              )
+              .toList();
+
+          debugPrint(
+            'DiscordSearchProvider: Filtered to ${_searchResults.length} Discord servers',
+          );
+        } else {
+          _error = 'Search failed: ${response.statusCode}';
+          _searchResults = [];
+        }
+      },
+      setLoading: _setLoading,
+      onError: (e, _) {
+        debugPrint('DiscordSearchProvider error: $e');
+        if (e.toString().contains('503')) {
+          _error =
+              'Search service temporarily unavailable. Please try again later.';
+        } else if (e.toString().contains('SocketException')) {
+          _error = 'Network error. Please check your connection.';
+        } else {
+          _error = 'Search error: $e';
+        }
         _searchResults = [];
-      }
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('DiscordSearchProvider error: $e');
-
-      // Check if this is a 503 error
-      if (e.toString().contains('503')) {
-        _error =
-            'Search service temporarily unavailable. Please try again later.';
-      } else if (e.toString().contains('SocketException')) {
-        _error = 'Network error. Please check your connection.';
-      } else {
-        _error = 'Search error: $e';
-      }
-
-      _searchResults = [];
-      notifyListeners();
-    } finally {
-      _setLoading(false);
-    }
+      },
+    );
   }
 
   /// Clear search results

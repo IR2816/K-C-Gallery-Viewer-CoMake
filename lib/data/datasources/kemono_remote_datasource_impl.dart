@@ -9,6 +9,7 @@ import 'kemono_remote_datasource.dart';
 import '../../utils/logger.dart';
 import '../../config/domain_config.dart';
 import '../../presentation/providers/tracked_http_client.dart';
+import '../utils/api_response_utils.dart';
 
 class _ApiCacheEntry {
   final dynamic data;
@@ -134,9 +135,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
             .get(Uri.parse(url), headers: finalHeaders);
 
         final bodyTrimmed = response.body.trimLeft();
-        final looksLikeHtml =
-            bodyTrimmed.startsWith('<!') ||
-            bodyTrimmed.toLowerCase().startsWith('<html');
+        final looksLikeHtml = ApiResponseUtils.isHtmlResponse(bodyTrimmed);
 
         if (response.statusCode < 200 ||
             response.statusCode >= 400 ||
@@ -199,8 +198,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       final response = await _tryWithFallback(endpoint, headers, apiSource);
 
       final bodyTrimmed = response.body.trimLeft();
-      if (bodyTrimmed.startsWith('<!') ||
-          bodyTrimmed.toLowerCase().startsWith('<html')) {
+      if (ApiResponseUtils.isHtmlResponse(bodyTrimmed)) {
         throw Exception(
           'API returned HTML error page instead of data. Status: ${response.statusCode}',
         );
@@ -211,10 +209,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
       cache.set(cacheKey, jsonList);
 
-      final creators = jsonList
-          .whereType<Map<String, dynamic>>()
-          .map((e) => CreatorModel.fromJson(e))
-          .toList();
+      final creators = ApiResponseUtils.parseList(jsonList, CreatorModel.fromJson);
 
       if (service != null && service.isNotEmpty && service != 'all') {
         return creators.where((c) => c.service == service).toList();
@@ -280,8 +275,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         'KemonoRemoteDataSource: getCreator response body=${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
       );
 
-      if (response.body.trim().startsWith('<!') ||
-          response.body.trim().startsWith('<html')) {
+      if (ApiResponseUtils.isHtmlResponse(response.body)) {
         throw Exception(
           'API returned HTML error page instead of data. Status: ${response.statusCode}',
         );
@@ -330,19 +324,17 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     try {
       final response = await _tryWithFallback(endpoint, headers, apiSource);
 
-      if (response.body.trim().startsWith('<!') ||
-          response.body.trim().startsWith('<html')) {
+      if (ApiResponseUtils.isHtmlResponse(response.body)) {
         throw Exception(
           'API returned HTML error page instead of data. Status: ${response.statusCode}',
         );
       }
 
       final dynamic decoded = json.decode(response.body);
-      final List<dynamic> jsonList = decoded is List
-          ? decoded
-          : (decoded is Map<String, dynamic> && decoded['posts'] is List)
-          ? (decoded['posts'] as List)
-          : [];
+      final List<dynamic> jsonList = ApiResponseUtils.unwrapJsonList(
+        decoded,
+        listKeys: const ['posts'],
+      );
 
       if (decoded is! List &&
           !(decoded is Map<String, dynamic> && decoded['posts'] is List)) {
@@ -352,10 +344,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       }
 
       cache.set(cacheKey, jsonList);
-      return jsonList
-          .whereType<Map<String, dynamic>>()
-          .map((e) => PostModel.fromJson(e))
-          .toList();
+      return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
     } catch (e) {
       throw Exception('Error fetching posts ($endpoint): $e');
     }
@@ -378,8 +367,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     try {
       final response = await _tryWithFallback(endpoint, headers, apiSource);
 
-      if (response.body.trim().startsWith('<!') ||
-          response.body.trim().startsWith('<html')) {
+      if (ApiResponseUtils.isHtmlResponse(response.body)) {
         throw Exception(
           'API returned HTML error page instead of data. Status: ${response.statusCode}',
         );
@@ -479,11 +467,10 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       }
 
       final dynamic decoded = json.decode(response.body);
-      final List<dynamic> jsonList = decoded is List
-          ? decoded
-          : (decoded is Map<String, dynamic> && decoded['posts'] is List)
-          ? (decoded['posts'] as List)
-          : [];
+      final List<dynamic> jsonList = ApiResponseUtils.unwrapJsonList(
+        decoded,
+        listKeys: const ['posts'],
+      );
 
       if (decoded is! List &&
           !(decoded is Map<String, dynamic> && decoded['posts'] is List)) {
@@ -493,10 +480,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       }
 
       cache.set(cacheKey, jsonList);
-      return jsonList
-          .whereType<Map<String, dynamic>>()
-          .map((e) => PostModel.fromJson(e))
-          .toList();
+      return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
     } catch (e) {
       throw Exception('Error searching posts ($endpoint): $e');
     }

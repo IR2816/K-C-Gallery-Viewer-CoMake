@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../presentation/providers/async_load_mixin.dart';
 import '../../domain/entities/discord_server.dart';
 import '../../domain/entities/discord_channel.dart';
 import '../../domain/entities/post.dart';
@@ -9,7 +10,7 @@ import '../../data/services/discord_api_client.dart';
 ///
 /// Manages Discord-specific state and API calls
 /// Discord = filesystem + log viewer, NOT creator/post feed
-class DiscordProvider with ChangeNotifier {
+class DiscordProvider with ChangeNotifier, AsyncLoadMixin {
   final DiscordApiClient _api;
 
   DiscordProvider(this._api);
@@ -62,81 +63,76 @@ class DiscordProvider with ChangeNotifier {
 
   /// Load Discord servers
   Future<void> loadServers() async {
-    _setLoading(true);
-    _error = null;
-
-    try {
-      _servers = await _api.getServers();
-      notifyListeners();
-    } catch (e) {
-      // Check if this is a 503 error
-      if (e.toString().contains('503')) {
-        _error =
-            'Kemono Discord is temporarily unavailable. Please try again later.';
-      } else {
-        _error = e.toString();
-      }
-      notifyListeners();
-    } finally {
-      _setLoading(false);
-    }
+    await runAsync(
+      () async {
+        _error = null;
+        _servers = await _api.getServers();
+      },
+      setLoading: _setLoading,
+      onError: (e, _) {
+        if (e.toString().contains('503')) {
+          _error =
+              'Kemono Discord is temporarily unavailable. Please try again later.';
+        } else {
+          _error = e.toString();
+        }
+      },
+    );
   }
 
   /// Load channels for a server
   Future<void> loadChannels(String serverId) async {
-    _setLoadingChannels(true);
-    _channelsError = null;
+    await runAsync(
+      () async {
+        _channelsError = null;
 
-    try {
-      // Try to get server with channels first (more efficient)
-      final serverData = await _api.getServerWithChannels(serverId);
+        try {
+          // Try to get server with channels first (more efficient)
+          final serverData = await _api.getServerWithChannels(serverId);
 
-      // Extract channels from server response
-      List<dynamic> channelsData = [];
-      if (serverData['channels'] is List) {
-        channelsData = serverData['channels'] as List;
-      }
+          // Extract channels from server response
+          List<dynamic> channelsData = [];
+          if (serverData['channels'] is List) {
+            channelsData = serverData['channels'] as List;
+          }
 
-      _channels = channelsData
-          .whereType<Map<String, dynamic>>()
-          .map(
-            (e) => DiscordChannel(
-              id: e['id']?.toString() ?? '',
-              serverId: e['server_id']?.toString() ?? serverId,
-              name: e['name']?.toString() ?? '',
-              parentId: e['parent_channel_id']?.toString(),
-              isNsfw: e['is_nsfw'] ?? false,
-              type: e['type'] ?? 11,
-              position: e['position'] ?? 0,
-              postCount: e['post_count'] ?? 0,
-              emoji: e['icon_emoji']?.toString(),
-            ),
-          )
-          .toList();
+          _channels = channelsData
+              .whereType<Map<String, dynamic>>()
+              .map(
+                (e) => DiscordChannel(
+                  id: e['id']?.toString() ?? '',
+                  serverId: e['server_id']?.toString() ?? serverId,
+                  name: e['name']?.toString() ?? '',
+                  parentId: e['parent_channel_id']?.toString(),
+                  isNsfw: e['is_nsfw'] ?? false,
+                  type: e['type'] ?? 11,
+                  position: e['position'] ?? 0,
+                  postCount: e['post_count'] ?? 0,
+                  emoji: e['icon_emoji']?.toString(),
+                ),
+              )
+              .toList();
 
-      // Sort by position
-      _channels.sort((a, b) => a.position.compareTo(b.position));
-
-      notifyListeners();
-    } catch (e) {
-      // Fallback to lookup channels if server endpoint fails
-      try {
-        _channels = await _api.lookupChannels(serverId);
-        notifyListeners();
-      } catch (fallbackError) {
-        // Check if this is a 503 error
-        if (e.toString().contains('503') ||
-            fallbackError.toString().contains('503')) {
-          _channelsError =
-              'Kemono Discord is temporarily unavailable. Please try again later.';
-        } else {
-          _channelsError = e.toString();
+          _channels.sort((a, b) => a.position.compareTo(b.position));
+        } catch (e) {
+          // Fallback to lookup channels if server endpoint fails
+          try {
+            _channels = await _api.lookupChannels(serverId);
+          } catch (fallbackError) {
+            // Check if this is a 503 error
+            if (e.toString().contains('503') ||
+                fallbackError.toString().contains('503')) {
+              _channelsError =
+                  'Kemono Discord is temporarily unavailable. Please try again later.';
+            } else {
+              _channelsError = e.toString();
+            }
+            rethrow;
+          }
         }
-        notifyListeners();
-      }
-    } finally {
-      _setLoadingChannels(false);
-    }
+      },
+      setLoading: _setLoadingChannels,
+    );
   }
 
   /// Load posts for a channel
@@ -145,50 +141,45 @@ class DiscordProvider with ChangeNotifier {
       '🔍 DEBUG: DiscordProvider.loadChannelPosts - ChannelId: $channelId, Offset: $offset',
     );
 
-    _setLoadingPosts(true);
-    _postsError = null;
-
-    try {
-      debugPrint(
-        '🔍 DEBUG: CALLING API.loadChannelPosts - ChannelId: $channelId, Offset: $offset',
-      );
-      final posts = await _api.loadChannelPosts(channelId, offset: offset);
-      debugPrint('🔍 DEBUG: API RETURNED ${posts.length} POSTS');
-
-      if (offset == 0) {
-        _channelPosts[channelId] = posts;
+    await runAsync(
+      () async {
+        _postsError = null;
         debugPrint(
-          '🔍 DEBUG: SET INITIAL POSTS - ChannelId: $channelId, Count: ${posts.length}',
+          '🔍 DEBUG: CALLING API.loadChannelPosts - ChannelId: $channelId, Offset: $offset',
         );
-      } else {
-        final existingPosts = _channelPosts[channelId] ?? [];
-        final existingIds = existingPosts.map((p) => p.id).toSet();
-        final uniquePosts =
-            posts.where((p) => !existingIds.contains(p.id)).toList();
-        _channelPosts[channelId] = [
-          ...existingPosts,
-          ...uniquePosts,
-        ];
-        debugPrint(
-          '🔍 DEBUG: APPENDED POSTS - ChannelId: $channelId, Added: ${uniquePosts.length}, Total: ${_channelPosts[channelId]?.length}',
-        );
-      }
+        final posts = await _api.loadChannelPosts(channelId, offset: offset);
+        debugPrint('🔍 DEBUG: API RETURNED ${posts.length} POSTS');
 
-      notifyListeners();
-    } catch (e) {
-      debugPrint('🔍 DEBUG: API ERROR - ChannelId: $channelId, Error: $e');
-
-      // Check if this is a 503 error
-      if (e.toString().contains('503')) {
-        _postsError =
-            'Kemono Discord is temporarily unavailable. Please try again later.';
-      } else {
-        _postsError = e.toString();
-      }
-      notifyListeners();
-    } finally {
-      _setLoadingPosts(false);
-    }
+        if (offset == 0) {
+          _channelPosts[channelId] = posts;
+          debugPrint(
+            '🔍 DEBUG: SET INITIAL POSTS - ChannelId: $channelId, Count: ${posts.length}',
+          );
+        } else {
+          final existingPosts = _channelPosts[channelId] ?? [];
+          final existingIds = existingPosts.map((p) => p.id).toSet();
+          final uniquePosts =
+              posts.where((p) => !existingIds.contains(p.id)).toList();
+          _channelPosts[channelId] = [
+            ...existingPosts,
+            ...uniquePosts,
+          ];
+          debugPrint(
+            '🔍 DEBUG: APPENDED POSTS - ChannelId: $channelId, Added: ${uniquePosts.length}, Total: ${_channelPosts[channelId]?.length}',
+          );
+        }
+      },
+      setLoading: _setLoadingPosts,
+      onError: (e, _) {
+        debugPrint('🔍 DEBUG: API ERROR - ChannelId: $channelId, Error: $e');
+        if (e.toString().contains('503')) {
+          _postsError =
+              'Kemono Discord is temporarily unavailable. Please try again later.';
+        } else {
+          _postsError = e.toString();
+        }
+      },
+    );
   }
 
   /// Get channels grouped by hierarchy (file explorer style)

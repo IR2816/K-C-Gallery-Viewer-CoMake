@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import '../models/creator_model.dart';
 import '../models/post_model.dart';
+import 'api_header_service.dart';
+import '../utils/api_response_utils.dart';
 import '../../domain/entities/api_source.dart';
 
 /// Kemono/Coomer API Helper - Prinsip 1: ID-centric, bukan name-centric
@@ -11,22 +13,6 @@ import '../../domain/entities/api_source.dart';
 /// API ini dioptimalkan untuk service + user_id, BUKAN search engine.
 /// Gunakan ID sebagai primary key, name search hanya fitur sekunder.
 class KemonoApi {
-  // Prinsip 3.1: Layer API yang rapi dengan helper class
-  static const Map<String, String> _headers = {
-    'Accept': 'text/css', // WAJIB - tanpa ini API return 403
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Accept-Encoding': 'gzip, deflate',
-    'DNT': '1',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Cache-Control': 'max-age=0',
-  };
-
   // Base URLs dengan fallback
   static const List<String> _kemonoDomains = ['https://kemono.cr/api'];
 
@@ -35,7 +21,7 @@ class KemonoApi {
   static String? _lastSuccessfulDomain;
 
   /// Get headers untuk semua request
-  static Map<String, String> get headers => Map<String, String>.from(_headers);
+  static Map<String, String> get headers => ApiHeaderService.kemonoHeaders;
 
   /// Simple in-memory cache (endpoint → cached body + expiry)
   static final Map<String, _CachedResponse> _responseCache = {};
@@ -64,7 +50,9 @@ class KemonoApi {
     final domains = apiSource == ApiSource.kemono
         ? _kemonoDomains
         : _coomerDomains;
-    final requestHeaders = {..._headers, ...?additionalHeaders};
+    final requestHeaders = ApiHeaderService.getApiHeaders(
+      additionalHeaders: additionalHeaders,
+    );
     final requestTimeout = timeout ?? const Duration(seconds: 18);
 
     // Prefer the last-known-good domain first
@@ -89,15 +77,17 @@ class KemonoApi {
           final url = '$domain$endpoint';
           debugPrint('KemonoApi: Requesting $url (attempt ${attempt + 1})');
 
-          final response = await http
-              .get(Uri.parse(url), headers: requestHeaders)
-              .timeout(requestTimeout);
+          final response = await ApiResponseUtils.withRetry(
+            () async => await http
+                .get(Uri.parse(url), headers: requestHeaders)
+                .timeout(requestTimeout),
+            maxRetries: maxRetries,
+            delay: (attempt) =>
+                Duration(milliseconds: 400 * (1 << attempt)),
+          );
 
-          // Validate response
           final bodyTrimmed = response.body.trimLeft();
-          final looksLikeHtml =
-              bodyTrimmed.startsWith('<!') ||
-              bodyTrimmed.toLowerCase().startsWith('<html');
+          final looksLikeHtml = ApiResponseUtils.isHtmlResponse(bodyTrimmed);
 
           if (response.statusCode >= 200 &&
               response.statusCode < 400 &&
@@ -130,13 +120,9 @@ class KemonoApi {
           if (response.statusCode == 404 || response.statusCode == 403) {
             break;
           }
-
-          // Don't retry on the last attempt
-          if (attempt >= maxRetries) break;
         } on TimeoutException catch (e) {
           lastError = 'Domain=$domain Timeout=$e (attempt ${attempt + 1})';
           debugPrint('KemonoApi: Timeout from $domain: $e');
-          // Retry on timeout up to maxRetries
         } catch (e) {
           lastError = 'Domain=$domain Exception=$e';
           debugPrint('KemonoApi: Error from $domain: $e');
@@ -200,16 +186,12 @@ class KemonoApi {
       final response = await _makeRequest(endpoint, apiSource: apiSource);
 
       final dynamic decoded = json.decode(response.body);
-      final List<dynamic> jsonList = decoded is List
-          ? decoded
-          : (decoded is Map<String, dynamic> && decoded['posts'] is List)
-          ? (decoded['posts'] as List)
-          : [];
+      final jsonList = ApiResponseUtils.unwrapJsonList(
+        decoded,
+        listKeys: const ['posts'],
+      );
 
-      return jsonList
-          .whereType<Map<String, dynamic>>()
-          .map((e) => PostModel.fromJson(e))
-          .toList();
+      return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
     } catch (e) {
       debugPrint('KemonoApi: getCreatorPosts failed - $e');
       rethrow;
@@ -228,16 +210,12 @@ class KemonoApi {
       final response = await _makeRequest(endpoint, apiSource: apiSource);
 
       final dynamic decoded = json.decode(response.body);
-      final List<dynamic> jsonList = decoded is List
-          ? decoded
-          : (decoded is Map<String, dynamic> && decoded['posts'] is List)
-          ? (decoded['posts'] as List)
-          : [];
+      final jsonList = ApiResponseUtils.unwrapJsonList(
+        decoded,
+        listKeys: const ['posts'],
+      );
 
-      return jsonList
-          .whereType<Map<String, dynamic>>()
-          .map((e) => PostModel.fromJson(e))
-          .toList();
+      return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
     } catch (e) {
       debugPrint('KemonoApi: getRecentPosts failed - $e');
       rethrow;
@@ -274,12 +252,9 @@ class KemonoApi {
         cacheTtl: const Duration(minutes: 15),
       );
 
-      final dynamic decoded = json.decode(response.body);
-      final List<dynamic> jsonList = decoded is List ? decoded : [];
-      final creators = jsonList
-          .whereType<Map<String, dynamic>>()
-          .map((e) => CreatorModel.fromJson(e))
-          .toList();
+        final dynamic decoded = json.decode(response.body);
+        final List<dynamic> jsonList = decoded is List ? decoded : [];
+        final creators = ApiResponseUtils.parseList(jsonList, CreatorModel.fromJson);
 
       final lowerQuery = query.toLowerCase().trim();
       if (lowerQuery.isEmpty) return [];
@@ -302,18 +277,12 @@ class KemonoApi {
 
   /// Validate headers sebelum request
   static bool validateHeaders() {
-    return _headers.containsKey('Accept') &&
-        _headers.containsKey('User-Agent') &&
-        _headers['Accept'] == 'text/css';
+    return ApiHeaderService.validateKemonoCoomerHeaders(headers);
   }
 
   /// Log headers untuk debugging
   static void logHeaders(String context) {
-    debugPrint('=== $context Headers ===');
-    _headers.forEach((key, value) {
-      debugPrint('$key: $value');
-    });
-    debugPrint('=== End Headers ===');
+    ApiHeaderService.logHeaders(context, headers);
   }
 
   // 🚀 NEW: Discord API Methods

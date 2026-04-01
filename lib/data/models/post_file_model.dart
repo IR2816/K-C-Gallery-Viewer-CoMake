@@ -1,4 +1,5 @@
 import '../../domain/entities/post_file.dart';
+import '../utils/json_field_utils.dart';
 
 class PostFileModel extends PostFile {
   PostFileModel({
@@ -10,14 +11,18 @@ class PostFileModel extends PostFile {
   });
 
   factory PostFileModel.fromJson(Map<String, dynamic> json) {
+    final typeCandidate = JsonFieldUtils.string(
+      json,
+      'type',
+      defaultValue: JsonFieldUtils.string(json, 'mime'),
+    );
+
     return PostFileModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      path: json['path'] ?? '',
-      type: (json['type'] ?? json['mime'])?.toString(),
-      size: json['size'] is int
-          ? json['size'] as int
-          : int.tryParse(json['size']?.toString() ?? ''),
+      id: JsonFieldUtils.string(json, 'id'),
+      name: JsonFieldUtils.string(json, 'name'),
+      path: JsonFieldUtils.string(json, 'path'),
+      type: typeCandidate.isNotEmpty ? typeCandidate : null,
+      size: JsonFieldUtils.intValue(json, 'size', defaultValue: 0),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 
 class ApiHeaderService {
+  /// Base headers for Kemono/Coomer API requests
   static const Map<String, String> _kemonoCoomerHeaders = {
     'Accept': 'text/css',
     'User-Agent':
@@ -16,6 +17,10 @@ class ApiHeaderService {
     'Cache-Control': 'max-age=0',
   };
 
+  /// Public accessor for kemono headers (returns a mutable copy)
+  static Map<String, String> get kemonoHeaders =>
+      Map<String, String>.from(_kemonoCoomerHeaders);
+
   static const Map<String, String> _mediaHeaders = {
     'Accept': 'image/*, video/*, */*',
     'User-Agent':
@@ -27,7 +32,7 @@ class ApiHeaderService {
   static Map<String, String> getApiHeaders({
     Map<String, String>? additionalHeaders,
   }) {
-    final headers = Map<String, String>.from(_kemonoCoomerHeaders);
+    final headers = kemonoHeaders;
     if (additionalHeaders != null) {
       headers.addAll(additionalHeaders);
     }

@@ -388,6 +388,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         name: fileName,
         url: url,
         savePath: savePath,
+        creatorName: widget.postCreator,
+        service: widget.apiSource,
       );
       
       ScaffoldMessenger.of(context).showSnackBar(

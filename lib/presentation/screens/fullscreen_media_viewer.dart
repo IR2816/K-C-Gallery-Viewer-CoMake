@@ -731,6 +731,8 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
         url: url,
         savePath: savePath,
         referer: referer,
+        creatorName: widget.postCreator,
+        service: widget.apiSource.name,
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

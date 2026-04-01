@@ -41,7 +41,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   String? _error;
   bool _hasMore = true;
   bool _isSwitchingSource = false;
-  bool _isFadingPage = false;
+  final bool _isFadingPage = false;
   String _selectedService = 'kemono';
   List<String> _blockedTags = [];
   TagFilterProvider? _tagFilterProvider;

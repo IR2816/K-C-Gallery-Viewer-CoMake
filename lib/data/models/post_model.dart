@@ -1,5 +1,6 @@
 import '../../domain/entities/post.dart';
 import 'post_file_model.dart';
+import '../utils/json_field_utils.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
 class PostModel extends Post {
@@ -79,34 +80,39 @@ class PostModel extends Post {
     debugPrint('=== END MEDIA DEBUG ===');
 
     // Safe parsing with type checking
+    final added = JsonFieldUtils.dateTime(postData, 'added', defaultValue: DateTime.now());
+    final published = JsonFieldUtils.dateTime(postData, 'published', defaultValue: DateTime.now());
+    final edited = JsonFieldUtils.dateTime(postData, 'edited', defaultValue: DateTime.now());
+    final embed = JsonFieldUtils.map(postData, 'embed');
+
     return PostModel(
-      id: postData['id']?.toString() ?? '',
-      user: postData['user']?.toString() ?? '',
-      service: postData['service']?.toString() ?? '',
-      title: postData['title']?.toString().isNotEmpty == true
-          ? postData['title'].toString()
-          : 'Post from ${DateTime.tryParse(postData['published']?.toString() ?? '')?.day ?? ''}',
-      content:
-          postData['content']?.toString() ??
-          postData['substring']?.toString() ??
-          postData['text']?.toString() ??
-          '',
-      embedUrl: postData['embed']?['url']?.toString(),
-      sharedFile: postData['shared_file']?.toString() ?? '',
-      added:
-          DateTime.tryParse(postData['added']?.toString() ?? '') ??
-          DateTime.now(),
-      published:
-          DateTime.tryParse(postData['published']?.toString() ?? '') ??
-          DateTime.now(),
-      edited:
-          DateTime.tryParse(postData['edited']?.toString() ?? '') ??
-          DateTime.now(),
-      attachments:
-          (postData['attachments'] as List?)
-              ?.map((e) => PostFileModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      id: JsonFieldUtils.string(postData, 'id'),
+      user: JsonFieldUtils.string(postData, 'user'),
+      service: JsonFieldUtils.string(postData, 'service'),
+      title: JsonFieldUtils.string(postData, 'title').isNotEmpty
+          ? JsonFieldUtils.string(postData, 'title')
+          : 'Post from ${published.day}',
+      content: JsonFieldUtils.string(
+        postData,
+        'content',
+        defaultValue: JsonFieldUtils.string(
+          postData,
+          'substring',
+          defaultValue: JsonFieldUtils.string(postData, 'text'),
+        ),
+      ),
+        embedUrl: JsonFieldUtils.string(embed, 'url').isNotEmpty
+          ? JsonFieldUtils.string(embed, 'url')
+          : null,
+      sharedFile: JsonFieldUtils.string(postData, 'shared_file'),
+      added: added,
+      published: published,
+      edited: edited,
+      attachments: JsonFieldUtils.list(
+        postData,
+        'attachments',
+        (e) => PostFileModel.fromJson(e as Map<String, dynamic>),
+      ),
       file: (postData['file'] != null && postData['file'] is Map)
           ? [PostFileModel.fromJson(postData['file'] as Map<String, dynamic>)]
           : (postData['file'] as List?)
@@ -115,11 +121,12 @@ class PostModel extends Post {
                     )
                     .toList() ??
                 [],
-      tags:
-          (postData['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      saved: postData['saved'] is bool
-          ? postData['saved'] as bool
-          : postData['saved']?.toString().toLowerCase() == 'true',
+      tags: JsonFieldUtils.list(
+        postData,
+        'tags',
+        (e) => e.toString(),
+      ),
+      saved: JsonFieldUtils.boolValue(postData, 'saved'),
     );
   }
 

@@ -1,4 +1,5 @@
 import '../../domain/entities/creator.dart';
+import '../utils/json_field_utils.dart';
 
 /// Creator search result from mbaharip API
 class CreatorSearchResult {
@@ -23,13 +24,21 @@ class CreatorSearchResult {
   /// Create from JSON
   factory CreatorSearchResult.fromJson(Map<String, dynamic> json) {
     return CreatorSearchResult(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      service: json['service']?.toString() ?? '',
-      avatar: json['avatar']?.toString(),
-      fans: json['fans'] as int?,
-      favorited: json['favorited'] as int?, // Changed from bool? to int?
-      indexed: json['indexed']?.toString(),
+      id: JsonFieldUtils.string(json, 'id'),
+      name: JsonFieldUtils.string(json, 'name'),
+      service: JsonFieldUtils.string(json, 'service'),
+      avatar: JsonFieldUtils.string(json, 'avatar').isNotEmpty
+          ? JsonFieldUtils.string(json, 'avatar')
+          : null,
+      fans: json['fans'] is int
+          ? json['fans'] as int
+          : int.tryParse(json['fans']?.toString() ?? ''),
+      favorited: json['favorited'] is int
+          ? json['favorited'] as int
+          : int.tryParse(json['favorited']?.toString() ?? ''),
+      indexed: JsonFieldUtils.string(json, 'indexed').isNotEmpty
+          ? JsonFieldUtils.string(json, 'indexed')
+          : null,
     );
   }
 

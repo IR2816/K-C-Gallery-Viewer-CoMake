@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import '../../domain/entities/discord_server.dart';
 import '../../domain/entities/discord_channel.dart';
 import '../../data/models/post_model.dart';
+import 'api_header_service.dart';
 
 /// 🚀 Discord API Client - Isolated from Kemono API
 ///
@@ -21,11 +22,7 @@ class DiscordApiClient {
       final response = await _dio.get(
         'https://kemono.cr/api/v1/discord/channel/lookup/$serverId',
         options: Options(
-          headers: {
-            'Accept': 'text/css', // WAJIB untuk Discord API
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
+          headers: ApiHeaderService.kemonoHeaders,
           validateStatus: (status) {
             // Allow 503 to handle manually
             return status != null && status < 600;
@@ -100,11 +97,7 @@ class DiscordApiClient {
         url,
         queryParameters: {'offset': offset},
         options: Options(
-          headers: {
-            'Accept': 'text/css', // WAJIB untuk Discord API
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
+          headers: ApiHeaderService.kemonoHeaders,
           validateStatus: (status) {
             // Allow 503 to handle manually
             return status != null && status < 600;
@@ -180,11 +173,7 @@ class DiscordApiClient {
       final response = await _dio.get(
         'https://kemono.cr/api/v1/discord/server',
         options: Options(
-          headers: {
-            'Accept': 'text/css', // WAJIB untuk Discord API
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
+          headers: ApiHeaderService.kemonoHeaders,
           validateStatus: (status) {
             // Allow 503 to handle manually, don't throw immediately
             return status != null && status < 600;
@@ -246,11 +235,7 @@ class DiscordApiClient {
       final response = await _dio.get(
         'https://kemono.cr/api/v1/discord/server/$serverId',
         options: Options(
-          headers: {
-            'Accept': 'text/css', // WAJIB untuk Discord API
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
+          headers: ApiHeaderService.kemonoHeaders,
           validateStatus: (status) {
             // Allow 503 to handle manually
             return status != null && status < 600;
