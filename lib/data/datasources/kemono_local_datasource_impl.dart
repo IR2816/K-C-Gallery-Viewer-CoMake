@@ -3,12 +3,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/creator_model.dart';
 import '../models/post_model.dart';
 import '../models/folder_model.dart';
+import '../services/prefs_store.dart';
 import 'kemono_local_datasource.dart';
 
 class KemonoLocalDataSourceImpl implements KemonoLocalDataSource {
   final SharedPreferences prefs;
+  final PrefsStore prefsStore;
 
-  KemonoLocalDataSourceImpl({required this.prefs});
+  KemonoLocalDataSourceImpl({required this.prefs})
+      : prefsStore = PrefsStore(prefs: prefs);
 
   static const String _favoriteCreatorsKey = 'favorite_creators';
   static const String _savedPostsKey = 'saved_posts';
@@ -26,51 +29,32 @@ class KemonoLocalDataSourceImpl implements KemonoLocalDataSource {
 
   @override
   Future<void> saveFavoriteCreator(CreatorModel creator) async {
-    final creators = await getFavoriteCreators();
-    // Check if creator already exists
-    final existingIndex = creators.indexWhere(
-      (c) => c.id == creator.id && c.service == creator.service,
-    );
-
-    // Create creator with favorited: true
     final favoritedCreator = CreatorModel(
       id: creator.id,
       service: creator.service,
       name: creator.name,
       indexed: creator.indexed,
       updated: creator.updated,
-      favorited: true, // CRITICAL: Set favorited to true!
+      favorited: true,
     );
 
-    if (existingIndex != -1) {
-      // Creator already exists, update it
-      creators[existingIndex] = favoritedCreator;
-    } else {
-      // Add new creator
-      creators.add(favoritedCreator);
-    }
-
-    final jsonString = json.encode(creators.map((e) => e.toJson()).toList());
-    await prefs.setString(_favoriteCreatorsKey, jsonString);
+    await prefsStore.upsert<CreatorModel>(
+      _favoriteCreatorsKey,
+      favoritedCreator,
+      (c) => c.id == creator.id && c.service == creator.service,
+      (c) => c.toJson(),
+      (json) => CreatorModel.fromJson(json),
+    );
   }
 
   @override
   Future<void> removeFavoriteCreator(String id, {String? service}) async {
-    final creators = await getFavoriteCreators();
-    final initialLength = creators.length;
-    // Remove creator by ID AND service to avoid cross-domain conflicts
-    if (service != null) {
-      creators.removeWhere((c) => c.id == id && c.service == service);
-    } else {
-      // Fallback: remove by ID only (backward compatibility)
-      creators.removeWhere((c) => c.id == id);
-    }
-
-    // Only save if something was actually removed
-    if (creators.length < initialLength) {
-      final jsonString = json.encode(creators.map((e) => e.toJson()).toList());
-      await prefs.setString(_favoriteCreatorsKey, jsonString);
-    }
+    await prefsStore.removeWhere<CreatorModel>(
+      _favoriteCreatorsKey,
+      (c) => c.id == id && (service == null || c.service == service),
+      (c) => c.toJson(),
+      (json) => CreatorModel.fromJson(json),
+    );
   }
 
   @override
@@ -84,25 +68,24 @@ class KemonoLocalDataSourceImpl implements KemonoLocalDataSource {
 
   @override
   Future<void> savePost(PostModel post) async {
-    final posts = await getSavedPosts();
-    posts.removeWhere((p) => p.id == post.id);
-    posts.insert(0, post);
-
-    final jsonString = json.encode(posts.map((e) => e.toJson()).toList());
-    await prefs.setString(_savedPostsKey, jsonString);
+    await prefsStore.upsert<PostModel>(
+      _savedPostsKey,
+      post,
+      (p) => p.id == post.id,
+      (p) => p.toJson(),
+      (json) => PostModel.fromJson(json),
+      prepend: true,
+    );
   }
 
   @override
   Future<void> removeSavedPost(String id) async {
-    final posts = await getSavedPosts();
-    final initialLength = posts.length;
-    posts.removeWhere((p) => p.id == id);
-
-    // Only persist if something was actually removed
-    if (posts.length < initialLength) {
-      final jsonString = json.encode(posts.map((e) => e.toJson()).toList());
-      await prefs.setString(_savedPostsKey, jsonString);
-    }
+    await prefsStore.removeWhere<PostModel>(
+      _savedPostsKey,
+      (p) => p.id == id,
+      (p) => p.toJson(),
+      (json) => PostModel.fromJson(json),
+    );
   }
 
   @override

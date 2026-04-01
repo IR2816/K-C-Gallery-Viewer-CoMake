@@ -45,7 +45,6 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   String _selectedService = 'kemono';
   List<String> _blockedTags = [];
   TagFilterProvider? _tagFilterProvider;
-  int _currentPage = 1;
 
   // Post search state
   late PostSearchProvider _postSearchProvider;
@@ -143,7 +142,6 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         _selectedService = settingsApiSource.name;
         _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
         _posts = [];
-        _currentPage = 1;
         // Reset search when switching service
         _postSearchProvider.clearSearch();
         _postSearchController.clear();
@@ -231,7 +229,6 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       _error = null;
       _hasMore = true;
       _isLoadingMore = false;
-      _currentPage = 1;
     });
 
     try {

@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kc_gallery_viewer/presentation/providers/download_manager.dart';
 import 'package:kc_gallery_viewer/presentation/providers/download_provider.dart';
 
 void main() {
@@ -158,9 +160,13 @@ void main() {
 
   group('DownloadProvider', () {
     late DownloadProvider provider;
+    late DownloadManager downloadManager;
 
-    setUp(() {
-      provider = DownloadProvider();
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      downloadManager = DownloadManager();
+      await downloadManager.initialize();
+      provider = DownloadProvider(downloadManager: downloadManager);
     });
 
     tearDown(() {
