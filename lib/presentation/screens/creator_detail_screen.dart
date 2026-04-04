@@ -82,7 +82,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     super.initState();
     // Force the API source to match the creator's service to avoid hitting the wrong backend.
     _activeApiSource = _apiSourceForService(widget.creator.service);
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabChange);
     _loadCreatorPosts();
     _linkedAccountsFuture = _fetchLinkedAccounts();
@@ -419,6 +419,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                   children: [
                     _buildPostsTab(postsProvider),
                     _buildMediaTab(postsProvider),
+                    _buildDetailsTab(),
                   ],
                 ),
               ),
@@ -632,6 +633,16 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                         Icon(Icons.photo_library_rounded, size: 16),
                         SizedBox(width: 8),
                         Text('MEDIA'),
+                      ],
+                    ),
+                  ),
+                  Tab(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 16),
+                        SizedBox(width: 8),
+                        Text('DETAILS'),
                       ],
                     ),
                   ),
@@ -873,9 +884,6 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
           controller: _postsScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            if (_linkedAccountsFuture != null)
-              SliverToBoxAdapter(child: _buildLinkedAccountsSection()),
-
             SliverToBoxAdapter(
               child: _buildCreatorOverviewCard(
                 title: 'Post Stream',
@@ -934,6 +942,249 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
         ),
       ),
     );
+  }
+
+  /// Details Tab – shows creator profile information
+  Widget _buildDetailsTab() {
+    final serviceColor = _getServiceColor(widget.creator.service);
+    final accentColor = _activeApiSource == ApiSource.kemono
+        ? AppTheme.primaryColor
+        : AppTheme.accentColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Profile Card ──────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.getCardColor(context).withValues(alpha: 0.96),
+                  AppTheme.getSurfaceColorContext(context).withValues(alpha: 0.92),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.getBorderColor(context).withValues(alpha: 0.85),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 18,
+                  spreadRadius: -10,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Creator name + service badge row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.creator.name,
+                        style: TextStyle(
+                          color: AppTheme.getPrimaryTextColor(context),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: serviceColor,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: serviceColor.withValues(alpha: 0.4),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        widget.creator.service.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Creator ID
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.tag_rounded,
+                      size: 14,
+                      color: AppTheme.getSecondaryTextColor(context),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'ID: ${widget.creator.id}',
+                      style: TextStyle(
+                        color: AppTheme.getSecondaryTextColor(context),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Bio
+                if (widget.creator.bio.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(
+                        alpha: isDark ? 0.1 : 0.07,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Text(
+                      widget.creator.bio,
+                      style: TextStyle(
+                        color: AppTheme.getPrimaryTextColor(context),
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Stats Row ─────────────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.favorite_rounded,
+                  label: 'Favorites',
+                  value: widget.creator.fans != null
+                      ? _formatFansCount(widget.creator.fans!)
+                      : '—',
+                  color: Colors.pinkAccent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'Indexed',
+                  value: _formatDate(
+                    DateTime.fromMillisecondsSinceEpoch(
+                      widget.creator.indexed * 1000,
+                    ),
+                  ),
+                  color: accentColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.update_rounded,
+                  label: 'Updated',
+                  value: _formatDate(
+                    DateTime.fromMillisecondsSinceEpoch(
+                      widget.creator.updated * 1000,
+                    ),
+                  ),
+                  color: Colors.greenAccent.shade400,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Linked Accounts ───────────────────────────────────────────
+          if (_linkedAccountsFuture != null) _buildLinkedAccountsSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              color: AppTheme.getPrimaryTextColor(context),
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.getSecondaryTextColor(context),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatFansCount(int fans) {
+    if (fans >= 1000000) {
+      final val = fans / 1000000;
+      return val == val.truncateToDouble() ? '${val.truncate()}M' : '${val.toStringAsFixed(1)}M';
+    } else if (fans >= 1000) {
+      final val = fans / 1000;
+      return val == val.truncateToDouble() ? '${val.truncate()}K' : '${val.toStringAsFixed(1)}K';
+    }
+    return fans.toString();
   }
 
   Widget _buildCreatorOverviewCard({
