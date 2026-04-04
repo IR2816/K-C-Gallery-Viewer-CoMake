@@ -14,7 +14,6 @@ import '../widgets/skeleton_loader.dart';
 import '../../domain/entities/api_source.dart';
 import '../../domain/entities/discord_server.dart';
 import '../../domain/repositories/kemono_repository.dart';
-import '../../data/utils/domain_resolver.dart';
 
 // Providers
 import '../providers/posts_provider.dart';
@@ -264,8 +263,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     if (normalized == 'kemono') return ApiSource.kemono;
     if (normalized == 'coomer') return ApiSource.coomer;
 
-    final inferred = DomainResolver.apiSourceForService(normalized);
-    return inferred == widget.apiSource ? inferred : widget.apiSource;
+    return widget.apiSource;
   }
 
   String _buildLinkedBannerUrl(String service, String creatorId) {
