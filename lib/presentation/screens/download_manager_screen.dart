@@ -631,10 +631,14 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   for (final download in activeDownloads) {
                     downloadProvider.cancelDownload(download.id);
                   }
+                  // Reload file list after a short delay so any partial files
+                  // written to disk are included / cleaned up.
+                  await Future.delayed(const Duration(milliseconds: 800));
+                  if (mounted) _loadDownloadedFiles();
                 },
                 child: const Text('Cancel All', style: TextStyle(color: Colors.red, fontSize: 12)),
               ),
@@ -685,7 +689,11 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                 ),
               if (download.status == DownloadStatus.pending)
                 IconButton(
-                  onPressed: () => downloadProvider.cancelDownload(download.id),
+                  onPressed: () async {
+                    downloadProvider.cancelDownload(download.id);
+                    await Future.delayed(const Duration(milliseconds: 800));
+                    if (mounted) _loadDownloadedFiles();
+                  },
                   icon: const Icon(Icons.cancel, color: Colors.red, size: 16),
                   tooltip: 'Cancel',
                 ),
@@ -1204,12 +1212,12 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
     if (confirmed != true) return;
     try {
       await info.file.delete();
-      setState(() => _allFiles.remove(info));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('File deleted'), backgroundColor: Colors.green),
         );
       }
+      await _loadDownloadedFiles();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

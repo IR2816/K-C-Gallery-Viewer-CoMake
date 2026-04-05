@@ -52,6 +52,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   late TextEditingController _postSearchController;
   late FocusNode _postSearchFocusNode;
   Timer? _postSearchDebounce;
+  bool _isSearchDebouncing = false;
 
   // UI state
   bool _isRecentlyViewedExpanded = true; // Collapsible section state
@@ -113,9 +114,22 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
   /// Scroll listener that triggers infinite-scroll loading when the user
   /// scrolls within 200 px of the bottom while scrolling downward.
+  /// Also auto-collapses the "Recently Viewed" carousel while scrolling
+  /// down, and restores it when the user scrolls back near the top.
   void _onScrollChanged() {
-    if (!_scrollController.hasClients || _isLoadingMore || _isLoading || !_hasMore) return;
+    if (!_scrollController.hasClients) return;
     final pos = _scrollController.position;
+
+    // Auto-hide / restore recently viewed
+    if (pos.pixels < 60 && !_isRecentlyViewedExpanded) {
+      setState(() => _isRecentlyViewedExpanded = true);
+    } else if (pos.userScrollDirection == ScrollDirection.reverse &&
+        pos.pixels > 80 &&
+        _isRecentlyViewedExpanded) {
+      setState(() => _isRecentlyViewedExpanded = false);
+    }
+
+    if (_isLoadingMore || _isLoading || !_hasMore) return;
     if (pos.pixels >= pos.maxScrollExtent - 200 &&
         pos.userScrollDirection == ScrollDirection.reverse) {
       _loadMorePosts();
@@ -852,94 +866,140 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     final resultCount = _postSearchProvider.resultCount;
     final hasSearchQuery = _postSearchProvider.searchQuery.isNotEmpty;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final noResults = hasSearchQuery && !_isSearchDebouncing && resultCount == 0;
+    final accentColor = noResults ? Colors.orange : AppTheme.primaryColor;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context).withValues(alpha: isDark ? 0.6 : 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.getBorderColor(context, opacity: 0.6),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.getCardColor(context).withValues(alpha: isDark ? 0.6 : 0.4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: hasSearchQuery
+                  ? accentColor.withValues(alpha: 0.55)
+                  : AppTheme.getBorderColor(context, opacity: 0.6),
+              width: hasSearchQuery ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              _isSearchDebouncing
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.primaryColor.withValues(alpha: 0.7),
+                      ),
+                    )
+                  : Icon(
+                      noResults ? Icons.search_off_rounded : Icons.search_rounded,
+                      size: 18,
+                      color: noResults
+                          ? Colors.orange.withValues(alpha: 0.8)
+                          : AppTheme.getSecondaryTextColor(context, opacity: 0.6),
+                    ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _postSearchController,
+                  focusNode: _postSearchFocusNode,
+                  onChanged: (query) {
+                    setState(() => _isSearchDebouncing = query.isNotEmpty);
+                    _postSearchDebounce?.cancel();
+                    _postSearchDebounce =
+                        Timer(const Duration(milliseconds: 350), () {
+                      _postSearchProvider.setSearchQuery(query);
+                      setState(() {
+                        _isSearchDebouncing = false;
+                        final postsProvider = context.read<PostsProvider>();
+                        _posts = _getFilteredPosts(postsProvider.posts);
+                      });
+                    });
+                  },
+                  onSubmitted: (_) {
+                    // Scroll back to top when search is submitted
+                    if (_scrollController.hasClients) {
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                    _postSearchFocusNode.unfocus();
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search posts by title or tag…',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    isDense: true,
+                    hintStyle: TextStyle(
+                      color: AppTheme.getSecondaryTextColor(context, opacity: 0.5),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getOnSurfaceColor(context),
+                  ),
+                  textInputAction: TextInputAction.search,
+                ),
+              ),
+              if (hasSearchQuery) ...[
+                const SizedBox(width: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _isSearchDebouncing ? '…' : '$resultCount',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () {
+                    _postSearchController.clear();
+                    _postSearchProvider.clearSearch();
+                    _postSearchFocusNode.unfocus();
+                    setState(() {
+                      _isSearchDebouncing = false;
+                      final postsProvider = context.read<PostsProvider>();
+                      _posts = _getFilteredPosts(postsProvider.posts);
+                    });
+                  },
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: AppTheme.getSecondaryTextColor(context, opacity: 0.6),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search_rounded,
-            size: 18,
-            color: AppTheme.getSecondaryTextColor(context, opacity: 0.6),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: _postSearchController,
-              focusNode: _postSearchFocusNode,
-              onChanged: (query) {
-                _postSearchDebounce?.cancel();
-                _postSearchDebounce =
-                    Timer(const Duration(milliseconds: 350), () {
-                  _postSearchProvider.setSearchQuery(query);
-
-                  setState(() {
-                    final postsProvider = context.read<PostsProvider>();
-                    _posts = _getFilteredPosts(postsProvider.posts);
-                  });
-                });
-              },
-              decoration: InputDecoration(
-                hintText: 'Search loaded posts by title…',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-                hintStyle: TextStyle(
-                  color:
-                      AppTheme.getSecondaryTextColor(context, opacity: 0.5),
-                ),
-              ),
+        if (noResults)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'No results in loaded posts — scroll down to load more',
               style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.getOnSurfaceColor(context),
+                fontSize: 11,
+                color: Colors.orange.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w500,
               ),
-              textInputAction: TextInputAction.done,
             ),
           ),
-          if (hasSearchQuery) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '$resultCount',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: () {
-                _postSearchController.clear();
-                _postSearchProvider.clearSearch();
-                _postSearchFocusNode.unfocus();
-                setState(() {
-                  final postsProvider = context.read<PostsProvider>();
-                  _posts = _getFilteredPosts(postsProvider.posts);
-                });
-              },
-              child: Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: AppTheme.getSecondaryTextColor(context, opacity: 0.6),
-              ),
-            ),
-          ],
-        ],
-      ),
+      ],
     );
   }
 
@@ -1099,11 +1159,12 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     CreatorQuickAccessProvider quickAccess,
     bool isDark,
   ) {
+    final settings = context.read<SettingsProvider>();
     final domain = (creator.service == 'fansly' ||
             creator.service == 'onlyfans' ||
             creator.service == 'candfans')
-        ? 'https://coomer.st'
-        : 'https://kemono.cr';
+        ? 'https://${settings.cleanCoomerDomain}'
+        : 'https://${settings.cleanKemonoDomain}';
     final avatarUrl =
         '$domain/data/avatars/${creator.service}/${creator.id}/avatar.jpg';
     final isFavorite = quickAccess.isFavorite(creator.id);

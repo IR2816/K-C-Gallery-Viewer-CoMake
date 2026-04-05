@@ -99,6 +99,7 @@ class PostCard extends StatelessWidget {
   Widget _buildCreatorHeader(BuildContext context) {
     final serviceColor = AppTheme.getServiceColor(post.service);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final settings = context.read<SettingsProvider>();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 6),
@@ -127,7 +128,7 @@ class PostCard extends StatelessWidget {
                   padding: const EdgeInsets.all(2),
                   child: ClipOval(
                     child: CachedNetworkImage(
-                      imageUrl: _getCreatorAvatarUrl(),
+                      imageUrl: _getCreatorAvatarUrl(settings),
                       fit: BoxFit.cover,
                       memCacheWidth: 80,
                       memCacheHeight: 80,
@@ -564,13 +565,13 @@ class PostCard extends StatelessWidget {
     return '${diff.inMinutes}m ago';
   }
 
-  String _getCreatorAvatarUrl() {
+  String _getCreatorAvatarUrl(SettingsProvider settings) {
     final domain =
         (post.service == 'fansly' ||
                 post.service == 'onlyfans' ||
                 post.service == 'candfans')
-            ? 'https://coomer.st'
-            : 'https://kemono.cr';
+            ? 'https://${settings.cleanCoomerDomain}'
+            : 'https://${settings.cleanKemonoDomain}';
     return '$domain/data/avatars/${post.service}/${post.user}/avatar.jpg';
   }
 
