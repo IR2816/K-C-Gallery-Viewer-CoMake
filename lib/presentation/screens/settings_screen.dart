@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 // Providers
 import '../providers/settings_provider.dart';
@@ -917,6 +922,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Exports saved posts, bookmarks and favourite creators to a JSON file
+  /// in the Downloads folder (Android) or app Documents folder (other
+  /// platforms) and then opens the system share sheet.
+  Future<void> _exportSavedData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Collect all three data sets from SharedPreferences
+      final savedPostsJson = prefs.getString('saved_posts');
+      final favoriteCreatorsJson = prefs.getString('favorite_creators');
+      final bookmarksRaw = prefs.getStringList('post_bookmarks_v1') ?? [];
+
+      final exportMap = <String, dynamic>{
+        'export_version': 1,
+        'exported_at': DateTime.now().toIso8601String(),
+        'saved_posts':
+            savedPostsJson != null ? json.decode(savedPostsJson) : [],
+        'favorite_creators':
+            favoriteCreatorsJson != null
+                ? json.decode(favoriteCreatorsJson)
+                : [],
+        'bookmarks':
+            bookmarksRaw.map((s) => json.decode(s)).toList(),
+      };
+
+      final jsonString = const JsonEncoder.withIndent('  ').convert(exportMap);
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')[0];
+      final fileName = 'kc-backup-$timestamp.json';
+
+      // Write to a temp file then share
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsString(jsonString);
+
+      // Also copy to Downloads on Android for easy access
+      if (Platform.isAndroid) {
+        const downloadsPath = '/storage/emulated/0/Download';
+        final downloadsDir = Directory(downloadsPath);
+        if (await downloadsDir.exists()) {
+          await file.copy('$downloadsPath/$fileName');
+        }
+      }
+
+      if (!mounted) return;
+
+      // Share the file
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/json')],
+        subject: 'KC Gallery Saved Data Backup',
+        text: 'Exported: saved posts, bookmarks & favourite creators',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildDataStorageSection() {
     return Consumer2<SettingsProvider, DataUsageTracker>(
       builder: (context, settingsProvider, dataUsageTracker, child) {
@@ -941,6 +1011,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     MaterialPageRoute(builder: (context) => const DataUsageDashboard()),
                   );
                 },
+              ),
+
+              const Divider(height: 1, indent: 56),
+
+              // Export saved data
+              ListTile(
+                leading: const Icon(Icons.upload_file_rounded, size: 20, color: Colors.teal),
+                title: const Text(
+                  'Export Saved Data',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('Back up saved posts, bookmarks & favourite creators'),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                onTap: _exportSavedData,
               ),
 
               const Divider(height: 1, indent: 56),

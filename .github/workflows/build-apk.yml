@@ -53,6 +53,18 @@ jobs:
             > android/key.properties
           echo "✅ Release keystore configured"
 
+      # ── Stable debug keystore fallback (when no release secrets are set) ────
+      # Uses android/keystore/ci_debug.jks committed to the repo so every CI
+      # build without KEYSTORE_BASE64 is signed with the *same* certificate.
+      # This prevents Android "INSTALL_FAILED_UPDATE_INCOMPATIBLE" errors when
+      # sideloading successive builds.
+      - name: Set up stable debug keystore (fallback)
+        if: env.KEYSTORE_BASE64 == ''
+        run: |
+          printf 'storePassword=ci_debug_pass\nkeyPassword=ci_debug_pass\nkeyAlias=ci_debug\nstoreFile=../keystore/ci_debug.jks\n' \
+            > android/key.properties
+          echo "✅ Stable debug keystore configured"
+
       # ── Compute version string ───────────────────────────────────────────────
       - name: Compute version
         id: version

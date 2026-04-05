@@ -46,11 +46,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       color: AppTheme.secondaryAccent,
     ),
     _NavItem(
-      icon: Icons.forum_rounded,
-      label: 'Discord',
-      color: Color(0xFF5865F2),
-    ),
-    _NavItem(
       icon: Icons.bookmark_rounded,
       label: 'Saved',
       color: Color(0xFFFFD740),
@@ -121,7 +116,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         children: [
           const LatestPostsScreen(),
           const SearchScreenDual(),
-          const DiscordServerScreen(),
           SavedScreen(),
           const SettingsScreen(),
         ],

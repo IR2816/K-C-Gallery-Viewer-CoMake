@@ -10,6 +10,9 @@ import '../widgets/app_state_widgets.dart';
 
 const _kDownloadFolderPath = '/storage/emulated/0/Download/KC Download';
 const _kPrefSortKey = 'dm_sort_order';
+// Delay after cancelling a download before rescanning the file-system, so
+// that any partial file written to disk is included/removed correctly.
+const _kDownloadRefreshDelay = Duration(milliseconds: 800);
 
 // ─── Sort options ─────────────────────────────────────────────────────────────
 
@@ -631,10 +634,14 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   for (final download in activeDownloads) {
                     downloadProvider.cancelDownload(download.id);
                   }
+                  // Reload file list after a short delay so any partial files
+                  // written to disk are included / cleaned up.
+                  await Future.delayed(_kDownloadRefreshDelay);
+                  if (mounted) _loadDownloadedFiles();
                 },
                 child: const Text('Cancel All', style: TextStyle(color: Colors.red, fontSize: 12)),
               ),
@@ -685,7 +692,11 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                 ),
               if (download.status == DownloadStatus.pending)
                 IconButton(
-                  onPressed: () => downloadProvider.cancelDownload(download.id),
+                  onPressed: () async {
+                    downloadProvider.cancelDownload(download.id);
+                    await Future.delayed(_kDownloadRefreshDelay);
+                    if (mounted) _loadDownloadedFiles();
+                  },
                   icon: const Icon(Icons.cancel, color: Colors.red, size: 16),
                   tooltip: 'Cancel',
                 ),
@@ -1204,12 +1215,12 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
     if (confirmed != true) return;
     try {
       await info.file.delete();
-      setState(() => _allFiles.remove(info));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('File deleted'), backgroundColor: Colors.green),
         );
       }
+      await _loadDownloadedFiles();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
