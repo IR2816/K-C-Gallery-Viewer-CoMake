@@ -1204,8 +1204,6 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         cacheExtent: 600,
-        addRepaintBoundaries: true,
-        addAutomaticKeepAlives: true,
         physics: const ClampingScrollPhysics(),
         itemCount: _cachedMediaItems.length,
         itemBuilder: (context, index) {
