@@ -1012,7 +1012,10 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         if (isSelected) return;
         // Persist to SettingsProvider — _onSettingsChanged will sync
         // _selectedService and reload the feed automatically.
-        final newSource = ApiSource.values.firstWhere((a) => a.name == id);
+        final newSource = ApiSource.values.firstWhere(
+          (a) => a.name == id,
+          orElse: () => ApiSource.kemono,
+        );
         await context.read<SettingsProvider>().setDefaultApiSource(newSource);
       },
       child: AnimatedContainer(
@@ -1835,8 +1838,10 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                           );
                           // Persist to SettingsProvider — _onSettingsChanged will
                           // sync _selectedService and reload the feed.
-                          final newSource = ApiSource.values
-                              .firstWhere((a) => a.name == service);
+                          final newSource = ApiSource.values.firstWhere(
+                            (a) => a.name == service,
+                            orElse: () => ApiSource.kemono,
+                          );
                           context
                               .read<SettingsProvider>()
                               .setDefaultApiSource(newSource);
