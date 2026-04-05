@@ -16,6 +16,8 @@ class PostSearchProvider extends ChangeNotifier {
     required this.settingsProvider,
   });
 
+  static const int _searchPageSize = 50;
+
   // Local filter state
   String _searchQuery = '';
   final List<String> _selectedTagFilters = [];
@@ -118,7 +120,7 @@ class PostSearchProvider extends ChangeNotifier {
       final newPosts = await repository.searchPosts(
         trimmed,
         offset: _searchOffset,
-        limit: 50,
+        limit: _searchPageSize,
         apiSource: effectiveApiSource,
       );
 
@@ -127,7 +129,7 @@ class PostSearchProvider extends ChangeNotifier {
       } else {
         _serverSearchResults.addAll(newPosts);
         _searchOffset += newPosts.length;
-        _searchHasMore = newPosts.length >= 50;
+        _searchHasMore = newPosts.length >= _searchPageSize;
       }
       _serverSearchError = null;
     } catch (e) {
@@ -153,7 +155,7 @@ class PostSearchProvider extends ChangeNotifier {
       final newPosts = await repository.searchPosts(
         _searchQuery,
         offset: _searchOffset,
-        limit: 50,
+        limit: _searchPageSize,
         apiSource: effectiveApiSource,
       );
 
@@ -162,7 +164,7 @@ class PostSearchProvider extends ChangeNotifier {
       } else {
         _serverSearchResults.addAll(newPosts);
         _searchOffset += newPosts.length;
-        _searchHasMore = newPosts.length >= 50;
+        _searchHasMore = newPosts.length >= _searchPageSize;
       }
       _serverSearchError = null;
     } catch (e) {

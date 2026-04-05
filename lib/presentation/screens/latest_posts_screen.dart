@@ -53,6 +53,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   late FocusNode _postSearchFocusNode;
   Timer? _postSearchDebounce;
   bool _isSearchDebouncing = false;
+  static const Duration _searchDebounceDelay = Duration(milliseconds: 500);
 
   // UI state
   bool _isRecentlyViewedExpanded = true; // Collapsible section state
@@ -952,7 +953,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                       return;
                     }
                     _postSearchDebounce =
-                        Timer(const Duration(milliseconds: 500), () {
+                        Timer(_searchDebounceDelay, () {
                       _postSearchProvider.performServerSearch(
                         query,
                         refresh: true,
