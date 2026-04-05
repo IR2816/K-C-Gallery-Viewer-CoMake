@@ -1010,8 +1010,10 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     return GestureDetector(
       onTap: () async {
         if (isSelected) return;
-        setState(() => _selectedService = id);
-        await _loadInitialPosts();
+        // Persist to SettingsProvider — _onSettingsChanged will sync
+        // _selectedService and reload the feed automatically.
+        final newSource = ApiSource.values.firstWhere((a) => a.name == id);
+        await context.read<SettingsProvider>().setDefaultApiSource(newSource);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
@@ -1831,11 +1833,13 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                             _selectedService,
                             service,
                           );
-
-                          setState(() {
-                            _selectedService = service;
-                          });
-                          _loadInitialPosts();
+                          // Persist to SettingsProvider — _onSettingsChanged will
+                          // sync _selectedService and reload the feed.
+                          final newSource = ApiSource.values
+                              .firstWhere((a) => a.name == service);
+                          context
+                              .read<SettingsProvider>()
+                              .setDefaultApiSource(newSource);
                           Navigator.pop(context);
                         }
                       },
