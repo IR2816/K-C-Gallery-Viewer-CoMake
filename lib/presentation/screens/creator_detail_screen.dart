@@ -80,8 +80,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   @override
   void initState() {
     super.initState();
-    // Force the API source to match the creator's service to avoid hitting the wrong backend.
-    _activeApiSource = _apiSourceForService(widget.creator.service);
+    // Keep caller-provided source as truth and only infer from service when missing/ambiguous.
+    _activeApiSource = _resolveActiveApiSource(widget.creator.service);
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
     _loadCreatorPosts();
@@ -141,8 +141,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       _cachedMediaItems = [];
       _mediaCacheKey = null;
 
-      // Ensure the active API source is aligned with the creator's service before loading.
-      _activeApiSource = _apiSourceForService(widget.creator.service);
+      // Keep the selected API source stable for this creator detail session.
+      _activeApiSource = _resolveActiveApiSource(widget.creator.service);
 
       await postsProvider.loadCreatorPosts(
         widget.creator.service,
@@ -254,6 +254,16 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     return coomerServices.contains(service.toLowerCase())
         ? ApiSource.coomer
         : ApiSource.kemono;
+  }
+
+  ApiSource _resolveActiveApiSource(String service) {
+    final normalized = service.trim().toLowerCase();
+
+    if (normalized.isEmpty) return widget.apiSource;
+    if (normalized == 'kemono') return ApiSource.kemono;
+    if (normalized == 'coomer') return ApiSource.coomer;
+
+    return widget.apiSource;
   }
 
   String _buildLinkedBannerUrl(String service, String creatorId) {
