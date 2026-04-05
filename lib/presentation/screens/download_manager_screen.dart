@@ -10,6 +10,9 @@ import '../widgets/app_state_widgets.dart';
 
 const _kDownloadFolderPath = '/storage/emulated/0/Download/KC Download';
 const _kPrefSortKey = 'dm_sort_order';
+// Delay after cancelling a download before rescanning the file-system, so
+// that any partial file written to disk is included/removed correctly.
+const _kDownloadRefreshDelay = Duration(milliseconds: 800);
 
 // ─── Sort options ─────────────────────────────────────────────────────────────
 
@@ -637,7 +640,7 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                   }
                   // Reload file list after a short delay so any partial files
                   // written to disk are included / cleaned up.
-                  await Future.delayed(const Duration(milliseconds: 800));
+                  await Future.delayed(_kDownloadRefreshDelay);
                   if (mounted) _loadDownloadedFiles();
                 },
                 child: const Text('Cancel All', style: TextStyle(color: Colors.red, fontSize: 12)),
@@ -691,7 +694,7 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                 IconButton(
                   onPressed: () async {
                     downloadProvider.cancelDownload(download.id);
-                    await Future.delayed(const Duration(milliseconds: 800));
+                    await Future.delayed(_kDownloadRefreshDelay);
                     if (mounted) _loadDownloadedFiles();
                   },
                   icon: const Icon(Icons.cancel, color: Colors.red, size: 16),

@@ -932,7 +932,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                     _postSearchFocusNode.unfocus();
                   },
                   decoration: InputDecoration(
-                    hintText: 'Search posts by title or tag…',
+                    hintText: 'Search loaded posts by title…',
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
                     isDense: true,
