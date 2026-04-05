@@ -153,8 +153,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CreatorQuickAccessProvider()..initialize()),
         // Search History (tracks searches with frequency)
         ChangeNotifierProvider(create: (_) => SearchHistoryProvider()..initialize()),
-        // Post Search (search posts by title + tags)
-        ChangeNotifierProvider(create: (_) => PostSearchProvider()),
+        // Post Search (server-side keyword search + local tag/title filtering)
+        ChangeNotifierProvider(
+          create: (ctx) => PostSearchProvider(
+            repository: ctx.read<KemonoRepository>(),
+            settingsProvider: ctx.read<SettingsProvider>(),
+          ),
+        ),
         // 🚀 NEW: Discord Provider
         ChangeNotifierProvider(create: (_) => DiscordProvider(DiscordApiClient(Dio()))),
         ChangeNotifierProvider(create: (_) => DiscordSearchProvider()),

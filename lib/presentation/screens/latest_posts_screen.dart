@@ -53,6 +53,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   late FocusNode _postSearchFocusNode;
   Timer? _postSearchDebounce;
   bool _isSearchDebouncing = false;
+  static const Duration _searchDebounceDelay = Duration(milliseconds: 500);
 
   // UI state
   bool _isRecentlyViewedExpanded = true; // Collapsible section state
@@ -90,6 +91,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     _settingsProvider?.addListener(_onSettingsChanged);
     _tagFilterProvider?.addListener(_onSettingsChanged);
     _scrollController.addListener(_onScrollChanged);
+    _postSearchProvider.addListener(_onSearchProviderChanged);
   }
 
   @override
@@ -98,6 +100,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     _tagFilterProvider?.removeListener(_onSettingsChanged);
     _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
+    _postSearchProvider.removeListener(_onSearchProviderChanged);
 
     // Clean up search resources
     _postSearchController.dispose();
@@ -129,10 +132,23 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       setState(() => _isRecentlyViewedExpanded = false);
     }
 
-    if (_isLoadingMore || _isLoading || !_hasMore) return;
     if (pos.pixels >= pos.maxScrollExtent - 200 &&
         pos.userScrollDirection == ScrollDirection.reverse) {
-      _loadMorePosts();
+      if (_isInSearchMode) {
+        // Infinite scroll for server-side search results
+        if (!_postSearchProvider.isLoadingMoreSearch &&
+            !_postSearchProvider.isSearching &&
+            _postSearchProvider.searchHasMore) {
+          _postSearchProvider.loadMoreSearchResults(
+            apiSource: _currentApiSource,
+          );
+        }
+      } else {
+        // Infinite scroll for latest posts
+        if (!_isLoadingMore && !_isLoading && _hasMore) {
+          _loadMorePosts();
+        }
+      }
     }
   }
 
@@ -360,6 +376,14 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
   ApiSource get _currentApiSource =>
       ApiSource.values.firstWhere((a) => a.name == _selectedService);
+
+  /// True when the user has typed a search query and server-search is active.
+  bool get _isInSearchMode => _postSearchProvider.searchQuery.isNotEmpty;
+
+  /// Rebuild when PostSearchProvider emits changes (e.g. new search results).
+  void _onSearchProviderChanged() {
+    if (mounted) setState(() {});
+  }
 
   void _navigateToPostDetail(Post post) {
     final apiSource = DomainResolver.apiSourceForService(post.service);
@@ -599,7 +623,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                           child: _buildPostList(),
                         ),
                 ),
-                if (_posts.isNotEmpty && !_isSwitchingSource) _buildPaginationBar(),
+                if ((_posts.isNotEmpty || _isInSearchMode) && !_isSwitchingSource) _buildPaginationBar(),
               ],
             ),
           ),
@@ -863,11 +887,18 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   }
 
   Widget _buildPostSearchBar() {
-    final resultCount = _postSearchProvider.resultCount;
     final hasSearchQuery = _postSearchProvider.searchQuery.isNotEmpty;
+    final isSearching = _postSearchProvider.isSearching;
+    final isLoadingMore = _postSearchProvider.isLoadingMoreSearch;
+    final resultCount = _postSearchProvider.serverSearchResults.length;
+    final hasError = _postSearchProvider.serverSearchError != null;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final noResults = hasSearchQuery && !_isSearchDebouncing && resultCount == 0;
-    final accentColor = noResults ? Colors.orange : AppTheme.primaryColor;
+    final noResults = hasSearchQuery && !isSearching && resultCount == 0 && !hasError;
+    final accentColor = hasError
+        ? Colors.red
+        : noResults
+            ? Colors.orange
+            : AppTheme.primaryColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -886,7 +917,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
           ),
           child: Row(
             children: [
-              _isSearchDebouncing
+              (isSearching || isLoadingMore)
                   ? SizedBox(
                       width: 18,
                       height: 18,
@@ -896,11 +927,17 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                       ),
                     )
                   : Icon(
-                      noResults ? Icons.search_off_rounded : Icons.search_rounded,
+                      hasError
+                          ? Icons.error_outline_rounded
+                          : noResults
+                              ? Icons.search_off_rounded
+                              : Icons.search_rounded,
                       size: 18,
-                      color: noResults
-                          ? Colors.orange.withValues(alpha: 0.8)
-                          : AppTheme.getSecondaryTextColor(context, opacity: 0.6),
+                      color: hasError
+                          ? Colors.red.withValues(alpha: 0.8)
+                          : noResults
+                              ? Colors.orange.withValues(alpha: 0.8)
+                              : AppTheme.getSecondaryTextColor(context, opacity: 0.6),
                     ),
               const SizedBox(width: 8),
               Expanded(
@@ -910,18 +947,32 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                   onChanged: (query) {
                     setState(() => _isSearchDebouncing = query.isNotEmpty);
                     _postSearchDebounce?.cancel();
+                    if (query.trim().isEmpty) {
+                      _postSearchProvider.clearSearch();
+                      setState(() => _isSearchDebouncing = false);
+                      return;
+                    }
                     _postSearchDebounce =
-                        Timer(const Duration(milliseconds: 350), () {
-                      _postSearchProvider.setSearchQuery(query);
-                      setState(() {
-                        _isSearchDebouncing = false;
-                        final postsProvider = context.read<PostsProvider>();
-                        _posts = _getFilteredPosts(postsProvider.posts);
-                      });
+                        Timer(_searchDebounceDelay, () {
+                      _postSearchProvider.performServerSearch(
+                        query,
+                        refresh: true,
+                        apiSource: _currentApiSource,
+                      );
+                      setState(() => _isSearchDebouncing = false);
                     });
                   },
                   onSubmitted: (_) {
-                    // Scroll back to top when search is submitted
+                    _postSearchDebounce?.cancel();
+                    setState(() => _isSearchDebouncing = false);
+                    final query = _postSearchController.text;
+                    if (query.trim().isNotEmpty) {
+                      _postSearchProvider.performServerSearch(
+                        query,
+                        refresh: true,
+                        apiSource: _currentApiSource,
+                      );
+                    }
                     if (_scrollController.hasClients) {
                       _scrollController.animateTo(
                         0,
@@ -932,7 +983,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                     _postSearchFocusNode.unfocus();
                   },
                   decoration: InputDecoration(
-                    hintText: 'Search loaded posts by title…',
+                    hintText: 'Search posts on server…',
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
                     isDense: true,
@@ -957,7 +1008,9 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    _isSearchDebouncing ? '…' : '$resultCount',
+                    _isSearchDebouncing || isSearching
+                        ? '…'
+                        : '$resultCount',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -968,14 +1021,11 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
                 const SizedBox(width: 6),
                 GestureDetector(
                   onTap: () {
+                    _postSearchDebounce?.cancel();
                     _postSearchController.clear();
                     _postSearchProvider.clearSearch();
                     _postSearchFocusNode.unfocus();
-                    setState(() {
-                      _isSearchDebouncing = false;
-                      final postsProvider = context.read<PostsProvider>();
-                      _posts = _getFilteredPosts(postsProvider.posts);
-                    });
+                    setState(() => _isSearchDebouncing = false);
                   },
                   child: Icon(
                     Icons.close_rounded,
@@ -987,11 +1037,23 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
             ],
           ),
         ),
-        if (noResults)
+        if (hasError)
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
-              'No results in loaded posts — scroll down to load more',
+              _postSearchProvider.serverSearchError ?? 'Search failed',
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          )
+        else if (noResults)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'No results found for "${_postSearchProvider.searchQuery}"',
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.orange.withValues(alpha: 0.85),
@@ -1359,6 +1421,118 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   }
 
   Widget _buildPostList() {
+    // ── Search mode ───────────────────────────────────────────────────────────
+    if (_isInSearchMode) {
+      final searchResults = _postSearchProvider.serverSearchResults;
+      final isSearching = _postSearchProvider.isSearching;
+      final isLoadingMore = _postSearchProvider.isLoadingMoreSearch;
+
+      // Initial skeleton while first-page results are loading
+      if (isSearching && searchResults.isEmpty) {
+        final settings = context.watch<SettingsProvider>();
+        final int columnCount = settings.latestPostsColumns.clamp(1, 3);
+        final bool isSingleColumn = columnCount == 1;
+        return MasonryGridView.builder(
+          padding: isSingleColumn
+              ? const EdgeInsets.symmetric(vertical: 4)
+              : const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columnCount,
+          ),
+          mainAxisSpacing: isSingleColumn ? 32 : 12,
+          crossAxisSpacing: isSingleColumn ? 0 : 12,
+          itemCount: 6,
+          itemBuilder: (context, index) => const PostGridSkeleton(),
+        );
+      }
+
+      // No results after search completed
+      if (!isSearching && searchResults.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 48,
+                  color: AppTheme.getSecondaryTextColor(context, opacity: 0.4),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No results for "${_postSearchProvider.searchQuery}"',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getPrimaryTextColor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Try a different keyword',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.getSecondaryTextColor(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      final settings = context.watch<SettingsProvider>();
+      final int columnCount = settings.latestPostsColumns.clamp(1, 3);
+      final bool isSingleColumn = columnCount == 1;
+      final skeletonCount = isLoadingMore ? columnCount : 0;
+      final totalItemCount = searchResults.length + skeletonCount;
+
+      return MasonryGridView.builder(
+        controller: _scrollController,
+        padding: isSingleColumn
+            ? const EdgeInsets.symmetric(vertical: 12)
+            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columnCount,
+        ),
+        mainAxisSpacing: isSingleColumn ? 32 : 12,
+        crossAxisSpacing: isSingleColumn ? 0 : 12,
+        addAutomaticKeepAlives: false,
+        itemCount: totalItemCount,
+        itemBuilder: (context, index) {
+          if (index >= searchResults.length) {
+            return const PostGridSkeleton();
+          }
+          final post = searchResults[index];
+          return RepaintBoundary(
+            child: _StaggeredFadeItem(
+              index: index,
+              epoch: _gridAnimationEpoch,
+              child: PostCard(
+                post: post,
+                isSingleColumn: isSingleColumn,
+                apiSource: settings.defaultApiSource,
+                onTap: () => _navigateToPostDetail(post),
+                onCreatorTap: () {
+                  final creator = Creator(
+                    id: post.user,
+                    name: post.user,
+                    service: post.service,
+                    indexed: 0,
+                    updated: 0,
+                  );
+                  _navigateToCreatorDetail(creator);
+                },
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // ── Latest posts mode ─────────────────────────────────────────────────────
     if (_isLoading && _posts.isEmpty) {
       final settings = context.watch<SettingsProvider>();
       final int columnCount = settings.latestPostsColumns.clamp(1, 3);
@@ -1501,7 +1675,32 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
   Widget _buildPaginationBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final totalLoaded = _posts.length;
+
+    final String label;
+    final bool showSpinner;
+
+    if (_isInSearchMode) {
+      final count = _postSearchProvider.serverSearchResults.length;
+      final isSearching = _postSearchProvider.isSearching;
+      final loadingMore = _postSearchProvider.isLoadingMoreSearch;
+      final hasMore = _postSearchProvider.searchHasMore;
+      showSpinner = isSearching || loadingMore;
+      label = (isSearching && count == 0)
+          ? 'Searching…'
+          : loadingMore
+              ? 'Loading more results…'
+              : hasMore
+                  ? '$count results · scroll for more'
+                  : '$count results · all loaded';
+    } else {
+      final totalLoaded = _posts.length;
+      showSpinner = _isLoadingMore;
+      label = _isLoadingMore
+          ? 'Loading more…'
+          : (_hasMore
+              ? '$totalLoaded loaded · scroll for more'
+              : '$totalLoaded posts · all loaded');
+    }
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 108),
@@ -1535,7 +1734,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (_isLoadingMore) ...[
+          if (showSpinner) ...[
             const SizedBox(
               width: 14,
               height: 14,
@@ -1548,11 +1747,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
             const SizedBox(width: 8),
           ],
           Text(
-            _isLoadingMore
-                ? 'Loading more…'
-                : (_hasMore
-                    ? '$totalLoaded loaded · scroll for more'
-                    : '$totalLoaded posts · all loaded'),
+            label,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
