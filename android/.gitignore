@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Exception: stable CI debug keystore is intentionally tracked so all
+# unsigned CI builds share the same signing certificate.
+!keystore/ci_debug.jks

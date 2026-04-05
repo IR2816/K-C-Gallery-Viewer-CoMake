@@ -86,11 +86,16 @@ app.*.symbols
 app.*.map.json
 
 # Android signing — never commit keystores or key.properties
-*.jks
 *.p12
 *.keystore
 android/key.properties
-android/keystore/
+# Ignore all keystores in the keystore directory except the stable CI debug key
+android/keystore/*.jks
+android/keystore/*.p12
+# Exception: stable CI debug keystore is intentionally tracked so all
+# unsigned CI builds share the same signing certificate, preventing
+# Android "INSTALL_FAILED_UPDATE_INCOMPATIBLE" clashes when sideloading.
+!android/keystore/ci_debug.jks
 
 
 task.md.resolved
