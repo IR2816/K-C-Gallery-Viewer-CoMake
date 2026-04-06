@@ -136,7 +136,7 @@ class PostsProvider with ChangeNotifier {
       );
     } catch (e) {
       if (_loadGeneration == generation) {
-        _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono, 99);
+        _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono);
       }
     } finally {
       if (_loadGeneration == generation) {
@@ -150,39 +150,38 @@ class PostsProvider with ChangeNotifier {
   String _getErrorMessage(
     dynamic error,
     ApiSource apiSource,
-    int attemptCount,
   ) {
     final errorString = error.toString().toLowerCase();
 
     if (apiSource == ApiSource.coomer) {
       if (errorString.contains('timeout') ||
           errorString.contains('connection')) {
-        return 'Coomer servers are slow. Auto-retrying... (attempt $attemptCount)';
+        return 'Coomer servers are slow. Please tap Retry to try again.';
       } else if (errorString.contains('404') ||
           errorString.contains('not found')) {
         return 'Creator not found on Coomer servers';
       } else if (errorString.contains('503') ||
           errorString.contains('unavailable')) {
-        return 'Coomer servers temporarily unavailable. Auto-retrying...';
+        return 'Coomer servers temporarily unavailable. Please tap Retry to try again.';
       } else if (errorString.contains('socket') ||
           errorString.contains('network')) {
-        return 'Network issue with Coomer. Auto-retrying...';
+        return 'Network issue with Coomer. Please tap Retry to try again.';
       } else {
-        return 'Coomer server error. Auto-retry will fix this automatically';
+        return 'Coomer server error. Please tap Retry to try again.';
       }
     } else {
       if (errorString.contains('timeout')) {
-        return 'Connection timeout. Auto-retrying... (attempt $attemptCount)';
+        return 'Connection timeout. Please tap Retry to try again.';
       } else if (errorString.contains('404')) {
         return 'Content not found';
       } else if (errorString.contains('503') ||
           errorString.contains('unavailable')) {
-        return 'Server temporarily unavailable. Auto-retrying...';
+        return 'Server temporarily unavailable. Please tap Retry to try again.';
       } else if (errorString.contains('socket') ||
           errorString.contains('network')) {
-        return 'Network connection issue. Auto-retrying...';
+        return 'Network connection issue. Please tap Retry to try again.';
       } else {
-        return 'Loading error. Auto-retrying... (attempt $attemptCount)';
+        return 'Loading error. Please tap Retry to try again.';
       }
     }
   }
@@ -571,7 +570,7 @@ class PostsProvider with ChangeNotifier {
             exponentialForCoomer: true),
       );
     } catch (e) {
-      _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono, 99);
+      _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono);
       AppLogger.debug('🔍 DEBUG: Final error in loadSinglePost: $e');
     } finally {
       _isLoading = false;
