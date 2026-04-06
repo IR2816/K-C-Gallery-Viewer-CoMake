@@ -101,7 +101,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
 
     // Provider instance will be obtained from context later
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.index = 1; // Default to "Search by ID" (index 1)
+    _tabController.index = 0; // Default to "By Name" (index 0)
     _fadeController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
     _fadeAnimation = Tween<double>(
       begin: 0.0,

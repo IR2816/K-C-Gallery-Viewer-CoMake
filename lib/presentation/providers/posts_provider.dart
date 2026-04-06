@@ -22,6 +22,10 @@ class PostsProvider with ChangeNotifier {
   int _retryCount = 0;
   static const int _maxRetries = 3;
 
+  // Generation counter: incremented on every refresh/clear so in-flight
+  // responses from a previous session are discarded when they arrive late.
+  int _loadGeneration = 0;
+
   // Separate lists for different contexts to prevent state contamination
   List<Post> _savedPosts = [];
   bool _isLoadingSavedPosts = false;
@@ -79,9 +83,11 @@ class PostsProvider with ChangeNotifier {
     );
 
     if (refresh) {
+      _loadGeneration++; // Invalidate any in-flight load from a previous session
       _offset = 0;
       _posts.clear(); // Clear existing posts to prevent memory leak
       _hasMore = true;
+      _isLoading = false; // Allow this refresh even if a previous load was running
     }
 
     if (_isLoading || !_hasMore) {
@@ -92,6 +98,8 @@ class PostsProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+
+    final generation = _loadGeneration; // Capture generation for this load
 
     try {
       // Determine API source based on explicit selection first, then service fallback.
@@ -108,6 +116,12 @@ class PostsProvider with ChangeNotifier {
             apiSource: effectiveApiSource,
           );
 
+          // Discard result if a newer refresh has started since this load began
+          if (_loadGeneration != generation) {
+            AppLogger.debug('🔍 DEBUG: Discarding stale load result (generation mismatch)');
+            return;
+          }
+
           if (newPosts.isEmpty) {
             _hasMore = false;
             return;
@@ -121,10 +135,14 @@ class PostsProvider with ChangeNotifier {
             exponentialForCoomer: true),
       );
     } catch (e) {
-      _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono, 99);
+      if (_loadGeneration == generation) {
+        _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono, 99);
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_loadGeneration == generation) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -414,6 +432,7 @@ class PostsProvider with ChangeNotifier {
   bool get canRetry => _retryCount < _maxRetries && _error != null;
 
   void reset() {
+    _loadGeneration++; // Invalidate any in-flight load
     _posts.clear(); // Clear existing posts to prevent memory leak
     _isLoading = false;
     _hasMore = true;
@@ -425,9 +444,11 @@ class PostsProvider with ChangeNotifier {
   }
 
   void clearPosts() {
+    _loadGeneration++; // Invalidate any in-flight load
     _posts.clear();
     _offset = 0;
     _hasMore = true;
+    _isLoading = false;
     _error = null;
     notifyListeners();
   }
