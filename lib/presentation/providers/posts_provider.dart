@@ -117,7 +117,10 @@ class PostsProvider with ChangeNotifier {
           );
 
           // Discard result if a newer refresh has started since this load began
-          if (_loadGeneration != generation) return;
+          if (_loadGeneration != generation) {
+            AppLogger.debug('🔍 DEBUG: Discarding stale load result (generation mismatch)');
+            return;
+          }
 
           if (newPosts.isEmpty) {
             _hasMore = false;
