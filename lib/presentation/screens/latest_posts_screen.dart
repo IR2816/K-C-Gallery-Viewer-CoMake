@@ -132,8 +132,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       setState(() => _isRecentlyViewedExpanded = false);
     }
 
-    if (pos.pixels >= pos.maxScrollExtent - 200 &&
-        pos.userScrollDirection == ScrollDirection.reverse) {
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
       if (_isInSearchMode) {
         // Infinite scroll for server-side search results
         if (!_postSearchProvider.isLoadingMoreSearch &&
