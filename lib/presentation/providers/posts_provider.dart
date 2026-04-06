@@ -215,6 +215,7 @@ class PostsProvider with ChangeNotifier {
 
   Future<void> searchPosts(String query, {bool refresh = false}) async {
     if (refresh) {
+      _loadGeneration++; // Invalidate any in-flight load from a previous session
       _offset = 0;
       _posts.clear(); // Clear existing posts to prevent memory leak
       _hasMore = true;
@@ -226,6 +227,8 @@ class PostsProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    final generation = _loadGeneration; // Capture generation for this load
+
     try {
       final newPosts = await repository.searchPosts(
         query,
@@ -233,6 +236,13 @@ class PostsProvider with ChangeNotifier {
         limit: 50,
         apiSource: settingsProvider.defaultApiSource,
       );
+
+      // Discard result if a newer refresh has started since this load began
+      if (_loadGeneration != generation) {
+        AppLogger.debug('🔍 DEBUG: Discarding stale searchPosts result (generation mismatch)');
+        return;
+      }
+
       _currentApiSource = settingsProvider.defaultApiSource;
 
       if (newPosts.isEmpty) {
@@ -243,10 +253,14 @@ class PostsProvider with ChangeNotifier {
       }
       _error = null;
     } catch (e) {
-      _error = e.toString();
+      if (_loadGeneration == generation) {
+        _error = e.toString();
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_loadGeneration == generation) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -256,6 +270,7 @@ class PostsProvider with ChangeNotifier {
     ApiSource? apiSource,
   }) async {
     if (refresh) {
+      _loadGeneration++; // Invalidate any in-flight load from a previous session
       _offset = 0;
       _posts.clear(); // Clear existing posts to prevent memory leak
       _hasMore = true;
@@ -266,6 +281,8 @@ class PostsProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+
+    final generation = _loadGeneration; // Capture generation for this load
 
     try {
       // IMPORTANT: Set API source at START and stick to it for entire session
@@ -306,6 +323,12 @@ class PostsProvider with ChangeNotifier {
               apiSource: effectiveApiSource,
             );
 
+            // Discard result if a newer refresh has started since this load began
+            if (_loadGeneration != generation) {
+              AppLogger.debug('🔍 DEBUG: Discarding stale loadLatestPosts result (generation mismatch)');
+              return;
+            }
+
             if (newPosts.isEmpty) {
               _hasMore = false;
             } else {
@@ -326,11 +349,15 @@ class PostsProvider with ChangeNotifier {
             exponentialForCoomer: true),
       );
     } catch (e) {
-      _error = 'Failed to load latest posts. Please try again or switch API in Settings.';
-      AppLogger.debug('🔍 DEBUG: Final error in loadLatestPosts: $e');
+      if (_loadGeneration == generation) {
+        _error = 'Failed to load latest posts. Please try again or switch API in Settings.';
+        AppLogger.debug('🔍 DEBUG: Final error in loadLatestPosts: $e');
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_loadGeneration == generation) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -340,10 +367,12 @@ class PostsProvider with ChangeNotifier {
     // Use the SAME API source that was used to load the initial posts
     // DO NOT switch to settingsProvider.defaultApiSource
     final effectiveApiSource = _currentApiSource ?? settingsProvider.defaultApiSource;
-    
+
     _isLoading = true;
     _error = null;
     notifyListeners();
+
+    final generation = _loadGeneration; // Capture generation for this load
 
     try {
       AppLogger.debug(
@@ -361,6 +390,12 @@ class PostsProvider with ChangeNotifier {
               limit: 50,
               apiSource: effectiveApiSource,
             );
+
+            // Discard result if a newer refresh has started since this load began
+            if (_loadGeneration != generation) {
+              AppLogger.debug('🔍 DEBUG: Discarding stale loadMorePosts result (generation mismatch)');
+              return;
+            }
 
             if (newPosts.isEmpty) {
               _hasMore = false;
@@ -383,16 +418,21 @@ class PostsProvider with ChangeNotifier {
             exponentialForCoomer: true),
       );
     } catch (e) {
-      _error = 'Failed to load more posts. Please try again.';
-      AppLogger.debug('🔍 DEBUG: Final error in loadMorePosts: $e');
+      if (_loadGeneration == generation) {
+        _error = 'Failed to load more posts. Please try again.';
+        AppLogger.debug('🔍 DEBUG: Final error in loadMorePosts: $e');
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_loadGeneration == generation) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> searchByTags(List<String> tags, {bool refresh = false}) async {
     if (refresh) {
+      _loadGeneration++; // Invalidate any in-flight load from a previous session
       _offset = 0;
       _posts.clear(); // Clear existing posts to prevent memory leak
       _hasMore = true;
@@ -404,12 +444,21 @@ class PostsProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    final generation = _loadGeneration; // Capture generation for this load
+
     try {
       final newPosts = await repository.getPostsByTags(
         tags,
         offset: _offset,
         apiSource: settingsProvider.defaultApiSource,
       );
+
+      // Discard result if a newer refresh has started since this load began
+      if (_loadGeneration != generation) {
+        AppLogger.debug('🔍 DEBUG: Discarding stale searchByTags result (generation mismatch)');
+        return;
+      }
+
       _currentApiSource = settingsProvider.defaultApiSource;
 
       if (newPosts.isEmpty) {
@@ -420,10 +469,14 @@ class PostsProvider with ChangeNotifier {
       }
       _error = null;
     } catch (e) {
-      _error = e.toString();
+      if (_loadGeneration == generation) {
+        _error = e.toString();
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_loadGeneration == generation) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
