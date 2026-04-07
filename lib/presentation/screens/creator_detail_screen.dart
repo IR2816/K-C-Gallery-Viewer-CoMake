@@ -30,6 +30,8 @@ import 'post_detail_screen.dart';
 import 'fullscreen_media_viewer.dart';
 import 'video_player_screen.dart';
 import 'discord_channel_list_screen.dart';
+import '../widgets/app_state_widgets.dart';
+import '../widgets/refresh_wrapper.dart';
 
 /// Creator Detail Screen - Clean & Simple
 ///
@@ -792,92 +794,29 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     }
 
     if (postsProvider.error != null && postsProvider.posts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppTheme.getErrorColor(context),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading posts',
-              style: AppTheme.getTitleStyle(
-                context,
-              ).copyWith(color: AppTheme.getErrorColor(context)),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 32),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                postsProvider.error!,
-                style: AppTheme.getCaptionStyle(
-                  context,
-                ).copyWith(color: AppTheme.getErrorColor(context)),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadCreatorPosts(),
-              child: const Text('Retry'),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Go Back',
-                style: TextStyle(color: AppTheme.secondaryTextColor),
-              ),
-            ),
-          ],
-        ),
+      return AppErrorState(
+        title: 'Error loading posts',
+        message: postsProvider.error!,
+        onRetry: _loadCreatorPosts,
       );
     }
 
     if (visiblePosts.isEmpty && !postsProvider.isLoading) {
       final hasActiveFilters = settings.hideNsfw || blockedTags.isNotEmpty;
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.article_outlined,
-              size: 64,
-              color: AppTheme.getOnSurfaceColor(context),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              hasActiveFilters ? 'No posts match your filters' : 'No posts yet',
-              style: AppTheme.getTitleStyle(
-                context,
-              ).copyWith(color: AppTheme.secondaryTextColor),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              hasActiveFilters
-                  ? 'Try changing filters in Settings'
-                  : 'This creator hasn\'t posted anything yet',
-              style: AppTheme.getCaptionStyle(
-                context,
-              ).copyWith(color: AppTheme.secondaryTextColor),
-            ),
-          ],
-        ),
+      return AppEmptyState(
+        icon: Icons.article_outlined,
+        title: hasActiveFilters
+            ? 'No posts match your filters'
+            : 'No posts yet',
+        message: hasActiveFilters
+            ? 'Try changing filters in Settings'
+            : 'This creator hasn\'t posted anything yet',
       );
     }
 
     return NotificationListener<ScrollNotification>(
       onNotification: _handleScrollNotification,
-      child: RefreshIndicator(
+      child: RefreshWrapper(
         onRefresh: () => _loadCreatorPosts(),
         child: CustomScrollView(
           controller: _postsScrollController,
@@ -1127,75 +1066,25 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     }
 
     if (postsProvider.error != null && postsProvider.posts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppTheme.getErrorColor(context),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading media',
-              style: AppTheme.getTitleStyle(
-                context,
-              ).copyWith(color: AppTheme.getErrorColor(context)),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              postsProvider.error!,
-              style: AppTheme.getCaptionStyle(
-                context,
-              ).copyWith(color: AppTheme.getErrorColor(context)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _loadCreatorPosts(),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return AppErrorState(
+        title: 'Error loading media',
+        message: postsProvider.error!,
+        onRetry: _loadCreatorPosts,
       );
     }
 
     if (_cachedMediaItems.isEmpty && !postsProvider.isLoading) {
       final hasActiveFilters = settings.hideNsfw || blockedTags.isNotEmpty;
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.photo_library_outlined,
-              size: 64,
-              color: AppTheme.getOnSurfaceColor(context),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              hasActiveFilters
-                  ? 'No media matches your filters'
-                  : 'No media yet',
-              style: AppTheme.getTitleStyle(
-                context,
-              ).copyWith(color: AppTheme.secondaryTextColor),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              hasActiveFilters
-                  ? 'Try changing filters in Settings'
-                  : 'This creator hasn\'t posted any media yet',
-              style: AppTheme.getCaptionStyle(
-                context,
-              ).copyWith(color: AppTheme.secondaryTextColor),
-            ),
-          ],
-        ),
+      return AppEmptyState(
+        icon: Icons.photo_library_outlined,
+        title: hasActiveFilters ? 'No media matches your filters' : 'No media yet',
+        message: hasActiveFilters
+            ? 'Try changing filters in Settings'
+            : 'This creator hasn\'t posted any media yet',
       );
     }
 
-    return RefreshIndicator(
+    return RefreshWrapper(
       onRefresh: () => _loadCreatorPosts(),
       child: MasonryGridView.count(
         controller: _mediaScrollController,
@@ -1253,7 +1142,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   }
 
   Widget _buildLinkedAccountCard(_LinkedAccount link) {
-    final serviceColor = _getServiceColor(link.service);
+    final serviceColor = AppTheme.getServiceColor(link.service);
     final bannerUrl = _buildLinkedBannerUrl(link.service, link.id);
     final iconUrl = _buildLinkedIconUrl(link.service, link.id);
     final subtitle = link.publicId != null && link.publicId!.isNotEmpty
@@ -1487,38 +1376,6 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
         ),
       ),
     );
-  }
-
-  Color _getServiceColor(String service) {
-    switch (service.toLowerCase()) {
-      case 'patreon':
-        return Colors.orange;
-      case 'fanbox':
-      case 'pixiv_fanbox':
-        return Colors.blue;
-      case 'fantia':
-        return Colors.purple;
-      case 'onlyfans':
-        return Colors.pink;
-      case 'fansly':
-        return Colors.teal;
-      case 'candfans':
-        return Colors.red;
-      case 'gumroad':
-        return Colors.green;
-      case 'afdian':
-        return Colors.teal;
-      case 'boosty':
-        return Colors.red;
-      case 'subscribestar':
-        return Colors.amber;
-      case 'dlsite':
-        return Colors.indigo;
-      case 'discord':
-        return Colors.blueGrey;
-      default:
-        return AppTheme.primaryColor;
-    }
   }
 
   // ignore: unused_element
@@ -1852,7 +1709,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   Widget _buildPostCard(Post post) {
     final hasMedia = post.attachments.isNotEmpty || post.file.isNotEmpty;
     final mediaCount = post.attachments.length + post.file.length;
-    final serviceColor = _getServiceColor(post.service);
+    final serviceColor = AppTheme.getServiceColor(post.service);
     final preview = _cleanHtmlContent(post.content);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 

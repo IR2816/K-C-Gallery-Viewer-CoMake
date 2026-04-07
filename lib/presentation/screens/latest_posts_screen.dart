@@ -17,10 +17,10 @@ import '../widgets/app_state_widgets.dart';
 import 'post_detail_screen.dart';
 import 'creator_detail_screen.dart';
 import 'download_manager_screen.dart';
-import '../widgets/post_card.dart';
+import '../widgets/post_grid.dart';
+import '../widgets/refresh_wrapper.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/domain_status_badge.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../utils/logger.dart';
 import '../../data/utils/domain_resolver.dart';
 
@@ -415,138 +415,6 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     );
   }
 
-  // ignore: unused_element
-  String _cleanHtmlContent(String content) {
-    try {
-      final cleanText = content
-          .replaceAll(RegExp(r'<[^>]*>'), ' ')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
-      return cleanText;
-    } catch (e) {
-      return content;
-    }
-  }
-
-  // ignore: unused_element
-  String _getServiceDisplayName(String service) {
-    switch (service.toLowerCase()) {
-      case 'patreon':
-        return 'Patreon';
-      case 'fanbox':
-        return 'Fanbox';
-      case 'fantia':
-        return 'Fantia';
-      case 'onlyfans':
-        return 'OnlyFans';
-      case 'fansly':
-        return 'Fansly';
-      case 'candfans':
-        return 'CandFans';
-      default:
-        return service.toUpperCase();
-    }
-  }
-
-  Color _getServiceColor(String service) {
-    switch (service.toLowerCase()) {
-      case 'patreon':
-        return Colors.orange;
-      case 'fanbox':
-        return Colors.blue;
-      case 'fantia':
-        return Colors.purple;
-      case 'onlyfans':
-        return Colors.pink;
-      case 'fansly':
-        return Colors.teal;
-      case 'candfans':
-        return Colors.red;
-      default:
-        return AppTheme.primaryColor;
-    }
-  }
-
-  // ignore: unused_element
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${date.day} ${_getMonthName(date.month)}';
-    }
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month - 1];
-  }
-
-  // ignore: unused_element
-  String _normalizeTitle(String text) {
-    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
-  // ignore: unused_element
-  int _getTitleMaxLines({
-    required int textLength,
-    required int columnCount,
-    required bool isCompact,
-  }) {
-    int lines;
-    if (isCompact) {
-      lines = columnCount == 1 ? 3 : 2;
-    } else {
-      lines = columnCount == 1 ? 4 : (columnCount == 2 ? 3 : 2);
-    }
-
-    if (columnCount == 1 && textLength > 140) {
-      lines += 1;
-    }
-
-    return lines.clamp(1, 5);
-  }
-
-  // ignore: unused_element
-  double _getTitleFontSize({
-    required int textLength,
-    required int columnCount,
-    required bool isCompact,
-  }) {
-    double size = isCompact ? 13 : 14;
-    if (columnCount >= 3) {
-      size -= 1;
-    }
-    if (textLength > 140) {
-      size -= 1;
-    }
-    if (textLength > 200) {
-      size -= 1;
-    }
-    return size.clamp(11, 16);
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -605,7 +473,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
               ),
             ),
           ),
-          RefreshIndicator(
+          RefreshWrapper(
             onRefresh: _loadInitialPosts,
             child: Column(
               children: [
@@ -1066,7 +934,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
   Widget _buildServiceToggle({required String id, required String label}) {
     final isSelected = id == _selectedService;
-    final serviceColor = _getServiceColor(id);
+    final serviceColor = AppTheme.getServiceColor(id);
 
     return GestureDetector(
       onTap: () async {
@@ -1429,125 +1297,50 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       // Initial skeleton while first-page results are loading
       if (isSearching && searchResults.isEmpty) {
         final settings = context.watch<SettingsProvider>();
-        final int columnCount = settings.latestPostsColumns.clamp(1, 3);
-        final bool isSingleColumn = columnCount == 1;
-        return MasonryGridView.builder(
-          padding: isSingleColumn
-              ? const EdgeInsets.symmetric(vertical: 4)
-              : const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columnCount,
-          ),
-          mainAxisSpacing: isSingleColumn ? 32 : 12,
-          crossAxisSpacing: isSingleColumn ? 0 : 12,
-          itemCount: 6,
-          itemBuilder: (context, index) => const PostGridSkeleton(),
+        return PostGrid(
+          posts: const [],
+          apiSource: settings.defaultApiSource,
+          columnCount: settings.latestPostsColumns.clamp(1, 3),
+          isLoading: true,
+          onPostTap: (_) {},
+          onCreatorTap: (_) {},
         );
       }
 
       // No results after search completed
       if (!isSearching && searchResults.isEmpty) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.search_off_rounded,
-                  size: 48,
-                  color: AppTheme.getSecondaryTextColor(context, opacity: 0.4),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No results for "${_postSearchProvider.searchQuery}"',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.getPrimaryTextColor(context),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Try a different keyword',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppTheme.getSecondaryTextColor(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return AppEmptyState(
+          icon: Icons.search_off_rounded,
+          title: 'No results for "${_postSearchProvider.searchQuery}"',
+          message: 'Try a different keyword',
         );
       }
 
       final settings = context.watch<SettingsProvider>();
       final int columnCount = settings.latestPostsColumns.clamp(1, 3);
-      final bool isSingleColumn = columnCount == 1;
-      final skeletonCount = isLoadingMore ? columnCount : 0;
-      final totalItemCount = searchResults.length + skeletonCount;
 
-      return MasonryGridView.builder(
+      return PostGrid(
+        posts: searchResults,
+        apiSource: settings.defaultApiSource,
+        columnCount: columnCount,
         controller: _scrollController,
-        padding: isSingleColumn
-            ? const EdgeInsets.symmetric(vertical: 12)
-            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columnCount,
-        ),
-        mainAxisSpacing: isSingleColumn ? 32 : 12,
-        crossAxisSpacing: isSingleColumn ? 0 : 12,
-        addAutomaticKeepAlives: false,
-        itemCount: totalItemCount,
-        itemBuilder: (context, index) {
-          if (index >= searchResults.length) {
-            return const PostGridSkeleton();
-          }
-          final post = searchResults[index];
-          return RepaintBoundary(
-            child: _StaggeredFadeItem(
-              index: index,
-              epoch: _gridAnimationEpoch,
-              child: PostCard(
-                post: post,
-                isSingleColumn: isSingleColumn,
-                apiSource: settings.defaultApiSource,
-                onTap: () => _navigateToPostDetail(post),
-                onCreatorTap: () {
-                  final creator = Creator(
-                    id: post.user,
-                    name: post.user,
-                    service: post.service,
-                    indexed: 0,
-                    updated: 0,
-                  );
-                  _navigateToCreatorDetail(creator);
-                },
-              ),
-            ),
-          );
-        },
+        isLoadingMore: isLoadingMore,
+        animationEpoch: _gridAnimationEpoch,
+        onPostTap: _navigateToPostDetail,
+        onCreatorTap: (post) => _navigateToCreatorDetail(creatorStubFromPost(post)),
       );
     }
 
     // ── Latest posts mode ─────────────────────────────────────────────────────
     if (_isLoading && _posts.isEmpty) {
       final settings = context.watch<SettingsProvider>();
-      final int columnCount = settings.latestPostsColumns.clamp(1, 3);
-      final bool isSingleColumn = columnCount == 1;
-      
-      return MasonryGridView.builder(
-        padding: isSingleColumn 
-            ? const EdgeInsets.symmetric(vertical: 4) 
-            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columnCount,
-        ),
-        mainAxisSpacing: isSingleColumn ? 32 : 12,
-        crossAxisSpacing: isSingleColumn ? 0 : 12,
-        itemCount: 6, // Show 6 skeleton items
-        itemBuilder: (context, index) => const PostGridSkeleton(),
+      return PostGrid(
+        posts: const [],
+        apiSource: settings.defaultApiSource,
+        columnCount: settings.latestPostsColumns.clamp(1, 3),
+        isLoading: true,
+        onPostTap: (_) {},
+        onCreatorTap: (_) {},
       );
     }
 
@@ -1560,55 +1353,16 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     }
 
     final settings = context.watch<SettingsProvider>();
-    final int columnCount = settings.latestPostsColumns.clamp(1, 3);
-    final bool isSingleColumn = columnCount == 1;
 
-    // Show all loaded posts for infinite scroll; append skeleton rows at
-    // the bottom while the next page is being fetched.
-    final skeletonCount = _isLoadingMore ? columnCount : 0;
-    final totalItemCount = _posts.length + skeletonCount;
-
-    return MasonryGridView.builder(
+    return PostGrid(
+      posts: _posts,
+      apiSource: settings.defaultApiSource,
+      columnCount: settings.latestPostsColumns.clamp(1, 3),
       controller: _scrollController,
-      padding: isSingleColumn 
-            ? const EdgeInsets.symmetric(vertical: 12) 
-            : const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columnCount,
-      ),
-      mainAxisSpacing: isSingleColumn ? 32 : 12,
-      crossAxisSpacing: isSingleColumn ? 0 : 12,
-      addAutomaticKeepAlives: false,
-      itemCount: totalItemCount,
-      itemBuilder: (context, index) {
-        // Skeleton placeholder rows at the bottom
-        if (index >= _posts.length) {
-          return const PostGridSkeleton();
-        }
-        final post = _posts[index];
-        return RepaintBoundary(
-          child: _StaggeredFadeItem(
-            index: index,
-            epoch: _gridAnimationEpoch,
-            child: PostCard(
-              post: post,
-              isSingleColumn: isSingleColumn,
-              apiSource: settings.defaultApiSource,
-              onTap: () => _navigateToPostDetail(post),
-              onCreatorTap: () {
-                final creator = Creator(
-                  id: post.user,
-                  name: post.user,
-                  service: post.service,
-                  indexed: 0,
-                  updated: 0,
-                );
-                _navigateToCreatorDetail(creator);
-              },
-            ),
-          ),
-        );
-      },
+      isLoadingMore: _isLoadingMore,
+      animationEpoch: _gridAnimationEpoch,
+      onPostTap: _navigateToPostDetail,
+      onCreatorTap: (post) => _navigateToCreatorDetail(creatorStubFromPost(post)),
     );
   }
 
@@ -2460,91 +2214,5 @@ class _DomainTransitionOverlayState extends State<_DomainTransitionOverlay>
       default:
         return Icons.public;
     }
-  }
-}
-
-/// Staggered fade-in widget for grid items.
-///
-/// When [epoch] changes, the item restarts its entry animation with a delay
-/// proportional to [index] (capped at 15 items to keep it snappy).
-class _StaggeredFadeItem extends StatefulWidget {
-  final int index;
-  final int epoch;
-  final Widget child;
-
-  const _StaggeredFadeItem({
-    required this.index,
-    required this.epoch,
-    required this.child,
-  });
-
-  @override
-  State<_StaggeredFadeItem> createState() => _StaggeredFadeItemState();
-}
-
-class _StaggeredFadeItemState extends State<_StaggeredFadeItem>
-    with SingleTickerProviderStateMixin {
-  static const int _maxStaggeredItems = 14;
-  static const int _delayPerItemMs = 40;
-
-  late AnimationController _ctrl;
-  late Animation<double> _opacity;
-  late Animation<Offset> _slide;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _opacity =
-        Tween<double>(begin: 0, end: 1).animate(
-          CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-        );
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-
-    _scheduleAnimation();
-  }
-
-  @override
-  void didUpdateWidget(_StaggeredFadeItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.epoch != widget.epoch) {
-      _scheduleAnimation();
-    }
-  }
-
-  void _scheduleAnimation() {
-    if (!mounted) return;
-    _ctrl.reset();
-    final delay = Duration(
-      milliseconds: (widget.index.clamp(0, _maxStaggeredItems) * _delayPerItemMs),
-    );
-    Future.delayed(delay, () {
-      if (mounted) {
-        _ctrl.forward();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacity,
-      child: SlideTransition(
-        position: _slide,
-        child: widget.child,
-      ),
-    );
   }
 }
