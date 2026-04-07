@@ -112,7 +112,12 @@ class PostGrid extends StatelessWidget {
   }
 }
 
-/// Helper to build a [Creator] stub from a [Post] for navigation.
+/// Creates a minimal [Creator] stub from a [Post] for navigation purposes.
+///
+/// When the user taps the creator avatar or name inside a [PostCard], the app
+/// navigates to [CreatorDetailScreen] which expects a [Creator] object.  Posts
+/// only carry the creator's ID and service, so this helper assembles the
+/// smallest valid [Creator] that satisfies the navigation contract.
 Creator creatorStubFromPost(Post post) => Creator(
       id: post.user,
       name: post.user,

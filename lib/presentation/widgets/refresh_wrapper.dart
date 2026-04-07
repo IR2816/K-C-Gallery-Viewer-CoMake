@@ -8,9 +8,16 @@ import '../theme/app_theme.dart';
 ///
 /// Replace every bare [RefreshIndicator] call with [RefreshWrapper] so
 /// the indicator colour is never specified ad-hoc.
+///
+/// The optional [color] parameter is intentionally omitted from most
+/// call sites; override it only when a specific screen genuinely needs
+/// a different accent (e.g. a per-service-branded indicator).
 class RefreshWrapper extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final Widget child;
+
+  /// Override the indicator colour only when the default [AppTheme.primaryColor]
+  /// is inappropriate for the context. Leave `null` to use the app-wide default.
   final Color? color;
 
   const RefreshWrapper({
