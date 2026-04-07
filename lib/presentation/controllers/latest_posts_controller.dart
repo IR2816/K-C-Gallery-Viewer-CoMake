@@ -261,7 +261,9 @@ class LatestPostsController extends ChangeNotifier {
 
       if (domainChanged) {
         // Surface the transition event; UI will show the animation overlay.
-        final fromDomain = settingsApiSource == ApiSource.kemono
+        // In this branch currentFeedApiSource == settingsApiSource (no source
+        // switch), so use currentFeedApiSource to convey the "before" state.
+        final fromDomain = currentFeedApiSource == ApiSource.kemono
             ? oldKemono
             : oldCoomer;
         final toDomain = settingsApiSource == ApiSource.kemono
