@@ -207,6 +207,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         setState(() {
           _error = e.toString();
           _fullPost = widget.post; // Fallback to original post
+          _isLoading = false;
         });
       }
     }
