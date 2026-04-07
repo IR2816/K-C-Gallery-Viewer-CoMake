@@ -398,7 +398,7 @@ class _PopularCreatorsSectionState extends State<PopularCreatorsSection> {
       creator,
       popularProvider.currentService,
     );
-    final serviceColor = _getServiceColor(creator.service);
+    final serviceColor = AppTheme.getServiceColor(creator.service);
     final idPreview = creator.id.length > 8
         ? creator.id.substring(0, 8).toUpperCase()
         : creator.id.toUpperCase();
@@ -663,22 +663,4 @@ class _PopularCreatorsSectionState extends State<PopularCreatorsSection> {
     };
   }
 
-  Color _getServiceColor(String service) {
-    switch (service.toLowerCase()) {
-      case 'patreon':
-        return Colors.orange;
-      case 'fanbox':
-        return Colors.blue;
-      case 'fantia':
-        return Colors.purple;
-      case 'onlyfans':
-        return Colors.pink;
-      case 'fansly':
-        return Colors.teal;
-      case 'candfans':
-        return Colors.red;
-      default:
-        return AppTheme.primaryColor;
-    }
-  }
 }

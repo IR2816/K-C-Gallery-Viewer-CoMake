@@ -11,6 +11,7 @@ import '../providers/tag_filter_provider.dart';
 import '../providers/bookmark_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_state_widgets.dart';
+import '../widgets/refresh_wrapper.dart';
 import '../widgets/skeleton_loader.dart';
 import 'creator_detail_screen.dart';
 import 'post_detail_screen.dart';
@@ -543,25 +544,6 @@ class _SavedPostsTabState extends State<SavedPostsTab>
     }
   }
 
-  Color _getServiceColor(String service) {
-    switch (service.toLowerCase()) {
-      case 'patreon':
-        return Colors.orange;
-      case 'fanbox':
-        return Colors.blue;
-      case 'fantia':
-        return Colors.purple;
-      case 'onlyfans':
-        return Colors.pink;
-      case 'fansly':
-        return Colors.teal;
-      case 'candfans':
-        return Colors.red;
-      default:
-        return AppTheme.primaryColor;
-    }
-  }
-
   String _buildFullUrl(String path, String service) {
     if (path.startsWith('http')) {
       return path;
@@ -619,7 +601,7 @@ class _SavedPostsTabState extends State<SavedPostsTab>
     final media = _getFirstMedia(post);
     final settings = context.read<SettingsProvider>();
     final imageFit = settings.imageFitMode;
-    final serviceColor = _getServiceColor(post.service);
+    final serviceColor = AppTheme.getServiceColor(post.service);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1071,9 +1053,8 @@ class _SavedPostsTabState extends State<SavedPostsTab>
 
             // Content
             Expanded(
-              child: RefreshIndicator(
+              child: RefreshWrapper(
                 onRefresh: () => _loadSavedPosts(refresh: true),
-                color: AppTheme.getOnSurfaceColor(context),
                 child: filteredPosts.isEmpty
                     ? (provider.savedPosts.isNotEmpty && hasActiveFilters
                           ? _buildFilteredEmptyState()
@@ -1200,25 +1181,6 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
     return filtered;
   }
 
-  Color _getServiceColor(String service) {
-    switch (service.toLowerCase()) {
-      case 'patreon':
-        return Colors.orange;
-      case 'fanbox':
-        return Colors.blue;
-      case 'fantia':
-        return Colors.purple;
-      case 'onlyfans':
-        return Colors.pink;
-      case 'fansly':
-        return Colors.teal;
-      case 'candfans':
-        return Colors.red;
-      default:
-        return AppTheme.primaryColor;
-    }
-  }
-
   String _buildCreatorBannerUrl(Creator creator) {
     final apiSource = _detectApiSourceForCreator(creator);
     final base = apiSource == ApiSource.coomer
@@ -1254,7 +1216,7 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
   }
 
   Widget _buildCreatorCard(Creator creator) {
-    final serviceColor = _getServiceColor(creator.service);
+    final serviceColor = AppTheme.getServiceColor(creator.service);
     final bannerUrl = _buildCreatorBannerUrl(creator);
     final iconUrl = _buildCreatorIconUrl(creator);
     final favoritesText = creator.fans != null
@@ -1876,9 +1838,8 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
 
             // Content
             Expanded(
-              child: RefreshIndicator(
+              child: RefreshWrapper(
                 onRefresh: () => _loadCreators(refresh: true),
-                color: AppTheme.getOnSurfaceColor(context),
                 child: filteredCreators.isEmpty
                     ? _buildEmptyState()
                     : ListView.builder(

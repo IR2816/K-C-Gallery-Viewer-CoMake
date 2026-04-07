@@ -691,7 +691,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
                     orElse: () => {'id': service, 'name': service, 'icon': Icons.hub_rounded},
                   );
                   final isSelected = _selectedService == service;
-                  final serviceColor = _getServiceColor(service);
+                  final serviceColor = AppTheme.getServiceColor(service);
 
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -1045,7 +1045,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
     final service = creator.service.toLowerCase();
     final bannerUrl = _buildCreatorBannerUrl(service, creator.id);
     final iconUrl = _buildCreatorIconUrl(service, creator.id);
-    final serviceColor = _getServiceColor(creator.service);
+    final serviceColor = AppTheme.getServiceColor(creator.service);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.mdSpacing),
@@ -1259,7 +1259,7 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
     final iconUrl = searchResult.avatar != null && searchResult.avatar!.isNotEmpty
         ? searchResult.avatar!
         : _buildCreatorIconUrl(service, searchResult.id);
-    final serviceColor = _getServiceColor(searchResult.service);
+    final serviceColor = AppTheme.getServiceColor(searchResult.service);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.lgSpacing),
@@ -1430,37 +1430,6 @@ class _SearchScreenDualState extends State<SearchScreenDual> with TickerProvider
         ),
       ),
     );
-  }
-
-  Color _getServiceColor(String service) {
-    switch (service.toLowerCase()) {
-      case 'patreon':
-        return Colors.orange;
-      case 'fanbox':
-        return Colors.purple;
-      case 'discord':
-        return Colors.blueGrey;
-      case 'fantia':
-        return Colors.pink;
-      case 'afdian':
-        return Colors.teal;
-      case 'boosty':
-        return Colors.red;
-      case 'gumroad':
-        return Colors.green;
-      case 'subscribestar':
-        return Colors.amber;
-      case 'dlsite':
-        return Colors.indigo;
-      case 'onlyfans':
-        return Colors.deepPurple;
-      case 'fansly':
-        return Colors.pink;
-      case 'candfans':
-        return Colors.orange;
-      default:
-        return Colors.blue;
-    }
   }
 
   ApiSource _apiSourceForService(String service) {
