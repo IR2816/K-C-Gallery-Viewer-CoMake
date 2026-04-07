@@ -84,7 +84,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
     _loadInitialPosts();
     _loadFilterState();
 
-    // Capture initial domain values for change detection
+    // Capture initial domain values for change detection in _onSettingsChanged.
     _lastKnownKemonoDomain = _settingsProvider!.cleanKemonoDomain;
     _lastKnownCoomerDomain = _settingsProvider!.cleanCoomerDomain;
 

@@ -172,13 +172,10 @@ class DataUsageTracker extends ChangeNotifier {
 
   DataUsageTracker() {
     _initializeCategoryUsage();
-    _loadStoredData().then((_) {
-      // Re-run session init after stored data is available so that the session
-      // count is incremented on the correct (potentially restored) _todayUsage.
-      _startSession();
-    });
-    // Start a preliminary session immediately so the UI has something to show.
-    _startSession();
+    // Load persisted data first, then start the session so the session count
+    // is incremented on the correct (potentially restored) _todayUsage and
+    // listeners are notified once with the full picture.
+    _loadStoredData().then((_) => _startSession());
   }
 
   void _initializeCategoryUsage() {
