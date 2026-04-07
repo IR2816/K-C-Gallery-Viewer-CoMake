@@ -167,10 +167,15 @@ class DataUsageTracker extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Counter for periodic saves (save every 5 track calls)
+  int _tracksSinceLastSave = 0;
+
   DataUsageTracker() {
     _initializeCategoryUsage();
-    _loadStoredData();
-    _startSession();
+    // Load persisted data first, then start the session so the session count
+    // is incremented on the correct (potentially restored) _todayUsage and
+    // listeners are notified once with the full picture.
+    _loadStoredData().then((_) => _startSession());
   }
 
   void _initializeCategoryUsage() {
@@ -223,9 +228,10 @@ class DataUsageTracker extends ChangeNotifier {
       _checkUsageLimits();
     }
 
-    // Save periodically
-    if (_sessionUsage % 1024 == 0) {
-      // Save every 1KB
+    // Save periodically (every 5 track calls to avoid excessive I/O)
+    _tracksSinceLastSave++;
+    if (_tracksSinceLastSave >= 5) {
+      _tracksSinceLastSave = 0;
       _saveToStorage();
     }
 
@@ -425,6 +431,8 @@ class DataUsageTracker extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error loading usage data: $e');
     }
+    // Notify listeners after loading so the dashboard reflects persisted data.
+    notifyListeners();
   }
 
   /// Clean old usage data (keep last 30 days)

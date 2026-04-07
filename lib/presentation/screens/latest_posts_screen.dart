@@ -72,17 +72,21 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
   @override
   void initState() {
     super.initState();
-    _loadInitialPosts();
-    _loadFilterState();
     _settingsProvider = context.read<SettingsProvider>();
     _tagFilterProvider = context.read<TagFilterProvider>();
     _postSearchProvider = context.read<PostSearchProvider>();
 
-    // Capture initial domain values for change detection
-    if (_settingsProvider != null) {
-      _lastKnownKemonoDomain = _settingsProvider!.cleanKemonoDomain;
-      _lastKnownCoomerDomain = _settingsProvider!.cleanCoomerDomain;
-    }
+    // Initialize _selectedService and blocked tags synchronously from settings
+    // BEFORE calling _loadInitialPosts() so the correct domain is used on startup.
+    _selectedService = _settingsProvider!.defaultApiSource.name;
+    _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
+
+    _loadInitialPosts();
+    _loadFilterState();
+
+    // Capture initial domain values for change detection in _onSettingsChanged.
+    _lastKnownKemonoDomain = _settingsProvider!.cleanKemonoDomain;
+    _lastKnownCoomerDomain = _settingsProvider!.cleanCoomerDomain;
 
     // Initialize search controllers
     _postSearchController = TextEditingController();
@@ -276,7 +280,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         setState(() {
           _posts = _getFilteredPosts(postsProvider.posts);
           _isLoading = false;
-          _hasMore = postsProvider.hasMore;
+          _hasMore = postsProvider.latestPostsHasMore;
         });
         AppLogger.debug(
           '🔍 DEBUG: _loadInitialPosts - Loaded ${_posts.length} posts from ${_currentApiSource.name}',
@@ -305,7 +309,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
     try {
       final postsProvider = context.read<PostsProvider>();
-      await postsProvider.loadMorePosts();
+      await postsProvider.loadMoreLatestPosts();
 
       if (mounted) {
         final newPosts = _getFilteredPosts(postsProvider.posts);
@@ -313,7 +317,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
         final uniqueNewPosts = newPosts
             .where((p) => !existingIds.contains(p.id))
             .toList();
-        final hasMoreFromProvider = postsProvider.hasMore;
+        final hasMoreFromProvider = postsProvider.latestPostsHasMore;
 
         setState(() {
           if (uniqueNewPosts.isNotEmpty) {
