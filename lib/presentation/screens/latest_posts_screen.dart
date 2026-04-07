@@ -229,7 +229,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
       setState(() {
         _blockedTags = _tagFilterProvider?.blacklist.toList() ?? [];
-        _posts = _getFilteredPosts(postsProvider.posts);
+        _posts = _getFilteredPosts(postsProvider.latestPosts);
         if (domainChanged) {
           // Clear cached images so thumbnails reload from the new domain
           PaintingBinding.instance.imageCache.clear();
@@ -278,7 +278,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
 
       if (mounted) {
         setState(() {
-          _posts = _getFilteredPosts(postsProvider.posts);
+          _posts = _getFilteredPosts(postsProvider.latestPosts);
           _isLoading = false;
           _hasMore = postsProvider.latestPostsHasMore;
         });
@@ -312,7 +312,7 @@ class _LatestPostsScreenState extends State<LatestPostsScreen>
       await postsProvider.loadMoreLatestPosts();
 
       if (mounted) {
-        final newPosts = _getFilteredPosts(postsProvider.posts);
+        final newPosts = _getFilteredPosts(postsProvider.latestPosts);
         final existingIds = _posts.map((p) => p.id).toSet();
         final uniqueNewPosts = newPosts
             .where((p) => !existingIds.contains(p.id))

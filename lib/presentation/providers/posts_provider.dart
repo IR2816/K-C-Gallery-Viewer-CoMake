@@ -40,7 +40,12 @@ class PostsProvider with ChangeNotifier {
   bool _latestPostsHasMore = true;
   ApiSource? _latestPostsApiSource;
 
+  // Dedicated post list for the latest-posts feed, kept separate from the
+  // creator/search _posts list so the two screens never corrupt each other.
+  List<Post> _latestPosts = [];
+
   List<Post> get posts => _posts;
+  List<Post> get latestPosts => _latestPosts;
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
   bool get latestPostsHasMore => _latestPostsHasMore;
@@ -280,7 +285,7 @@ class PostsProvider with ChangeNotifier {
     if (refresh) {
       _loadGeneration++; // Invalidate any in-flight load from a previous session
       _latestPostsOffset = 0;
-      _posts.clear(); // Clear existing posts to prevent memory leak
+      _latestPosts.clear(); // Clear latest-posts list (creator _posts are unaffected)
       _latestPostsHasMore = true;
     }
 
@@ -341,7 +346,7 @@ class PostsProvider with ChangeNotifier {
             if (newPosts.isEmpty) {
               _latestPostsHasMore = false;
             } else {
-              _posts.addAll(newPosts);
+              _latestPosts.addAll(newPosts);
               _latestPostsOffset += newPosts.length;
             }
 
@@ -411,7 +416,7 @@ class PostsProvider with ChangeNotifier {
               return;
             }
 
-            _posts.addAll(newPosts);
+            _latestPosts.addAll(newPosts);
             _latestPostsOffset += newPosts.length;
             _error = null;
           } catch (e) {
@@ -563,8 +568,11 @@ class PostsProvider with ChangeNotifier {
   void reset() {
     _loadGeneration++; // Invalidate any in-flight load
     _posts.clear(); // Clear existing posts to prevent memory leak
+    _latestPosts.clear();
     _isLoading = false;
     _hasMore = true;
+    _latestPostsHasMore = true;
+    _latestPostsOffset = 0;
     _error = null;
     _offset = 0;
     _currentApiSource = null;
@@ -574,6 +582,7 @@ class PostsProvider with ChangeNotifier {
 
   void clearPosts() {
     _loadGeneration++; // Invalidate any in-flight load
+    // Only clear the creator/search _posts; _latestPosts belongs to the feed.
     _posts.clear();
     _offset = 0;
     _hasMore = true;
