@@ -102,8 +102,12 @@ class RetryHttpClient extends http.BaseClient {
 
   RetryHttpClient(
     this._inner, {
-    this.maxRetries = 3,
-    this.timeout = const Duration(seconds: 15),
+    // One retry is enough here; the higher-level ApiResponseUtils.withRetry
+    // already provides outer retries.  Having both retry layers multiply
+    // together (e.g. 3 inner × N outer × 15 s timeout) can produce
+    // several-minute hangs before an error is surfaced to the user.
+    this.maxRetries = 1,
+    this.timeout = const Duration(seconds: 10),
   });
 
   Future<http.BaseRequest> _copyRequest(http.BaseRequest request) async {

@@ -51,6 +51,12 @@ class PostsProvider with ChangeNotifier {
   bool get latestPostsHasMore => _latestPostsHasMore;
   String? get error => _error;
   ApiSource? get currentApiSource => _currentApiSource;
+
+  /// The API source that was used to load the latest-posts feed.
+  /// This is separate from [currentApiSource], which is also updated by
+  /// creator/search loads and should NOT be used to determine whether the
+  /// feed needs a reload.
+  ApiSource? get latestPostsApiSource => _latestPostsApiSource;
   
   /// Get display name of current API source (e.g., "Kemono" or "Coomer")
   String get currentApiSourceDisplayName {
@@ -118,7 +124,10 @@ class PostsProvider with ChangeNotifier {
       // Determine API source based on explicit selection first, then service fallback.
       final effectiveApiSource = apiSource ?? _getApiSourceForService(service);
       _currentApiSource = effectiveApiSource;
-      final maxRetries = effectiveApiSource == ApiSource.coomer ? 5 : 2;
+      // Keep retry counts low: the inner RetryHttpClient already retries at the
+      // HTTP layer, so a high outer count multiplies the total wait time
+      // dramatically (e.g. 5 outer × 4 inner × 15 s = 300 s before an error).
+      final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
       await ApiResponseUtils.withRetry(
         () async {
