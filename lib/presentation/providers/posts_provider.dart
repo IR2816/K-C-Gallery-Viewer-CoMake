@@ -33,9 +33,17 @@ class PostsProvider with ChangeNotifier {
   String? _savedPostsError;
   int _savedPostsOffset = 0;
 
+  // Separate pagination state for the latest-posts feed so that navigation to
+  // creator / search screens (which overwrite _offset / _hasMore / _currentApiSource)
+  // does not corrupt the latest-posts infinite scroll.
+  int _latestPostsOffset = 0;
+  bool _latestPostsHasMore = true;
+  ApiSource? _latestPostsApiSource;
+
   List<Post> get posts => _posts;
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
+  bool get latestPostsHasMore => _latestPostsHasMore;
   String? get error => _error;
   ApiSource? get currentApiSource => _currentApiSource;
   
@@ -271,12 +279,12 @@ class PostsProvider with ChangeNotifier {
   }) async {
     if (refresh) {
       _loadGeneration++; // Invalidate any in-flight load from a previous session
-      _offset = 0;
+      _latestPostsOffset = 0;
       _posts.clear(); // Clear existing posts to prevent memory leak
-      _hasMore = true;
+      _latestPostsHasMore = true;
     }
 
-    if (_isLoading || (!_hasMore && !refresh)) return;
+    if (_isLoading || (!_latestPostsHasMore && !refresh)) return;
 
     _isLoading = true;
     _error = null;
@@ -289,6 +297,7 @@ class PostsProvider with ChangeNotifier {
       // Never auto-switch to other API - user controls API selection only
       final effectiveApiSource = apiSource ?? settingsProvider.defaultApiSource;
       _currentApiSource = effectiveApiSource;
+      _latestPostsApiSource = effectiveApiSource;
       
       AppLogger.debug(
         '🔍 DEBUG: loadLatestPosts - Using API source: $effectiveApiSource (locked for this session)',
@@ -318,7 +327,7 @@ class PostsProvider with ChangeNotifier {
           try {
             final newPosts = await repository.searchPosts(
               query,
-              offset: _offset,
+              offset: _latestPostsOffset,
               limit: 50,
               apiSource: effectiveApiSource,
             );
@@ -330,10 +339,10 @@ class PostsProvider with ChangeNotifier {
             }
 
             if (newPosts.isEmpty) {
-              _hasMore = false;
+              _latestPostsHasMore = false;
             } else {
               _posts.addAll(newPosts);
-              _offset += newPosts.length;
+              _latestPostsOffset += newPosts.length;
             }
 
             _error = null;
@@ -352,6 +361,74 @@ class PostsProvider with ChangeNotifier {
       if (_loadGeneration == generation) {
         _error = 'Failed to load latest posts. Please try again or switch API in Settings.';
         AppLogger.debug('🔍 DEBUG: Final error in loadLatestPosts: $e');
+      }
+    } finally {
+      if (_loadGeneration == generation) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Load the next page of latest posts, always using the API source that was
+  /// locked when [loadLatestPosts] was first called (prevents domain mixing).
+  Future<void> loadMoreLatestPosts() async {
+    if (_isLoading || !_latestPostsHasMore) return;
+
+    // Always use the API source that was locked at the start of this latest-posts session.
+    final effectiveApiSource = _latestPostsApiSource ?? settingsProvider.defaultApiSource;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    final generation = _loadGeneration;
+
+    try {
+      AppLogger.debug(
+        '🔍 DEBUG: loadMoreLatestPosts - Continuing with ${effectiveApiSource.name} (offset: $_latestPostsOffset)',
+      );
+
+      final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+
+      await ApiResponseUtils.withRetry(
+        () async {
+          try {
+            final newPosts = await repository.searchPosts(
+              ' ',
+              offset: _latestPostsOffset,
+              limit: 50,
+              apiSource: effectiveApiSource,
+            );
+
+            if (_loadGeneration != generation) {
+              AppLogger.debug('🔍 DEBUG: Discarding stale loadMoreLatestPosts result (generation mismatch)');
+              return;
+            }
+
+            if (newPosts.isEmpty) {
+              _latestPostsHasMore = false;
+              return;
+            }
+
+            _posts.addAll(newPosts);
+            _latestPostsOffset += newPosts.length;
+            _error = null;
+          } catch (e) {
+            if (!_isRetryableError(e, effectiveApiSource)) {
+              throw ApiResponseUtils.nonRetryable(e);
+            }
+            rethrow;
+          }
+        },
+        maxRetries: maxRetries,
+        delay: (attempt) => _retryDelay(effectiveApiSource, attempt,
+            exponentialForCoomer: true),
+      );
+    } catch (e) {
+      if (_loadGeneration == generation) {
+        _error = 'Failed to load more posts. Please try again.';
+        AppLogger.debug('🔍 DEBUG: Final error in loadMoreLatestPosts: $e');
       }
     } finally {
       if (_loadGeneration == generation) {
