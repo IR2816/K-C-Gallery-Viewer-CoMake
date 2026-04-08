@@ -214,9 +214,15 @@ class LatestPostsController extends ChangeNotifier {
 
   Future<void> _onSettingsChanged() async {
     final settingsApiSource = _settingsProvider.defaultApiSource;
-    final currentLoadedApiSource = _postsProvider.currentApiSource;
-    final shouldReload = currentLoadedApiSource == null ||
-        currentLoadedApiSource != settingsApiSource;
+    // Compare against the API source used for the *feed* (latestPostsApiSource),
+    // NOT currentApiSource.  currentApiSource is also overwritten whenever
+    // creator or search posts are loaded, so using it here caused spurious feed
+    // reloads after visiting a creator whose service lives on a different source
+    // (e.g. an OnlyFans creator triggering a "coomer" source, then any setting
+    // change triggering _onSettingsChanged would incorrectly detect a mismatch).
+    final currentFeedApiSource = _postsProvider.latestPostsApiSource;
+    final shouldReload = currentFeedApiSource == null ||
+        currentFeedApiSource != settingsApiSource;
 
     if (shouldReload) {
       if (isSwitchingSource) return;
@@ -255,10 +261,12 @@ class LatestPostsController extends ChangeNotifier {
 
       if (domainChanged) {
         // Surface the transition event; UI will show the animation overlay.
-        final fromDomain = _postsProvider.currentApiSource == ApiSource.kemono
+        // In this branch currentFeedApiSource == settingsApiSource (no source
+        // switch), so use currentFeedApiSource to convey the "before" state.
+        final fromDomain = currentFeedApiSource == ApiSource.kemono
             ? oldKemono
             : oldCoomer;
-        final toDomain = _postsProvider.currentApiSource == ApiSource.kemono
+        final toDomain = settingsApiSource == ApiSource.kemono
             ? _settingsProvider.cleanKemonoDomain
             : _settingsProvider.cleanCoomerDomain;
         pendingDomainTransition = (from: fromDomain, to: toDomain);

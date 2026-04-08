@@ -71,13 +71,19 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   List<Map<String, dynamic>> _cachedMediaItems = [];
   String? _mediaCacheKey;
   final Map<String, Future<Size>> _imageSizeCache = {};
+  // Track ImageStreamListeners so they can be removed in dispose() to avoid leaks.
+  final List<({ImageStream stream, ImageStreamListener listener})>
+      _imageStreamListeners = [];
   Future<List<_LinkedAccount>>? _linkedAccountsFuture;
   late ApiSource _activeApiSource;
   final bool _isSwitchingSource = false;
 
-  // State preservation
+  // wantKeepAlive is not used here: CreatorDetailScreen is a Navigator route,
+  // and AutomaticKeepAliveClientMixin only prevents deactivation in PageView /
+  // TabBarView contexts.  In a Navigator overlay every route is always kept
+  // alive while on the stack, so this override has no practical effect.
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => false;
 
   @override
   void initState() {
@@ -99,6 +105,13 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
 
   @override
   void dispose() {
+    // Remove all ImageStreamListeners registered by _getImageSize to prevent
+    // memory leaks from listeners that outlive this widget's lifecycle.
+    for (final entry in _imageStreamListeners) {
+      entry.stream.removeListener(entry.listener);
+    }
+    _imageStreamListeners.clear();
+    _imageSizeCache.clear();
     _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _scrollController.dispose();
@@ -318,34 +331,33 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   Future<Size> _getImageSize(String imageUrl) {
     return _imageSizeCache.putIfAbsent(imageUrl, () {
       final completer = Completer<Size>();
-      final image = Image(
-        image: CachedNetworkImageProvider(
-          imageUrl,
-          headers: _getCoomerHeaders(imageUrl),
-        ),
+      final provider = CachedNetworkImageProvider(
+        imageUrl,
+        headers: _getCoomerHeaders(imageUrl),
       );
 
-      image.image
-          .resolve(const ImageConfiguration())
-          .addListener(
-            ImageStreamListener(
-              (info, _) {
-                if (!completer.isCompleted) {
-                  completer.complete(
-                    Size(
-                      info.image.width.toDouble(),
-                      info.image.height.toDouble(),
-                    ),
-                  );
-                }
-              },
-              onError: (error, stackTrace) {
-                if (!completer.isCompleted) {
-                  completer.complete(const Size(1.0, 1.0));
-                }
-              },
-            ),
-          );
+      final stream = provider.resolve(const ImageConfiguration());
+      final listener = ImageStreamListener(
+        (info, _) {
+          if (!completer.isCompleted) {
+            completer.complete(
+              Size(
+                info.image.width.toDouble(),
+                info.image.height.toDouble(),
+              ),
+            );
+          }
+        },
+        onError: (error, stackTrace) {
+          if (!completer.isCompleted) {
+            completer.complete(const Size(1.0, 1.0));
+          }
+        },
+      );
+
+      stream.addListener(listener);
+      // Keep a reference so we can remove the listener in dispose().
+      _imageStreamListeners.add((stream: stream, listener: listener));
 
       return completer.future;
     });
