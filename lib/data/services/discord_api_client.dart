@@ -15,6 +15,12 @@ class DiscordApiClient {
 
   DiscordApiClient(this._dio);
 
+  void _log(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
+
   /// Lookup Discord channels by server ID
   /// GET /v1/discord/channel/lookup/{discord_server}
   Future<List<DiscordChannel>> lookupChannels(String serverId) async {
@@ -48,7 +54,7 @@ class DiscordApiClient {
       }
 
       // Log response for debugging
-      debugPrint(
+      _log(
         'DiscordApiClient lookupChannels: statusCode=${response.statusCode}, channelCount=${channelsData.length}',
       );
 
@@ -74,7 +80,7 @@ class DiscordApiClient {
 
       return channels;
     } catch (e) {
-      debugPrint('DiscordApiClient lookupChannels error: $e');
+      _log('DiscordApiClient lookupChannels error: $e');
       throw Exception('Failed to lookup channels for server $serverId: $e');
     }
   }
@@ -85,13 +91,13 @@ class DiscordApiClient {
     String channelId, {
     int offset = 0,
   }) async {
-    debugPrint(
+    _log(
       '🔍 DEBUG: DiscordApiClient.loadChannelPosts - ChannelId: $channelId, Offset: $offset',
     );
 
     try {
       final url = 'https://kemono.cr/api/v1/discord/channel/$channelId';
-      debugPrint('🔍 DEBUG: MAKING REQUEST TO: $url?offset=$offset');
+      _log('🔍 DEBUG: MAKING REQUEST TO: $url?offset=$offset');
 
       final response = await _dio.get(
         url,
@@ -105,12 +111,12 @@ class DiscordApiClient {
         ),
       );
 
-      debugPrint('🔍 DEBUG: RESPONSE STATUS: ${response.statusCode}');
-      debugPrint('🔍 DEBUG: RESPONSE TYPE: ${response.data.runtimeType}');
+      _log('🔍 DEBUG: RESPONSE STATUS: ${response.statusCode}');
+      _log('🔍 DEBUG: RESPONSE TYPE: ${response.data.runtimeType}');
 
       // Handle 503 Service Unavailable
       if (response.statusCode == 503) {
-        debugPrint('🔍 DEBUG: 503 ERROR - SERVICE UNAVAILABLE');
+        _log('🔍 DEBUG: 503 ERROR - SERVICE UNAVAILABLE');
         throw Exception('Kemono Discord is temporarily unavailable (503)');
       }
 
@@ -140,15 +146,15 @@ class DiscordApiClient {
             postsData = parsed;
           }
         } catch (e) {
-          debugPrint('🔍 DEBUG: FAILED TO PARSE STRING RESPONSE: $e');
+          _log('🔍 DEBUG: FAILED TO PARSE STRING RESPONSE: $e');
           throw Exception('Failed to parse response as JSON: $e');
         }
       }
 
-      debugPrint('🔍 DEBUG: PARSED ${postsData.length} POSTS FROM RESPONSE');
+      _log('🔍 DEBUG: PARSED ${postsData.length} POSTS FROM RESPONSE');
 
       // Log response for debugging
-      debugPrint(
+      _log(
         'DiscordApiClient loadChannelPosts: statusCode=${response.statusCode}, postCount=${postsData.length}',
       );
 
@@ -157,11 +163,11 @@ class DiscordApiClient {
           .map((json) => PostModel.fromJson(json))
           .toList();
 
-      debugPrint('🔍 DEBUG: CREATED ${posts.length} POSTMODEL OBJECTS');
+      _log('🔍 DEBUG: CREATED ${posts.length} POSTMODEL OBJECTS');
 
       return posts;
     } catch (e) {
-      debugPrint('🔍 DEBUG: DiscordApiClient loadChannelPosts ERROR: $e');
+      _log('🔍 DEBUG: DiscordApiClient loadChannelPosts ERROR: $e');
       throw Exception('Failed to load posts for channel $channelId: $e');
     }
   }
@@ -201,7 +207,7 @@ class DiscordApiClient {
       }
 
       // Log response for debugging
-      debugPrint(
+      _log(
         'DiscordApiClient getServers: statusCode=${response.statusCode}, dataCount=${serversData.length}',
       );
 
@@ -223,7 +229,7 @@ class DiscordApiClient {
 
       return servers;
     } catch (e) {
-      debugPrint('DiscordApiClient getServers error: $e');
+      _log('DiscordApiClient getServers error: $e');
       throw Exception('Failed to load Discord servers: $e');
     }
   }
@@ -251,13 +257,13 @@ class DiscordApiClient {
       final data = response.data;
 
       // Log response for debugging
-      debugPrint(
+      _log(
         'DiscordApiClient getServerWithChannels: statusCode=${response.statusCode}',
       );
-      debugPrint(
+      _log(
         'DiscordApiClient getServerWithChannels: dataType=${data.runtimeType}',
       );
-      debugPrint(
+      _log(
         'DiscordApiClient getServerWithChannels: dataPreview=${data.toString().substring(0, data.toString().length > 200 ? 200 : data.toString().length)}',
       );
 
@@ -288,7 +294,7 @@ class DiscordApiClient {
 
       return serverData;
     } catch (e) {
-      debugPrint('DiscordApiClient getServerWithChannels error: $e');
+      _log('DiscordApiClient getServerWithChannels error: $e');
       throw Exception('Failed to load server $serverId: $e');
     }
   }

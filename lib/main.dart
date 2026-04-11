@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'data/datasources/kemono_remote_datasource_impl.dart';
 import 'data/datasources/kemono_local_datasource_impl.dart';
 import 'data/repositories/kemono_repository_impl.dart';
+import 'data/services/api_client.dart';
 import 'domain/repositories/kemono_repository.dart';
 import 'domain/entities/post.dart';
 import 'domain/entities/creator.dart';
@@ -22,6 +23,7 @@ import 'presentation/providers/media_filter_provider.dart';
 import 'presentation/providers/comments_provider.dart';
 import 'presentation/providers/popular_creators_provider.dart';
 import 'presentation/providers/data_usage_tracker.dart';
+import 'presentation/providers/data_usage_dio_interceptor.dart';
 import 'presentation/providers/tracked_http_client.dart';
 import 'presentation/providers/download_provider.dart';
 import 'presentation/providers/bookmark_provider.dart';
@@ -45,6 +47,7 @@ import 'presentation/screens/settings_screen.dart';
 // 🚀 NEW: Discord screens
 import 'presentation/screens/discord_server_screen.dart';
 import 'presentation/screens/discord_search_screen.dart';
+import 'presentation/services/header_http_file_service.dart';
 import 'utils/error_handler.dart';
 
 void main() async {
@@ -58,8 +61,13 @@ void main() async {
   }
   AppErrorHandler.initialize();
   final prefs = await SharedPreferences.getInstance();
+  final dataUsageTracker = DataUsageTracker();
+  TrackedHttpClientFactory.initialize(dataUsageTracker);
+  HeaderHttpFileService.setTracker(dataUsageTracker);
 
-  final remoteDataSource = KemonoRemoteDataSourceImpl(); // Will use tracked client automatically
+  final remoteDataSource = KemonoRemoteDataSourceImpl(
+    apiClient: ApiClient(client: TrackedHttpClientFactory.getTrackedClient()),
+  );
   final localDataSource = KemonoLocalDataSourceImpl(prefs: prefs);
   final repository = KemonoRepositoryImpl(
     remoteDataSource: remoteDataSource,
@@ -90,6 +98,7 @@ void main() async {
       downloadManager: downloadManager,
       tagFilterProvider: tagFilterProvider,
       creatorIndexManager: creatorIndexManager,
+      dataUsageTracker: dataUsageTracker,
     ),
   );
 }
@@ -102,6 +111,7 @@ class MyApp extends StatelessWidget {
   final DownloadManager downloadManager;
   final TagFilterProvider tagFilterProvider;
   final CreatorIndexManager creatorIndexManager;
+  final DataUsageTracker dataUsageTracker;
 
   const MyApp({
     super.key,
@@ -112,6 +122,7 @@ class MyApp extends StatelessWidget {
     required this.downloadManager,
     required this.tagFilterProvider,
     required this.creatorIndexManager,
+    required this.dataUsageTracker,
   });
 
   @override
@@ -142,10 +153,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CommentsProvider(repository: repository)),
         ChangeNotifierProvider(create: (_) => PopularCreatorsProvider()),
         // Data Usage Tracking
-        ChangeNotifierProvider(create: (_) => DataUsageTracker()),
+        ChangeNotifierProvider.value(value: dataUsageTracker),
         // Download Provider
         ChangeNotifierProvider(
-          create: (_) => DownloadProvider(downloadManager: downloadManager),
+          create: (_) => DownloadProvider(
+            downloadManager: downloadManager,
+            dataUsageTracker: dataUsageTracker,
+          ),
         ),
         // Bookmark Provider
         ChangeNotifierProvider(create: (_) => BookmarkProvider()..initialize()),
@@ -161,16 +175,18 @@ class MyApp extends StatelessWidget {
           ),
         ),
         // 🚀 NEW: Discord Provider
-        ChangeNotifierProvider(create: (_) => DiscordProvider(DiscordApiClient(Dio()))),
-        ChangeNotifierProvider(create: (_) => DiscordSearchProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final dio = Dio()..interceptors.add(DataUsageDioInterceptor(dataUsageTracker));
+            return DiscordProvider(DiscordApiClient(dio));
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DiscordSearchProvider(dataUsageTracker: dataUsageTracker),
+        ),
       ],
-      child: Consumer<DataUsageTracker>(
-        builder: (context, dataUsageTracker, _) {
-          // Initialize TrackedHttpClientFactory with DataUsageTracker
-          TrackedHttpClientFactory.initialize(dataUsageTracker);
-
-          // Use select() so that only the specific fields consumed here trigger
-          // a rebuild of MaterialApp, instead of any change to these providers.
+      child: Builder(
+        builder: (context) {
           final themeMode = context.select<ThemeProvider, ThemeMode>(
             (p) => p.themeMode,
           );
@@ -203,7 +219,6 @@ class MyApp extends StatelessWidget {
                   return MaterialPageRoute(builder: (context) => const SearchScreenDual());
                 case '/settings':
                   return MaterialPageRoute(builder: (context) => const SettingsScreen());
-                // 🚀 NEW: Discord routes
                 case '/discord':
                   return MaterialPageRoute(
                     builder: (context) => const DiscordServerScreen(),

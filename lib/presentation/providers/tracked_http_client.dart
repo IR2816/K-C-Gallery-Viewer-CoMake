@@ -1,6 +1,8 @@
 import 'dart:async';
-import 'package:http/http.dart' as http;
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+
 import 'data_usage_tracker.dart';
 
 /// Custom HTTP Client with Data Usage Tracking
@@ -12,85 +14,48 @@ class TrackedHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final stopwatch = Stopwatch()..start();
-
     try {
       final response = await _inner.send(request);
 
-      // Track response size
-      final contentLength = response.contentLength ?? 0;
-      final category = _categorizeRequest(request.url.toString());
-
-      _tracker.trackUsage(contentLength, category: category);
-
-      debugPrint(
-        '📊 HTTP: ${request.method} ${request.url} → ${response.statusCode} ($contentLength bytes, ${stopwatch.elapsedMilliseconds}ms)',
+      final category = DataUsageTracker.categorizeRequest(
+        request.url.toString(),
+        contentType: response.headers['content-type'],
       );
 
-      return response;
+      var streamedBytes = 0;
+      final trackedStream = response.stream.transform<List<int>>(
+        StreamTransformer.fromHandlers(
+          handleData: (chunk, sink) {
+            streamedBytes += chunk.length;
+            sink.add(chunk);
+          },
+          handleDone: (sink) {
+            final fallbackBytes = response.contentLength ?? 0;
+            final bytesToTrack = streamedBytes > 0 ? streamedBytes : fallbackBytes;
+            if (bytesToTrack > 0) {
+              _tracker.trackUsage(bytesToTrack, category: category);
+            }
+            sink.close();
+          },
+        ),
+      );
+
+      return http.StreamedResponse(
+        trackedStream,
+        response.statusCode,
+        contentLength: response.contentLength,
+        request: response.request,
+        headers: response.headers,
+        isRedirect: response.isRedirect,
+        persistentConnection: response.persistentConnection,
+        reasonPhrase: response.reasonPhrase,
+      );
     } catch (e) {
-      debugPrint('❌ HTTP Error: ${request.method} ${request.url} → $e');
+      if (kDebugMode) {
+        debugPrint('HTTP Error: ${request.method} ${request.url} -> $e');
+      }
       rethrow;
-    } finally {
-      stopwatch.stop();
     }
-  }
-
-  /// Categorize HTTP requests for usage tracking
-  UsageCategory _categorizeRequest(String url) {
-    // API calls
-    if (url.contains('/api/') || url.contains('/v1/')) {
-      return UsageCategory.apiCalls;
-    }
-
-    // Image files
-    if (_isImageFile(url)) {
-      return UsageCategory.images;
-    }
-
-    // Video files
-    if (_isVideoFile(url)) {
-      return UsageCategory.videos;
-    }
-
-    // Thumbnail files (usually smaller or contain 'thumb')
-    if (url.contains('thumb') || url.contains('preview')) {
-      return UsageCategory.thumbnails;
-    }
-
-    // Attachments
-    if (url.contains('file') || url.contains('attachment')) {
-      return UsageCategory.attachments;
-    }
-
-    return UsageCategory.other;
-  }
-
-  bool _isImageFile(String url) {
-    final imageExtensions = [
-      '.jpg',
-      '.jpeg',
-      '.png',
-      '.gif',
-      '.webp',
-      '.bmp',
-      '.svg',
-    ];
-    return imageExtensions.any((ext) => url.toLowerCase().endsWith(ext));
-  }
-
-  bool _isVideoFile(String url) {
-    final videoExtensions = [
-      '.mp4',
-      '.avi',
-      '.mov',
-      '.wmv',
-      '.flv',
-      '.webm',
-      '.mkv',
-      '.m4v',
-    ];
-    return videoExtensions.any((ext) => url.toLowerCase().endsWith(ext));
   }
 }
 
@@ -102,10 +67,6 @@ class RetryHttpClient extends http.BaseClient {
 
   RetryHttpClient(
     this._inner, {
-    // One retry is enough here; the higher-level ApiResponseUtils.withRetry
-    // already provides outer retries.  Having both retry layers multiply
-    // together (e.g. 3 inner × N outer × 15 s timeout) can produce
-    // several-minute hangs before an error is surfaced to the user.
     this.maxRetries = 1,
     this.timeout = const Duration(seconds: 10),
   });
@@ -131,7 +92,7 @@ class RetryHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    int attempts = 0;
+    var attempts = 0;
     while (true) {
       attempts++;
       try {
@@ -139,16 +100,22 @@ class RetryHttpClient extends http.BaseClient {
         final response = await _inner.send(requestCopy).timeout(timeout);
 
         if (response.statusCode >= 500 && attempts <= maxRetries) {
-          debugPrint(
-              '⚠️ HTTP ${response.statusCode}: Retrying request (Attempt $attempts/$maxRetries) for ${request.url}');
+          if (kDebugMode) {
+            debugPrint(
+              'HTTP ${response.statusCode}: retry $attempts/$maxRetries for ${request.url}',
+            );
+          }
           await Future.delayed(Duration(seconds: 1 << attempts));
           continue;
         }
         return response;
       } catch (e) {
         if (attempts <= maxRetries) {
-          debugPrint(
-              '⚠️ Network Error: Retrying request (Attempt $attempts/$maxRetries) for ${request.url} -> $e');
+          if (kDebugMode) {
+            debugPrint(
+              'Network retry $attempts/$maxRetries for ${request.url} -> $e',
+            );
+          }
           await Future.delayed(Duration(seconds: 1 << attempts));
           continue;
         }
@@ -165,20 +132,24 @@ class TrackedHttpClientFactory {
 
   /// Initialize with a tracker instance
   static void initialize(DataUsageTracker tracker) {
+    // Skip re-initialization when the same tracker instance is already wired,
+    // so we avoid unnecessary client recreation.
+    if (identical(_tracker, tracker) && _cachedClient != null) return;
     _tracker = tracker;
-    _cachedClient = null; // Reset cached client
+    _cachedClient = null;
   }
 
   /// Get or create tracked HTTP client
   static http.Client getTrackedClient() {
-    if (_tracker == null) {
-      debugPrint(
-        '⚠️ DataUsageTracker not initialized. Using regular HTTP client.',
-      );
+    final tracker = _tracker;
+    if (tracker == null) {
+      if (kDebugMode) {
+        debugPrint('DataUsageTracker not initialized. Using regular HTTP client.');
+      }
       return RetryHttpClient(http.Client());
     }
 
-    _cachedClient ??= TrackedHttpClient(RetryHttpClient(http.Client()), _tracker!);
+    _cachedClient ??= TrackedHttpClient(RetryHttpClient(http.Client()), tracker);
     return _cachedClient!;
   }
 
@@ -202,37 +173,48 @@ class ManualUsageTracker {
 
   ManualUsageTracker(this._tracker);
 
-  /// Track image loading manually
   void trackImageLoad(String url, int bytes) {
-    _tracker.trackImageUsage(bytes);
-    debugPrint('🖼️ Image: $url ($bytes bytes)');
+    _tracker.trackUsage(
+      bytes,
+      category: DataUsageTracker.categorizeRequest(url, contentType: 'image/*'),
+    );
   }
 
-  /// Track video streaming manually
   void trackVideoStream(String url, int bytes) {
-    _tracker.trackVideoUsage(bytes);
-    debugPrint('🎥 Video: $url ($bytes bytes)');
+    _tracker.trackUsage(
+      bytes,
+      category: DataUsageTracker.categorizeRequest(url, contentType: 'video/*'),
+    );
   }
 
-  /// Track thumbnail loading manually
   void trackThumbnailLoad(String url, int bytes) {
-    _tracker.trackThumbnailUsage(bytes);
-    debugPrint('👁️ Thumbnail: $url ($bytes bytes)');
+    _tracker.trackUsage(
+      bytes,
+      category: DataUsageTracker.categorizeRequest(
+        url,
+        contentType: 'image/*',
+      ),
+    );
   }
 
-  /// Track API response manually
   void trackApiResponse(String endpoint, int bytes) {
-    _tracker.trackApiUsage(bytes);
-    debugPrint('📡 API: $endpoint ($bytes bytes)');
+    _tracker.trackUsage(
+      bytes,
+      category: DataUsageTracker.categorizeRequest(
+        endpoint,
+        contentType: 'application/json',
+      ),
+    );
   }
 
-  /// Track generic data usage
   void trackGenericUsage(
     String description,
     int bytes, {
     UsageCategory? category,
   }) {
     _tracker.trackUsage(bytes, category: category ?? UsageCategory.other);
-    debugPrint('📊 Generic: $description ($bytes bytes)');
+    if (kDebugMode) {
+      debugPrint('Generic usage tracked: $description ($bytes bytes)');
+    }
   }
 }

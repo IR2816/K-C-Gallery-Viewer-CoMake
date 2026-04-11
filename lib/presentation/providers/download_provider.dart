@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 import 'download_manager.dart';
+import 'data_usage_tracker.dart';
 
 class DownloadItem {
   final String id;
@@ -96,9 +97,13 @@ class DownloadProvider extends ChangeNotifier {
   final Map<String, CancelToken> _cancelTokens = {};
   bool _disposed = false;
   final DownloadManager _downloadManager;
+  final DataUsageTracker? _dataUsageTracker;
 
-  DownloadProvider({required DownloadManager downloadManager})
-      : _downloadManager = downloadManager;
+  DownloadProvider({
+    required DownloadManager downloadManager,
+    DataUsageTracker? dataUsageTracker,
+  })  : _downloadManager = downloadManager,
+        _dataUsageTracker = dataUsageTracker;
 
   List<DownloadItem> get downloads => List.unmodifiable(_downloads);
 
@@ -157,6 +162,7 @@ class DownloadProvider extends ChangeNotifier {
 
     try {
       final dio = Dio();
+      var trackedBytes = 0;
 
       // Browser-like headers; use the referer provided at queue time so that
       // both Kemono (kemono.cr) and Coomer (coomer.st) CDN anti-hotlink checks
@@ -183,8 +189,30 @@ class DownloadProvider extends ChangeNotifier {
         options: Options(
           headers: browserHeaders,
           receiveTimeout: const Duration(minutes: 5),
+          extra: const {'skipUsageTracking': true},
         ),
         onReceiveProgress: (received, total) {
+          final delta = received - trackedBytes;
+          if (delta < 0) {
+            if (kDebugMode) {
+              debugPrint(
+                'Download progress regression detected for ${download.id}: '
+                'tracked=$trackedBytes received=$received',
+              );
+            }
+            // Skip tracking for regressed callbacks to avoid double-counting
+            // when Dio emits non-monotonic progress events.
+            trackedBytes = received;
+          } else if (delta > 0) {
+            trackedBytes = received;
+            _dataUsageTracker?.trackUsage(
+              delta,
+              category: DataUsageTracker.categorizeRequest(
+                download.url,
+                forceAttachment: true,
+              ),
+            );
+          }
           // Update progress
           _updateDownloadProgress(download.id, received, total);
         },
@@ -193,6 +221,16 @@ class DownloadProvider extends ChangeNotifier {
       final fileSize = download.savePath != null
           ? await File(download.savePath!).length().catchError((_) => download.totalBytes)
           : download.totalBytes;
+      final completionDelta = fileSize - trackedBytes;
+      if (completionDelta > 0) {
+        _dataUsageTracker?.trackUsage(
+          completionDelta,
+          category: DataUsageTracker.categorizeRequest(
+            download.url,
+            forceAttachment: true,
+          ),
+        );
+      }
       _updateDownloadProgress(download.id, fileSize, fileSize);
       _updateDownloadStatus(download.id, DownloadStatus.completed);
       await _persistDownload(download, fileSize);

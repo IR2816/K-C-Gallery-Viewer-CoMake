@@ -5,6 +5,7 @@ import '../../utils/logger.dart';
 import '../../config/domain_config.dart';
 import '../data/services/api_header_service.dart';
 import '../presentation/widgets/media_resolver_final.dart';
+import '../presentation/services/custom_cache_manager.dart';
 
 /// Optimized Media Loader for Kemono/Coomer
 /// Based on technical analysis: CDN-based, direct access, no special headers required
@@ -302,6 +303,9 @@ class _FallbackImageState extends State<FallbackImage> {
     }
 
     final currentUrl = _urls[_currentUrlIndex];
+    final cacheManager = widget.apiSource == 'coomer'
+        ? coomerCacheManager
+        : customCacheManager;
 
     // Log current URL attempt
     AppLogger.info(
@@ -311,6 +315,7 @@ class _FallbackImageState extends State<FallbackImage> {
 
     return CachedNetworkImage(
       imageUrl: currentUrl,
+      cacheManager: cacheManager,
       httpHeaders: _mediaHeaders,
       width: widget.width,
       height: widget.height,
