@@ -132,6 +132,8 @@ class TrackedHttpClientFactory {
 
   /// Initialize with a tracker instance
   static void initialize(DataUsageTracker tracker) {
+    // Skip re-initialization when the same tracker instance is already wired,
+    // so we avoid unnecessary client recreation.
     if (identical(_tracker, tracker) && _cachedClient != null) return;
     _tracker = tracker;
     _cachedClient = null;

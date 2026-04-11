@@ -44,14 +44,22 @@ class _TrackedFileServiceResponse implements FileServiceResponse {
   @override
   Stream<List<int>> get content {
     var streamedBytes = 0;
+    var hadError = false;
     return inner.content.transform<List<int>>(
       StreamTransformer.fromHandlers(
         handleData: (chunk, sink) {
           streamedBytes += chunk.length;
           sink.add(chunk);
         },
+        handleError: (error, stackTrace, sink) {
+          hadError = true;
+          sink.addError(error, stackTrace);
+        },
         handleDone: (sink) {
-          final fallbackBytes = contentLength ?? 0;
+          final isSuccessful = statusCode >= 200 && statusCode < 400;
+          final fallbackBytes = (!hadError && streamedBytes == 0 && isSuccessful)
+              ? (contentLength ?? 0)
+              : 0;
           final bytesToTrack = streamedBytes > 0 ? streamedBytes : fallbackBytes;
           if (bytesToTrack > 0) {
             tracker.trackUsage(

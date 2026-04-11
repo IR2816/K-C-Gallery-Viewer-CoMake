@@ -193,7 +193,17 @@ class DownloadProvider extends ChangeNotifier {
         ),
         onReceiveProgress: (received, total) {
           final delta = received - trackedBytes;
-          if (delta > 0) {
+          if (delta < 0) {
+            if (kDebugMode) {
+              debugPrint(
+                'Download progress regression detected for ${download.id}: '
+                'tracked=$trackedBytes received=$received',
+              );
+            }
+            // Skip tracking for regressed callbacks to avoid double-counting
+            // when Dio emits non-monotonic progress events.
+            trackedBytes = received;
+          } else if (delta > 0) {
             trackedBytes = received;
             _dataUsageTracker?.trackUsage(
               delta,

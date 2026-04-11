@@ -139,6 +139,8 @@ class DataUsageTracker extends ChangeNotifier {
   static const String _historyKey = 'usage_history';
   static const String _todayKey = 'today_usage';
 
+  // Notify threshold keeps dashboard responsive without rebuilding on every
+  // small chunk; persist threshold reduces storage I/O during heavy media loads.
   static const int _notifyByteThreshold = 32 * 1024;
   static const int _persistByteThreshold = 256 * 1024;
   static const Duration _notifyMinInterval = Duration(milliseconds: 500);
@@ -214,8 +216,8 @@ class DataUsageTracker extends ChangeNotifier {
         lowerUrl.contains('thumb') ||
         lowerUrl.contains('thumbnail') ||
         lowerUrl.contains('preview') ||
-        lowerContentType.contains('image/') &&
-            (lowerUrl.contains('/thumbnail/') || lowerUrl.contains('/thumbnails/'));
+        (lowerContentType.contains('image/') &&
+            (lowerUrl.contains('/thumbnail/') || lowerUrl.contains('/thumbnails/')));
     if (isThumb) return UsageCategory.thumbnails;
 
     final isVideo =
@@ -257,10 +259,10 @@ class DataUsageTracker extends ChangeNotifier {
   }
 
   static bool _matchesAny(String value, List<String> suffixes) {
+    final q = value.indexOf('?');
+    final base = q > 0 ? value.substring(0, q) : value;
     for (final suffix in suffixes) {
-      if (value.endsWith(suffix)) return true;
-      final q = value.indexOf('?');
-      if (q > 0 && value.substring(0, q).endsWith(suffix)) return true;
+      if (base.endsWith(suffix)) return true;
     }
     return false;
   }
@@ -325,7 +327,6 @@ class DataUsageTracker extends ChangeNotifier {
     _ensureTodayUsage(incrementSession: true);
     _recalculateAggregates();
     _notifyThrottled(force: true);
-    unawaited(_saveToStorage(force: true));
   }
 
   /// Track data usage for a specific category
@@ -690,9 +691,4 @@ class DataUsageTracker extends ChangeNotifier {
     };
   }
 
-  @override
-  void dispose() {
-    unawaited(_saveToStorage(force: true));
-    super.dispose();
-  }
 }

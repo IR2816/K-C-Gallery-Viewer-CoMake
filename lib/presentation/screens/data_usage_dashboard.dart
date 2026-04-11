@@ -15,12 +15,13 @@ class DataUsageDashboard extends StatefulWidget {
 }
 
 class _DataUsageDashboardState extends State<DataUsageDashboard> {
+  static const double _minThresholdGap = 1.0;
   Timer? _ticker;
 
   @override
   void initState() {
     super.initState();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+    _ticker = Timer.periodic(const Duration(seconds: 2), (_) {
       if (mounted) setState(() {});
     });
   }
@@ -827,9 +828,10 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
                   label: warningThreshold.round().toString(),
                   onChanged: (value) => setState(() {
                     warningThreshold = value;
-                    if (criticalThreshold <= warningThreshold) {
-                      criticalThreshold = (warningThreshold + 1).clamp(51, 99);
-                    }
+                    criticalThreshold = _normalizeCriticalThreshold(
+                      criticalThreshold,
+                      warningThreshold,
+                    );
                   }),
                 ),
                 Align(
@@ -843,9 +845,10 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
                   divisions: 48,
                   label: criticalThreshold.round().toString(),
                   onChanged: (value) => setState(() {
-                    criticalThreshold = value < warningThreshold + 1
-                        ? warningThreshold + 1
-                        : value;
+                    criticalThreshold = _normalizeCriticalThreshold(
+                      value,
+                      warningThreshold,
+                    );
                   }),
                 ),
               ],
@@ -883,5 +886,12 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
         ),
       ),
     );
+  }
+
+  double _normalizeCriticalThreshold(double value, double warningThreshold) {
+    final minAllowed =
+        (warningThreshold.roundToDouble() + _minThresholdGap).clamp(51.0, 99.0);
+    final normalizedValue = value.roundToDouble();
+    return normalizedValue < minAllowed ? minAllowed : normalizedValue;
   }
 }
