@@ -1,7 +1,8 @@
-import 'dart:convert';
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Severity level of a data usage alert.
 enum DataUsageAlertLevel { warning, critical }
@@ -41,16 +42,27 @@ class UsageData {
   }
 
   factory UsageData.fromJson(Map<String, dynamic> json) {
-    return UsageData(
-      date: DateTime.parse(json['date']),
-      categoryUsage: Map.from(json['categoryUsage']).map(
+    final decodedMap = Map<String, dynamic>.from(
+      (json['categoryUsage'] as Map?) ?? const {},
+    );
+    final categoryUsage = {
+      for (final category in UsageCategory.values) category: 0,
+      ...decodedMap.map(
         (k, v) => MapEntry(
-          UsageCategory.values.firstWhere((e) => e.name == k),
-          v as int,
+          UsageCategory.values.firstWhere(
+            (e) => e.name == k,
+            orElse: () => UsageCategory.other,
+          ),
+          (v as num?)?.toInt() ?? 0,
         ),
       ),
-      totalUsage: json['totalUsage'],
-      sessionCount: json['sessionCount'] ?? 1,
+    };
+
+    return UsageData(
+      date: DateTime.parse(json['date']),
+      categoryUsage: categoryUsage,
+      totalUsage: (json['totalUsage'] as num?)?.toInt() ?? 0,
+      sessionCount: (json['sessionCount'] as num?)?.toInt() ?? 1,
     );
   }
 }
@@ -125,6 +137,12 @@ class DataUsageTracker extends ChangeNotifier {
   static const String _storageKey = 'data_usage_tracker';
   static const String _limitsKey = 'usage_limits';
   static const String _historyKey = 'usage_history';
+  static const String _todayKey = 'today_usage';
+
+  static const int _notifyByteThreshold = 32 * 1024;
+  static const int _persistByteThreshold = 256 * 1024;
+  static const Duration _notifyMinInterval = Duration(milliseconds: 500);
+  static const Duration _persistMinInterval = Duration(seconds: 10);
 
   // Current session data
   int _sessionUsage = 0;
@@ -143,6 +161,14 @@ class DataUsageTracker extends ChangeNotifier {
   // Pending alert to be consumed by the UI layer
   DataUsageAlert? _pendingAlert;
 
+  DateTime _lastNotifyTime = DateTime.fromMillisecondsSinceEpoch(0);
+  int _bytesSinceLastNotify = 0;
+  DateTime _lastPersistTime = DateTime.fromMillisecondsSinceEpoch(0);
+  int _bytesSinceLastPersist = 0;
+
+  DateTime? _warningShownAtDay;
+  DateTime? _criticalShownAtDay;
+
   // Getters
   int get sessionUsage => _sessionUsage;
   Map<UsageCategory, int> get sessionCategoryUsage =>
@@ -155,10 +181,89 @@ class DataUsageTracker extends ChangeNotifier {
   UsageLimits get limits => _limits;
 
   /// The most recent unread data-usage alert.
-  ///
-  /// Widgets should call [clearPendingAlert] after handling the alert to
-  /// prevent it from being shown again.
   DataUsageAlert? get pendingAlert => _pendingAlert;
+
+  DataUsageTracker() {
+    _initializeCategoryUsage();
+    _loadStoredData().then((_) {
+      _normalizeLoadedState();
+      _startSession();
+    });
+  }
+
+  static DateTime dayKey(DateTime date) => DateTime(date.year, date.month, date.day);
+
+  static UsageCategory categorizeRequest(
+    String url, {
+    String? contentType,
+    bool forceAttachment = false,
+  }) {
+    if (forceAttachment) return UsageCategory.attachments;
+
+    final lowerUrl = url.toLowerCase();
+    final lowerContentType = contentType?.toLowerCase() ?? '';
+
+    final isApi =
+        lowerUrl.contains('/api/') ||
+        lowerUrl.contains('/v1/') ||
+        lowerContentType.contains('application/json') ||
+        lowerContentType.contains('text/json');
+    if (isApi) return UsageCategory.apiCalls;
+
+    final isThumb =
+        lowerUrl.contains('thumb') ||
+        lowerUrl.contains('thumbnail') ||
+        lowerUrl.contains('preview') ||
+        lowerContentType.contains('image/') &&
+            (lowerUrl.contains('/thumbnail/') || lowerUrl.contains('/thumbnails/'));
+    if (isThumb) return UsageCategory.thumbnails;
+
+    final isVideo =
+        lowerContentType.startsWith('video/') ||
+        _matchesAny(lowerUrl, const [
+          '.mp4',
+          '.avi',
+          '.mov',
+          '.wmv',
+          '.flv',
+          '.webm',
+          '.mkv',
+          '.m4v',
+        ]);
+    if (isVideo) return UsageCategory.videos;
+
+    final isImage =
+        lowerContentType.startsWith('image/') ||
+        _matchesAny(lowerUrl, const [
+          '.jpg',
+          '.jpeg',
+          '.png',
+          '.gif',
+          '.webp',
+          '.bmp',
+          '.svg',
+          '.avif',
+        ]);
+    if (isImage) return UsageCategory.images;
+
+    final isAttachment =
+        lowerUrl.contains('/attachment') ||
+        lowerUrl.contains('/file') ||
+        lowerUrl.contains('/download') ||
+        lowerContentType.contains('application/octet-stream');
+    if (isAttachment) return UsageCategory.attachments;
+
+    return UsageCategory.other;
+  }
+
+  static bool _matchesAny(String value, List<String> suffixes) {
+    for (final suffix in suffixes) {
+      if (value.endsWith(suffix)) return true;
+      final q = value.indexOf('?');
+      if (q > 0 && value.substring(0, q).endsWith(suffix)) return true;
+    }
+    return false;
+  }
 
   /// Mark the current pending alert as handled.
   void clearPendingAlert() {
@@ -167,75 +272,84 @@ class DataUsageTracker extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Counter for periodic saves (save every 5 track calls)
-  int _tracksSinceLastSave = 0;
-
-  DataUsageTracker() {
-    _initializeCategoryUsage();
-    // Load persisted data first, then start the session so the session count
-    // is incremented on the correct (potentially restored) _todayUsage and
-    // listeners are notified once with the full picture.
-    _loadStoredData().then((_) => _startSession());
-  }
-
   void _initializeCategoryUsage() {
     for (final category in UsageCategory.values) {
       _sessionCategoryUsage[category] = 0;
     }
   }
 
-  void _startSession() {
-    _sessionStart = DateTime.now();
-    _sessionUsage = 0;
-    _sessionCategoryUsage.clear();
-    _initializeCategoryUsage();
+  void _normalizeLoadedState() {
+    _sessionCategoryUsage
+      ..clear()
+      ..addAll({for (final c in UsageCategory.values) c: 0});
 
-    // Increment today's session count
-    final today = DateTime.now();
-    final todayKey = DateTime(today.year, today.month, today.day);
-    if (_todayUsage != null && _todayUsage!.date == todayKey) {
+    if (_todayUsage != null) {
+      final merged = {
+        for (final c in UsageCategory.values) c: 0,
+        ..._todayUsage!.categoryUsage,
+      };
       _todayUsage = UsageData(
-        date: _todayUsage!.date,
-        categoryUsage: Map.from(_todayUsage!.categoryUsage),
+        date: dayKey(_todayUsage!.date),
+        categoryUsage: merged,
         totalUsage: _todayUsage!.totalUsage,
-        sessionCount: _todayUsage!.sessionCount + 1,
-      );
-    } else if (_todayUsage == null || _todayUsage!.date != todayKey) {
-      _todayUsage = UsageData(
-        date: todayKey,
-        categoryUsage: Map.from(
-          UsageCategory.values.asMap().map((k, v) => MapEntry(v, 0)),
-        ),
-        totalUsage: 0,
-        sessionCount: 1,
+        sessionCount: _todayUsage!.sessionCount,
       );
     }
 
-    notifyListeners();
+    _usageHistory = _usageHistory
+        .map(
+          (item) => UsageData(
+            date: dayKey(item.date),
+            categoryUsage: {
+              for (final c in UsageCategory.values) c: 0,
+              ...item.categoryUsage,
+            },
+            totalUsage: item.totalUsage,
+            sessionCount: item.sessionCount,
+          ),
+        )
+        .toList();
+
+    _dedupeAndSortHistory();
+    _rolloverTodayIfNeeded();
+    _recalculateAggregates();
+  }
+
+  void _startSession() {
+    _sessionStart = DateTime.now();
+    _sessionUsage = 0;
+    _sessionCategoryUsage
+      ..clear()
+      ..addAll({for (final category in UsageCategory.values) category: 0});
+
+    _ensureTodayUsage(incrementSession: true);
+    _recalculateAggregates();
+    _notifyThrottled(force: true);
+    unawaited(_saveToStorage(force: true));
   }
 
   /// Track data usage for a specific category
   void trackUsage(int bytes, {UsageCategory category = UsageCategory.other}) {
+    if (bytes <= 0) return;
+
+    _rolloverTodayIfNeeded();
+
     _sessionUsage += bytes;
     _sessionCategoryUsage[category] =
         (_sessionCategoryUsage[category] ?? 0) + bytes;
 
-    // Update today's usage
     _updateTodayUsage(bytes, category);
+    _recalculateAggregates();
 
-    // Check limits and show warnings
     if (_limits.enableWarnings) {
       _checkUsageLimits();
     }
 
-    // Save periodically (every 5 track calls to avoid excessive I/O)
-    _tracksSinceLastSave++;
-    if (_tracksSinceLastSave >= 5) {
-      _tracksSinceLastSave = 0;
-      _saveToStorage();
-    }
+    _bytesSinceLastNotify += bytes;
+    _bytesSinceLastPersist += bytes;
 
-    notifyListeners();
+    _notifyThrottled();
+    unawaited(_saveToStorage());
   }
 
   /// Track image usage specifically
@@ -258,19 +372,54 @@ class DataUsageTracker extends ChangeNotifier {
     trackUsage(bytes, category: UsageCategory.thumbnails);
   }
 
-  void _updateTodayUsage(int bytes, UsageCategory category) {
-    final today = DateTime.now();
-    final todayKey = DateTime(today.year, today.month, today.day);
-
-    if (_todayUsage == null || _todayUsage!.date != todayKey) {
+  void _ensureTodayUsage({bool incrementSession = false}) {
+    final today = dayKey(DateTime.now());
+    if (_todayUsage == null || _todayUsage!.date != today) {
       _todayUsage = UsageData(
-        date: todayKey,
-        categoryUsage: Map.from(
-          UsageCategory.values.asMap().map((k, v) => MapEntry(v, 0)),
-        ),
+        date: today,
+        categoryUsage: {for (final category in UsageCategory.values) category: 0},
         totalUsage: 0,
+        sessionCount: incrementSession ? 1 : 0,
+      );
+      return;
+    }
+
+    if (incrementSession) {
+      _todayUsage = UsageData(
+        date: _todayUsage!.date,
+        categoryUsage: Map<UsageCategory, int>.from(_todayUsage!.categoryUsage),
+        totalUsage: _todayUsage!.totalUsage,
+        sessionCount: _todayUsage!.sessionCount + 1,
       );
     }
+  }
+
+  void _rolloverTodayIfNeeded() {
+    if (_todayUsage == null) {
+      _ensureTodayUsage();
+      return;
+    }
+
+    final today = dayKey(DateTime.now());
+    if (_todayUsage!.date == today) return;
+
+    if (_todayUsage!.totalUsage > 0 || _todayUsage!.sessionCount > 0) {
+      _upsertHistory(_todayUsage!);
+    }
+
+    _todayUsage = UsageData(
+      date: today,
+      categoryUsage: {for (final category in UsageCategory.values) category: 0},
+      totalUsage: 0,
+      sessionCount: 0,
+    );
+
+    _warningShownAtDay = null;
+    _criticalShownAtDay = null;
+  }
+
+  void _updateTodayUsage(int bytes, UsageCategory category) {
+    _ensureTodayUsage();
 
     final updatedCategoryUsage = Map<UsageCategory, int>.from(
       _todayUsage!.categoryUsage,
@@ -279,53 +428,132 @@ class DataUsageTracker extends ChangeNotifier {
         (updatedCategoryUsage[category] ?? 0) + bytes;
 
     _todayUsage = UsageData(
-      date: todayKey,
+      date: _todayUsage!.date,
       categoryUsage: updatedCategoryUsage,
       totalUsage: _todayUsage!.totalUsage + bytes,
       sessionCount: _todayUsage!.sessionCount,
     );
   }
 
+  void _recalculateAggregates() {
+    _rollupIntoHistoryFromToday();
+
+    final nowDay = dayKey(DateTime.now());
+    final weeklyCutoff = nowDay.subtract(const Duration(days: 6));
+    final monthlyCutoff = nowDay.subtract(const Duration(days: 29));
+
+    _weeklyUsage = _aggregateRange(from: weeklyCutoff, to: nowDay);
+    _monthlyUsage = _aggregateRange(from: monthlyCutoff, to: nowDay);
+  }
+
+  void _rollupIntoHistoryFromToday() {
+    if (_todayUsage == null) return;
+
+    _usageHistory.removeWhere((d) => d.date == _todayUsage!.date);
+    _usageHistory.add(_todayUsage!);
+    _dedupeAndSortHistory();
+
+    final cutoffDate = dayKey(DateTime.now().subtract(const Duration(days: 30)));
+    _usageHistory.removeWhere((data) => data.date.isBefore(cutoffDate));
+  }
+
+  UsageData _aggregateRange({required DateTime from, required DateTime to}) {
+    final totals = {for (final category in UsageCategory.values) category: 0};
+    var totalUsage = 0;
+    var sessionCount = 0;
+
+    for (final day in _usageHistory) {
+      if (day.date.isBefore(from) || day.date.isAfter(to)) continue;
+      totalUsage += day.totalUsage;
+      sessionCount += day.sessionCount;
+      for (final entry in day.categoryUsage.entries) {
+        totals[entry.key] = (totals[entry.key] ?? 0) + entry.value;
+      }
+    }
+
+    return UsageData(
+      date: to,
+      categoryUsage: totals,
+      totalUsage: totalUsage,
+      sessionCount: sessionCount,
+    );
+  }
+
+  void _upsertHistory(UsageData usage) {
+    _usageHistory.removeWhere((d) => d.date == usage.date);
+    _usageHistory.add(usage);
+    _dedupeAndSortHistory();
+  }
+
+  void _dedupeAndSortHistory() {
+    final map = <DateTime, UsageData>{};
+    for (final item in _usageHistory) {
+      map[dayKey(item.date)] = item;
+    }
+    _usageHistory = map.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+  }
+
   void _checkUsageLimits() {
     if (_todayUsage == null) return;
 
-    final dailyPercent =
-        (_todayUsage!.totalUsage / (_limits.dailyLimitMB * 1024 * 1024)) * 100;
+    final dailyLimitBytes = _limits.dailyLimitMB * 1024 * 1024;
+    if (dailyLimitBytes <= 0) return;
+
+    final dailyPercent = (_todayUsage!.totalUsage / dailyLimitBytes) * 100;
+    final today = dayKey(DateTime.now());
 
     if (dailyPercent >= _limits.criticalThreshold) {
-      _showCriticalAlert(dailyPercent);
-    } else if (dailyPercent >= _limits.warningThreshold) {
-      _showWarningAlert(dailyPercent);
+      if (_criticalShownAtDay != today) {
+        _criticalShownAtDay = today;
+        _showCriticalAlert(dailyPercent);
+      }
+      return;
+    }
+
+    if (dailyPercent >= _limits.warningThreshold) {
+      if (_warningShownAtDay != today) {
+        _warningShownAtDay = today;
+        _showWarningAlert(dailyPercent);
+      }
     }
   }
 
   void _showWarningAlert(double percentage) {
-    debugPrint(
-      '⚠️ DATA USAGE WARNING: ${percentage.toStringAsFixed(1)}% of daily limit used',
-    );
     _pendingAlert = DataUsageAlert(
       level: DataUsageAlertLevel.warning,
       percentage: percentage,
     );
-    notifyListeners();
+    _notifyThrottled(force: true);
   }
 
   void _showCriticalAlert(double percentage) {
-    debugPrint(
-      '🚨 CRITICAL DATA USAGE: ${percentage.toStringAsFixed(1)}% of daily limit used!',
-    );
     _pendingAlert = DataUsageAlert(
       level: DataUsageAlertLevel.critical,
       percentage: percentage,
     );
+    _notifyThrottled(force: true);
+  }
+
+  void _notifyThrottled({bool force = false}) {
+    final now = DateTime.now();
+    final shouldNotify =
+        force ||
+        _bytesSinceLastNotify >= _notifyByteThreshold ||
+        now.difference(_lastNotifyTime) >= _notifyMinInterval;
+    if (!shouldNotify) return;
+
+    _bytesSinceLastNotify = 0;
+    _lastNotifyTime = now;
     notifyListeners();
   }
 
   /// Update usage limits
   void updateLimits(UsageLimits newLimits) {
     _limits = newLimits;
-    _saveLimits();
-    notifyListeners();
+    _checkUsageLimits();
+    _notifyThrottled(force: true);
+    unawaited(_saveLimits());
   }
 
   /// Reset current session
@@ -350,6 +578,7 @@ class DataUsageTracker extends ChangeNotifier {
 
   /// Get top data consuming category
   UsageCategory getTopDataConsumer() {
+    if (_sessionCategoryUsage.isEmpty) return UsageCategory.other;
     return _sessionCategoryUsage.entries
         .reduce((a, b) => a.value > b.value ? a : b)
         .key;
@@ -361,11 +590,20 @@ class DataUsageTracker extends ChangeNotifier {
   }
 
   /// Save data to local storage
-  Future<void> _saveToStorage() async {
+  Future<void> _saveToStorage({bool force = false}) async {
+    final now = DateTime.now();
+    final shouldPersist =
+        force ||
+        _bytesSinceLastPersist >= _persistByteThreshold ||
+        now.difference(_lastPersistTime) >= _persistMinInterval;
+    if (!shouldPersist) return;
+
+    _bytesSinceLastPersist = 0;
+    _lastPersistTime = now;
+
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Save current session data
       await prefs.setString(
         _storageKey,
         json.encode({
@@ -377,15 +615,10 @@ class DataUsageTracker extends ChangeNotifier {
         }),
       );
 
-      // Save today's usage
       if (_todayUsage != null) {
-        await prefs.setString(
-          'today_usage',
-          json.encode(_todayUsage!.toJson()),
-        );
+        await prefs.setString(_todayKey, json.encode(_todayUsage!.toJson()));
       }
 
-      // Save usage history
       await prefs.setString(
         _historyKey,
         json.encode(_usageHistory.map((e) => e.toJson()).toList()),
@@ -410,36 +643,36 @@ class DataUsageTracker extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Load limits
       final limitsJson = prefs.getString(_limitsKey);
       if (limitsJson != null) {
         _limits = UsageLimits.fromJson(json.decode(limitsJson));
       }
 
-      // Load today's usage
-      final todayUsageJson = prefs.getString('today_usage');
+      final todayUsageJson = prefs.getString(_todayKey);
       if (todayUsageJson != null) {
         _todayUsage = UsageData.fromJson(json.decode(todayUsageJson));
       }
 
-      // Load usage history
       final historyJson = prefs.getString(_historyKey);
       if (historyJson != null) {
         final List<dynamic> historyList = json.decode(historyJson);
-        _usageHistory = historyList.map((e) => UsageData.fromJson(e)).toList();
+        _usageHistory = historyList
+            .whereType<Map<String, dynamic>>()
+            .map(UsageData.fromJson)
+            .toList();
       }
     } catch (e) {
       debugPrint('Error loading usage data: $e');
     }
-    // Notify listeners after loading so the dashboard reflects persisted data.
-    notifyListeners();
   }
 
   /// Clean old usage data (keep last 30 days)
   Future<void> cleanupOldData() async {
-    final cutoffDate = DateTime.now().subtract(const Duration(days: 30));
+    final cutoffDate = dayKey(DateTime.now().subtract(const Duration(days: 30)));
     _usageHistory.removeWhere((data) => data.date.isBefore(cutoffDate));
-    await _saveToStorage();
+    _recalculateAggregates();
+    _notifyThrottled(force: true);
+    await _saveToStorage(force: true);
   }
 
   /// Generate daily report
@@ -455,5 +688,11 @@ class DataUsageTracker extends ChangeNotifier {
       'sessionCount': _todayUsage!.sessionCount,
       'topCategory': getTopDataConsumer().name,
     };
+  }
+
+  @override
+  void dispose() {
+    unawaited(_saveToStorage(force: true));
+    super.dispose();
   }
 }

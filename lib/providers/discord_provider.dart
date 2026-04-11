@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../presentation/providers/async_load_mixin.dart';
-import '../../domain/entities/discord_server.dart';
-import '../../domain/entities/discord_channel.dart';
-import '../../domain/entities/post.dart';
-import '../../data/models/post_model.dart';
-import '../../data/services/discord_api_client.dart';
+import '../domain/entities/discord_server.dart';
+import '../domain/entities/discord_channel.dart';
+import '../domain/entities/post.dart';
+import '../data/models/post_model.dart';
+import '../data/services/discord_api_client.dart';
 
 /// Discord Provider - Isolated from PostsProvider
 ///
@@ -14,6 +14,12 @@ class DiscordProvider with ChangeNotifier, AsyncLoadMixin {
   final DiscordApiClient _api;
 
   DiscordProvider(this._api);
+
+  void _log(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
 
   // State management
   bool _isLoading = false;
@@ -137,22 +143,22 @@ class DiscordProvider with ChangeNotifier, AsyncLoadMixin {
 
   /// Load posts for a channel
   Future<void> loadChannelPosts(String channelId, {int offset = 0}) async {
-    debugPrint(
+    _log(
       '🔍 DEBUG: DiscordProvider.loadChannelPosts - ChannelId: $channelId, Offset: $offset',
     );
 
     await runAsync(
       () async {
         _postsError = null;
-        debugPrint(
+        _log(
           '🔍 DEBUG: CALLING API.loadChannelPosts - ChannelId: $channelId, Offset: $offset',
         );
         final posts = await _api.loadChannelPosts(channelId, offset: offset);
-        debugPrint('🔍 DEBUG: API RETURNED ${posts.length} POSTS');
+        _log('🔍 DEBUG: API RETURNED ${posts.length} POSTS');
 
         if (offset == 0) {
           _channelPosts[channelId] = posts;
-          debugPrint(
+          _log(
             '🔍 DEBUG: SET INITIAL POSTS - ChannelId: $channelId, Count: ${posts.length}',
           );
         } else {
@@ -164,14 +170,14 @@ class DiscordProvider with ChangeNotifier, AsyncLoadMixin {
             ...existingPosts,
             ...uniquePosts,
           ];
-          debugPrint(
+          _log(
             '🔍 DEBUG: APPENDED POSTS - ChannelId: $channelId, Added: ${uniquePosts.length}, Total: ${_channelPosts[channelId]?.length}',
           );
         }
       },
       setLoading: _setLoadingPosts,
       onError: (e, _) {
-        debugPrint('🔍 DEBUG: API ERROR - ChannelId: $channelId, Error: $e');
+        _log('🔍 DEBUG: API ERROR - ChannelId: $channelId, Error: $e');
         if (e.toString().contains('503')) {
           _postsError =
               'Kemono Discord is temporarily unavailable. Please try again later.';

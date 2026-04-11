@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
@@ -13,6 +15,22 @@ class DataUsageDashboard extends StatefulWidget {
 }
 
 class _DataUsageDashboardState extends State<DataUsageDashboard> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,7 +56,11 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
                 const SizedBox(height: 16),
                 _buildLimitsCard(tracker),
                 const SizedBox(height: 16),
+                _buildPeriodSummaryCard(tracker),
+                const SizedBox(height: 16),
                 _buildUsageHistoryCard(tracker),
+                const SizedBox(height: 16),
+                _buildTrackedSourcesCard(),
               ],
             ),
           );
@@ -495,7 +517,10 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
   }
 
   Widget _buildUsageHistoryCard(DataUsageTracker tracker) {
-    final history = tracker.usageHistory.take(7).toList(); // Last 7 days
+    final history = tracker.usageHistory
+        .where((item) => item.totalUsage > 0)
+        .take(7)
+        .toList();
 
     if (history.isEmpty) {
       return const SizedBox.shrink();
@@ -570,6 +595,133 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
     );
   }
 
+  Widget _buildPeriodSummaryCard(DataUsageTracker tracker) {
+    final weekly = tracker.weeklyUsage;
+    final monthly = tracker.monthlyUsage;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Period Summary',
+            style: AppTheme.subtitleStyle.copyWith(
+              color: AppTheme.getOnSurfaceColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildPeriodItem(
+                  label: 'Weekly',
+                  value: '${tracker.getUsageInMB(weekly?.totalUsage ?? 0).toStringAsFixed(2)} MB',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPeriodItem(
+                  label: 'Monthly',
+                  value: '${tracker.getUsageInMB(monthly?.totalUsage ?? 0).toStringAsFixed(2)} MB',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodItem({required String label, required String value}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: AppTheme.bodyStyle.copyWith(
+              color: AppTheme.getOnSurfaceColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: AppTheme.captionStyle.copyWith(
+              color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrackedSourcesCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.getSurfaceColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tracked Sources',
+            style: AppTheme.subtitleStyle.copyWith(
+              color: AppTheme.getOnSurfaceColor(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildSourceStatus('API / HTTP client', true),
+          _buildSourceStatus('Discord Dio requests', true),
+          _buildSourceStatus('Downloads', true),
+          _buildSourceStatus('Media cache fetches', true),
+          _buildSourceStatus('Cache hits (local reads)', false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSourceStatus(String label, bool tracked) {
+    final color = tracked ? Colors.green : Colors.orange;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(tracked ? Icons.check_circle : Icons.info, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTheme.captionStyle.copyWith(
+                color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getUsageColor(double percentage) {
     if (percentage >= 90) return Colors.red;
     if (percentage >= 75) return Colors.orange;
@@ -611,17 +763,124 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
   }
 
   void _showLimitsDialog(DataUsageTracker tracker) {
+    final dailyController = TextEditingController(
+      text: tracker.limits.dailyLimitMB.toString(),
+    );
+    final weeklyController = TextEditingController(
+      text: tracker.limits.weeklyLimitMB.toString(),
+    );
+    final monthlyController = TextEditingController(
+      text: tracker.limits.monthlyLimitMB.toString(),
+    );
+    var warningEnabled = tracker.limits.enableWarnings;
+    var autoDataSaver = tracker.limits.autoDataSaver;
+    var warningThreshold = tracker.limits.warningThreshold.toDouble();
+    var criticalThreshold = tracker.limits.criticalThreshold.toDouble();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Usage Limits'),
-        content: const Text('Limit editing feature coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit Usage Limits'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: dailyController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Daily limit (MB)'),
+                ),
+                TextField(
+                  controller: weeklyController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Weekly limit (MB)'),
+                ),
+                TextField(
+                  controller: monthlyController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Monthly limit (MB)'),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Enable warnings'),
+                  value: warningEnabled,
+                  onChanged: (value) => setState(() => warningEnabled = value),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Auto data saver (advisory)'),
+                  value: autoDataSaver,
+                  onChanged: (value) => setState(() => autoDataSaver = value),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Warning threshold: ${warningThreshold.round()}%'),
+                ),
+                Slider(
+                  value: warningThreshold,
+                  min: 50,
+                  max: 95,
+                  divisions: 45,
+                  label: warningThreshold.round().toString(),
+                  onChanged: (value) => setState(() {
+                    warningThreshold = value;
+                    if (criticalThreshold <= warningThreshold) {
+                      criticalThreshold = (warningThreshold + 1).clamp(51, 99);
+                    }
+                  }),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Critical threshold: ${criticalThreshold.round()}%'),
+                ),
+                Slider(
+                  value: criticalThreshold,
+                  min: 51,
+                  max: 99,
+                  divisions: 48,
+                  label: criticalThreshold.round().toString(),
+                  onChanged: (value) => setState(() {
+                    criticalThreshold = value < warningThreshold + 1
+                        ? warningThreshold + 1
+                        : value;
+                  }),
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final daily = int.tryParse(dailyController.text.trim());
+                final weekly = int.tryParse(weeklyController.text.trim());
+                final monthly = int.tryParse(monthlyController.text.trim());
+                if (daily == null || weekly == null || monthly == null) return;
+                if (daily <= 0 || weekly <= 0 || monthly <= 0) return;
+
+                tracker.updateLimits(
+                  tracker.limits.copyWith(
+                    dailyLimitMB: daily,
+                    weeklyLimitMB: weekly,
+                    monthlyLimitMB: monthly,
+                    enableWarnings: warningEnabled,
+                    autoDataSaver: autoDataSaver,
+                    warningThreshold: warningThreshold.round(),
+                    criticalThreshold: criticalThreshold.round(),
+                  ),
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }

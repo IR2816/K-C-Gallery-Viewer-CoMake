@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../../domain/entities/discord_server.dart';
+import '../domain/entities/discord_server.dart';
 import '../presentation/providers/async_load_mixin.dart';
+import '../presentation/providers/data_usage_dio_interceptor.dart';
+import '../presentation/providers/data_usage_tracker.dart';
 
 /// Discord Search Provider untuk mengelola pencarian Discord servers
 /// Uses mbaharip API for search, Kemono API for data retrieval
@@ -25,7 +27,7 @@ class DiscordSearchProvider with ChangeNotifier, AsyncLoadMixin {
   bool get hasResults => _searchResults.isNotEmpty;
   bool get hasQuery => _currentQuery.isNotEmpty;
 
-  DiscordSearchProvider() {
+  DiscordSearchProvider({DataUsageTracker? dataUsageTracker}) {
     _dio = Dio();
     _dio.options.baseUrl = 'https://kemono-api.mbaharip.com';
     _dio.options.headers = {
@@ -34,6 +36,9 @@ class DiscordSearchProvider with ChangeNotifier, AsyncLoadMixin {
     };
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 10);
+    if (dataUsageTracker != null) {
+      _dio.interceptors.add(DataUsageDioInterceptor(dataUsageTracker));
+    }
   }
 
 
