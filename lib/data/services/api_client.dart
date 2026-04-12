@@ -94,8 +94,8 @@ class ApiClient {
   final Map<String, int> _headerVariantWinnerByDomain = {};
   final Map<String, _CircuitBreakerState> _circuitBreakerByDomain = {};
 
-  static const int _circuitBreakerThreshold = 3;
-  static const Duration _circuitBreakerCooldown = Duration(seconds: 30);
+  static const int _circuitBreakerThreshold = 10;
+  static const Duration _circuitBreakerCooldown = Duration(seconds: 10);
   static const int _responseSnippetMaxLength = 200;
 
   String? _lastSuccessfulDomain;

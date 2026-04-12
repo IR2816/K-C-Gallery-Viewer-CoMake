@@ -72,10 +72,7 @@ class _LatestPostsViewState extends State<_LatestPostsView>
   bool _isRecentlyViewedExpanded = true;
 
   @override
-  bool get wantKeepAlive {
-    final ctrl = context.read<LatestPostsController>();
-    return ctrl.filteredPosts.length < 100;
-  }
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
