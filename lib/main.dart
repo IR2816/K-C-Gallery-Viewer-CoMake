@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'data/services/per_domain_http_client.dart';
 import 'data/datasources/kemono_remote_datasource_impl.dart';
 import 'data/datasources/kemono_local_datasource_impl.dart';
 import 'data/repositories/kemono_repository_impl.dart';
@@ -67,7 +68,14 @@ void main() async {
   HeaderHttpFileService.setTracker(dataUsageTracker);
 
   final remoteDataSource = KemonoRemoteDataSourceImpl(
-    apiClient: ApiClient(client: TrackedHttpClientFactory.getTrackedClient()),
+    perDomainClient: PerDomainHttpClient(
+      kemonoClient: ApiClient(
+        client: TrackedHttpClientFactory.createTrackedClient(dataUsageTracker),
+      ),
+      coomerClient: ApiClient(
+        client: TrackedHttpClientFactory.createTrackedClient(dataUsageTracker),
+      ),
+    ),
   );
   final localDataSource = KemonoLocalDataSourceImpl(prefs: prefs);
   final repository = KemonoRepositoryImpl(
