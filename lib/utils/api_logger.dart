@@ -1,15 +1,15 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'logger.dart';
 
 class ApiLogger {
-  static const int _maxCounterValue = 1000000;
-  static int _counter = 0;
+  static final Random _random = Random();
 
   static String nextRequestId() {
-    _counter = (_counter + 1) % _maxCounterValue;
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'req-$timestamp-$_counter';
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
+    final nonce = _random.nextInt(1 << 32);
+    return 'req-$timestamp-$nonce';
   }
 
   static void request({

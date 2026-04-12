@@ -58,7 +58,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         return creators.where((c) => c.service == service).toList();
       }
       return creators;
-    } catch (primaryError) {
+    } catch (primaryError, primaryStackTrace) {
       // Fallback: derive creator list from recent posts.
       try {
         final posts = await searchPosts(' ', offset: 0, apiSource: apiSource);
@@ -89,7 +89,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
         return creators;
       } catch (fallbackError, fallbackStackTrace) {
-        if (primaryError is ApiException) rethrow;
+        if (primaryError is ApiException) {
+          Error.throwWithStackTrace(primaryError, primaryStackTrace);
+        }
         if (fallbackError is ApiException) rethrow;
         throw NetworkRequestException(
           message:
