@@ -27,6 +27,7 @@ class DiscordApiClient {
 
   static const int _breakerThreshold = 3;
   static const Duration _breakerCooldown = Duration(seconds: 30);
+  static const int _responseSnippetMaxLength = 200;
 
   DiscordApiClient(
     this._dio, {
@@ -176,8 +177,8 @@ class DiscordApiClient {
               ? null
               : response.data.toString().replaceAll('\n', ' ').substring(
                   0,
-                  response.data.toString().length > 200
-                      ? 200
+                  response.data.toString().length > _responseSnippetMaxLength
+                      ? _responseSnippetMaxLength
                       : response.data.toString().length,
                 );
 

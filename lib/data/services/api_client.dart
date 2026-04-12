@@ -104,6 +104,7 @@ class ApiClient {
 
   static const int _circuitBreakerThreshold = 3;
   static const Duration _circuitBreakerCooldown = Duration(seconds: 30);
+  static const int _responseSnippetMaxLength = 200;
 
   String? _lastSuccessfulDomain;
 
@@ -379,8 +380,8 @@ class ApiClient {
 
               final duration = DateTime.now().difference(startedAt);
               final bodyTrimmed = response.body.trimLeft();
-              final snippet = bodyTrimmed.length > 200
-                  ? bodyTrimmed.substring(0, 200)
+              final snippet = bodyTrimmed.length > _responseSnippetMaxLength
+                  ? bodyTrimmed.substring(0, _responseSnippetMaxLength)
                   : bodyTrimmed;
 
               ApiLogger.response(
