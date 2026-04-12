@@ -69,7 +69,7 @@ class RetryHttpClient extends http.BaseClient {
 
   RetryHttpClient(
     this._inner, {
-    this.maxRetries = 1,
+    this.maxRetries = 0,
     this.timeout = const Duration(seconds: 10),
   });
 

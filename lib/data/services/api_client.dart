@@ -28,7 +28,6 @@ class _ApiCache {
   _ApiCache._internal();
 
   final Map<String, _ApiCacheEntry> _cache = {};
-  final Map<String, Future<http.Response>> _inFlightRequests = {};
 
   dynamic get(String key) {
     final entry = _cache[key];
@@ -61,13 +60,6 @@ class _ApiCache {
 
   void clear() {
     _cache.clear();
-    _inFlightRequests.clear();
-  }
-
-  Future<http.Response>? getInFlight(String key) => _inFlightRequests[key];
-  void setInFlight(String key, Future<http.Response> request) {
-    _inFlightRequests[key] = request;
-    request.whenComplete(() => _inFlightRequests.remove(key));
   }
 }
 
@@ -118,9 +110,9 @@ class ApiClient {
        _retryStrategy = retryStrategy ??
            HttpRetryStrategy(
              policy: const RetryPolicy(
-               maxAttempts: 3,
-               initialTimeout: Duration(seconds: 30),
-               retryTimeout: Duration(seconds: 15),
+               maxAttempts: 2,
+               initialTimeout: Duration(seconds: 10),
+               retryTimeout: Duration(seconds: 10),
                baseDelay: Duration(seconds: 1),
                maxDelay: Duration(seconds: 4),
              ),
@@ -274,24 +266,13 @@ class ApiClient {
     Map<String, String>? headers,
     List<Map<String, String>>? headerVariants,
   }) async {
-    final cacheKey =
-        '${apiSource.name}_${service ?? 'nosvc'}_${endpoint}_${headerVariants?.length ?? 0}';
-
-    final inFlight = _cache.getInFlight(cacheKey);
-    if (inFlight != null) {
-      AppLogger.debug('Deduping request: $endpoint');
-      return inFlight;
-    }
-
-    final requestFuture = _executeTryWithFallback(
+    return _executeTryWithFallback(
       endpoint: endpoint,
       apiSource: apiSource,
       service: service,
       headers: headers,
       headerVariants: headerVariants,
     );
-    _cache.setInFlight(cacheKey, requestFuture);
-    return requestFuture;
   }
 
   Future<http.Response> _executeTryWithFallback({

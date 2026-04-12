@@ -62,7 +62,7 @@ class LatestPostsApiHandler extends ChangeNotifier {
     final generation = _generation;
     final effectiveApiSource = apiSource ?? settingsProvider.defaultApiSource;
     _apiSource = effectiveApiSource;
-    final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+    final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
     try {
       AppLogger.debug(
@@ -130,7 +130,7 @@ class LatestPostsApiHandler extends ChangeNotifier {
     notifyListeners();
 
     final generation = _generation;
-    final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+    final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
     try {
       AppLogger.debug(

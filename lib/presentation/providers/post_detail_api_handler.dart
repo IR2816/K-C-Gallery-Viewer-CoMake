@@ -47,7 +47,7 @@ class PostDetailApiHandler extends ChangeNotifier {
       'PostDetailApiHandler: loading post $postId, api=${effectiveApiSource.name}',
     );
 
-    final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+    final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
     try {
       await ApiResponseUtils.withRetry(
