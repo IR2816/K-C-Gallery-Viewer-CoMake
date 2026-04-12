@@ -167,7 +167,7 @@ class PerDomainHttpClient {
     final rateLimitedUntil = apiSource == ApiSource.coomer
         ? _coomerRateLimitedUntil
         : _kemonoRateLimitedUntil;
-    if (rateLimitedUntil != null && DateTime.now().isBefore(rateLimitedUntil)) {
+    if (rateLimitedUntil != null) {
       final remaining = rateLimitedUntil.difference(DateTime.now());
       if (remaining > Duration.zero) {
         await Future<void>.delayed(remaining);
