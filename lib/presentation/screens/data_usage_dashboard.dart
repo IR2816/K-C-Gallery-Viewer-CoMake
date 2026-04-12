@@ -19,9 +19,6 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
 
   @override
   Widget build(BuildContext context) {
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
