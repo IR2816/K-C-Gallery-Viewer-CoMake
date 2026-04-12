@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../data/utils/domain_resolver.dart';
+import '../../domain/entities/api_source.dart';
 import '../../domain/entities/creator.dart';
 import '../providers/creators_provider.dart';
 import '../theme/app_theme.dart';
@@ -201,6 +203,11 @@ class _CreatorCardState extends State<CreatorCard>
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 5),
+                              // Domain badge – shows whether this creator is
+                              // from Kemono or Coomer so it is always clear
+                              // which API is serving the content.
+                              _DomainBadge(service: widget.creator.service),
                               const SizedBox(width: 7),
                               Icon(
                                 Icons.update_rounded,
@@ -387,6 +394,45 @@ class _CreatorCardState extends State<CreatorCard>
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact domain label (Kemono / Coomer) derived from service name.
+///
+/// - Kemono: blue  (#2196F3)
+/// - Coomer: red/orange (#FF6B6B)
+class _DomainBadge extends StatelessWidget {
+  final String service;
+
+  const _DomainBadge({required this.service});
+
+  static const Color _kemonoColor = Color(0xFF2196F3);
+  static const Color _coomerColor = Color(0xFFFF6B6B);
+
+  @override
+  Widget build(BuildContext context) {
+    final isCoomer =
+        DomainResolver.apiSourceForService(service) == ApiSource.coomer;
+    final color = isCoomer ? _coomerColor : _kemonoColor;
+    final label = isCoomer ? 'Coomer' : 'Kemono';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.3,
         ),
       ),
     );

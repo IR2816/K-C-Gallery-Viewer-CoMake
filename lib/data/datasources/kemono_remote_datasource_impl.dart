@@ -9,6 +9,7 @@ import '../models/creator_model.dart';
 import '../models/post_model.dart';
 import '../services/api_client.dart';
 import '../services/api_header_service.dart';
+import '../services/per_domain_http_client.dart';
 import '../utils/api_response_utils.dart';
 import '../utils/domain_resolver.dart';
 import 'kemono_remote_datasource.dart';
@@ -19,15 +20,30 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
   // Maximum bytes to scan when searching for embedded JSON in a CSS response.
   static const int _jsonScanLimit = 5120; // 5 KB
-  final ApiClient apiClient;
 
-  String? get lastSuccessfulDomain => apiClient.lastSuccessfulDomain;
+  /// Per-domain HTTP client — routes every request to the correct domain
+  /// client (Kemono or Coomer) and enforces per-domain request throttling.
+  final PerDomainHttpClient _perDomainClient;
 
-  KemonoRemoteDataSourceImpl({ApiClient? apiClient})
-    : apiClient = apiClient ?? ApiClient();
+  String? get lastSuccessfulDomain => _perDomainClient.lastSuccessfulDomain;
+
+  /// Create with an explicit [PerDomainHttpClient].
+  ///
+  /// For backward compatibility a legacy [ApiClient] can be passed via
+  /// [apiClient]; it wraps the single client in a [PerDomainHttpClient]
+  /// that uses the same instance for both domains.
+  KemonoRemoteDataSourceImpl({
+    PerDomainHttpClient? perDomainClient,
+    // ignore: deprecated_member_use_from_same_package
+    ApiClient? apiClient,
+  }) : _perDomainClient = perDomainClient ??
+            PerDomainHttpClient(
+              kemonoClient: apiClient ?? ApiClient(),
+              coomerClient: apiClient ?? ApiClient(),
+            );
 
   ApiSource _resolveApiSource(String service, ApiSource provided) {
-    final resolved = DomainResolver.apiSourceForService(service);
+    final resolved = DomainResolver.lockedApiSourceForService(service);
     if (resolved != provided) {
       AppLogger.warning(
         'DomainResolver override: service=$service prefers $resolved (was $provided)',
@@ -43,7 +59,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
   }) async {
     final endpoint = '/v1/creators.txt';
     try {
-      final jsonList = await apiClient.getJsonList(
+      final jsonList = await _perDomainClient.getJsonList(
         endpoint: endpoint,
         apiSource: apiSource,
         cacheKey: 'creators_${apiSource.name}',
@@ -119,7 +135,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       'KemonoRemoteDataSource: getCreator endpoint=$endpoint apiSource=$apiSource',
     );
     try {
-      final jsonMap = await apiClient.getJsonObject(
+      final jsonMap = await _perDomainClient.getJsonObject(
         endpoint: endpoint,
         apiSource: effectiveApiSource,
         service: service,
@@ -155,7 +171,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     );
 
     try {
-      final jsonList = await apiClient.getJsonList(
+      final jsonList = await _perDomainClient.getJsonList(
         endpoint: endpoint,
         apiSource: effectiveApiSource,
         service: service,
@@ -187,7 +203,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       'KemonoRemoteDataSource: getCreatorLinks endpoint=$endpoint apiSource=$apiSource',
     );
     try {
-      final jsonList = await apiClient.getJsonList(
+      final jsonList = await _perDomainClient.getJsonList(
         endpoint: endpoint,
         apiSource: effectiveApiSource,
         service: service,
@@ -226,7 +242,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       debugPrint(
         'KemonoRemoteDataSource: getPost endpoint=$endpoint apiSource=$apiSource',
       );
-      final jsonMap = await apiClient.getJsonObject(
+      final jsonMap = await _perDomainClient.getJsonObject(
         endpoint: endpoint,
         apiSource: effectiveApiSource,
         service: service,
@@ -256,7 +272,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         : '/v1/posts?q=${Uri.encodeComponent(query)}&o=$offset&l=$limit';
 
     try {
-      final jsonList = await apiClient.getJsonList(
+      final jsonList = await _perDomainClient.getJsonList(
         endpoint: endpoint,
         apiSource: apiSource,
         cacheKey: '${apiSource.name}_$endpoint',
@@ -312,7 +328,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     ];
 
     try {
-      final comments = await apiClient.getJsonList(
+      final comments = await _perDomainClient.getJsonList(
         endpoint: endpoint,
         apiSource: DomainResolver.apiSourceForService(service),
         service: service,
