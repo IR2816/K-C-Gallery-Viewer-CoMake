@@ -92,7 +92,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         if (primaryError is ApiException) {
           Error.throwWithStackTrace(primaryError, primaryStackTrace);
         }
-        if (fallbackError is ApiException) rethrow;
+        if (fallbackError is ApiException) {
+          Error.throwWithStackTrace(fallbackError, fallbackStackTrace);
+        }
         throw NetworkRequestException(
           message:
               'Failed to load creators from primary and fallback sources.',

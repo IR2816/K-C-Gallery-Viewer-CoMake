@@ -15,6 +15,7 @@ class NetworkConnectivityService {
   final Queue<Future<void> Function()> _offlineQueue = Queue<Future<void> Function()>();
 
   StreamSubscription<dynamic>? _subscription;
+  Future<void>? _flushFuture;
   bool _initialized = false;
   bool _isOnline = true;
 
@@ -30,7 +31,7 @@ class NetworkConnectivityService {
       _isOnline = online;
       AppLogger.debug('Connectivity changed: online=$online', tag: 'Network');
       if (online) {
-        await _flushQueue();
+        _flushFuture ??= _flushQueue().whenComplete(() => _flushFuture = null);
       }
     });
   }
@@ -55,6 +56,8 @@ class NetworkConnectivityService {
 
   Future<void> dispose() async {
     await _subscription?.cancel();
+    await _flushFuture;
+    _flushFuture = null;
     _subscription = null;
     _initialized = false;
     _offlineQueue.clear();

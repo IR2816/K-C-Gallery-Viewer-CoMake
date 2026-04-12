@@ -304,17 +304,6 @@ class ApiClient {
     final requestId = ApiLogger.nextRequestId();
     final hasNetwork = await _connectivityService.hasNetworkConnection();
     if (!hasNetwork) {
-      // Fire-and-forget queue: this is only a best-effort retry trigger once
-      // connectivity returns, not a promise tied to the current caller.
-      _connectivityService.enqueueForReconnect(() async {
-        await _executeTryWithFallback(
-          endpoint: endpoint,
-          apiSource: apiSource,
-          service: service,
-          headers: headers,
-          headerVariants: headerVariants,
-        );
-      });
       throw NetworkUnavailableException(endpoint: endpoint, requestId: requestId);
     }
 

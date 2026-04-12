@@ -193,7 +193,7 @@ class DiscordApiClient {
 
           if ((response.statusCode ?? 0) == 503) {
             throw HttpStatusException(
-              message: 'Kemono Discord is temporarily unavailable (503).',
+              message: 'Discord API is temporarily unavailable (503).',
               statusCode: 503,
               endpoint: endpoint,
               requestId: requestId,
