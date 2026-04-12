@@ -125,8 +125,9 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor =
-        isDark ? const Color(0xFF1E1F22) : AppTheme.getBackgroundColor(context);
+    final bgColor = isDark
+        ? const Color(0xFF1E1F22)
+        : AppTheme.getBackgroundColor(context);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -158,9 +159,11 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
               final channels = _searchQuery.isEmpty
                   ? provider.channels
                   : provider.channels
-                      .where((channel) =>
-                          channel.name.toLowerCase().contains(_searchQuery))
-                      .toList();
+                        .where(
+                          (channel) =>
+                              channel.name.toLowerCase().contains(_searchQuery),
+                        )
+                        .toList();
               final visibleChannels = settings.hideNsfw
                   ? channels.where((c) => !c.isNsfw).toList()
                   : channels;
@@ -229,13 +232,17 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
               child: CachedNetworkImage(
                 imageUrl: bannerUrl,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: Colors.indigo.withValues(alpha: 0.1)),
+                placeholder: (context, url) =>
+                    Container(color: Colors.indigo.withValues(alpha: 0.1)),
                 errorWidget: (context, url, error) => Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Colors.indigo.withValues(alpha: 0.8), Colors.black],
+                      colors: [
+                        Colors.indigo.withValues(alpha: 0.8),
+                        Colors.black,
+                      ],
                     ),
                   ),
                 ),
@@ -269,7 +276,10 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                     height: 64,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        width: 2,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.4),
@@ -283,7 +293,11 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                       child: CachedNetworkImage(
                         imageUrl: iconUrl,
                         fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => const Icon(Icons.discord_rounded, color: Colors.white, size: 30),
+                        errorWidget: (context, url, error) => const Icon(
+                          Icons.discord_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                       ),
                     ),
                   ),
@@ -344,8 +358,8 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: _searchQuery.isNotEmpty 
-              ? Colors.indigoAccent.withValues(alpha: 0.4) 
+          color: _searchQuery.isNotEmpty
+              ? Colors.indigoAccent.withValues(alpha: 0.4)
               : Theme.of(context).dividerColor.withValues(alpha: 0.1),
           width: 1.5,
         ),
@@ -373,8 +387,10 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                 : AppTheme.lightSecondaryTextColor.withValues(alpha: 0.6),
           ),
           prefixIcon: Icon(
-            Icons.tag_rounded, 
-            color: _searchQuery.isNotEmpty ? Colors.indigoAccent : AppTheme.getIconColor(context),
+            Icons.tag_rounded,
+            color: _searchQuery.isNotEmpty
+                ? Colors.indigoAccent
+                : AppTheme.getIconColor(context),
             size: 20,
           ),
           suffixIcon: _searchQuery.isNotEmpty
@@ -382,7 +398,9 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                   icon: Icon(
                     Icons.close_rounded,
                     size: 18,
-                    color: isDark ? Colors.white : AppTheme.lightPrimaryTextColor,
+                    color: isDark
+                        ? Colors.white
+                        : AppTheme.lightPrimaryTextColor,
                   ),
                   onPressed: () => _onSearchChanged(''),
                 )
@@ -465,11 +483,15 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: accentColor.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Center(
                     child: Text(
-                      channel.displayEmoji.isNotEmpty ? channel.displayEmoji : '#',
+                      channel.displayEmoji.isNotEmpty
+                          ? channel.displayEmoji
+                          : '#',
                       style: const TextStyle(fontSize: 20),
                     ),
                   ),
@@ -483,7 +505,9 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                         channel.name,
                         style: TextStyle(
                           color: isDisabled
-                              ? AppTheme.getPrimaryTextColor(context).withValues(alpha: 0.4)
+                              ? AppTheme.getPrimaryTextColor(
+                                  context,
+                                ).withValues(alpha: 0.4)
                               : AppTheme.getPrimaryTextColor(context),
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
@@ -495,15 +519,24 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                       if (channel.isNsfw) ...[
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.redAccent.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+                            border: Border.all(
+                              color: Colors.redAccent.withValues(alpha: 0.2),
+                            ),
                           ),
                           child: const Text(
                             'NSFW',
-                            style: TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.w800),
+                            style: TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ],
@@ -512,7 +545,10 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                 ),
                 if (channel.postCount > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: accentColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -529,9 +565,17 @@ class _DiscordChannelListScreenState extends State<DiscordChannelListScreen>
                     ),
                   )
                 else if (!channel.canOpen)
-                  const Icon(Icons.lock_rounded, color: Colors.orangeAccent, size: 16),
+                  const Icon(
+                    Icons.lock_rounded,
+                    color: Colors.orangeAccent,
+                    size: 16,
+                  ),
                 const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white24,
+                  size: 14,
+                ),
               ],
             ),
           ),

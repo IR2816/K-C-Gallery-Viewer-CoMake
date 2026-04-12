@@ -16,11 +16,11 @@ class CreatorModel extends Creator {
       id: JsonFieldUtils.string(json, 'id'),
       service: JsonFieldUtils.string(json, 'service'),
       name: JsonFieldUtils.string(json, 'name', defaultValue: 'Unknown'),
-      indexed: JsonFieldUtils.dateTime(json, 'indexed')
-              .millisecondsSinceEpoch ~/
+      indexed:
+          JsonFieldUtils.dateTime(json, 'indexed').millisecondsSinceEpoch ~/
           1000,
-      updated: JsonFieldUtils.dateTime(json, 'updated')
-              .millisecondsSinceEpoch ~/
+      updated:
+          JsonFieldUtils.dateTime(json, 'updated').millisecondsSinceEpoch ~/
           1000,
       favorited: JsonFieldUtils.boolValue(json, 'favorited'),
     );

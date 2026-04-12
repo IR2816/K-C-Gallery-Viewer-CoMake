@@ -50,7 +50,9 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppTheme.darkCardColor : AppTheme.lightCardColor;
-    final borderColor = isDark ? AppTheme.darkBorderColor : AppTheme.lightBorderColor;
+    final borderColor = isDark
+        ? AppTheme.darkBorderColor
+        : AppTheme.lightBorderColor;
 
     return Container(
       decoration: BoxDecoration(
@@ -236,11 +238,11 @@ class PostCard extends StatelessWidget {
     return Consumer<SettingsProvider>(
       builder: (context, settings, _) {
         final quality = settings.imageQuality;
-        
+
         // Get proper domains from settings based on API source
         final kemonoDomain = settings.cleanKemonoDomain;
         final coomerDomain = settings.cleanCoomerDomain;
-        
+
         final thumbnailUrl = post.getBestThumbnailUrl(
           apiSource,
           quality: quality,
@@ -268,7 +270,9 @@ class PostCard extends StatelessWidget {
                         apiSource: apiSource.name,
                         quality: quality,
                         allowFallback: quality != 'low',
-                        domain: apiSource == ApiSource.coomer ? coomerDomain : kemonoDomain,
+                        domain: apiSource == ApiSource.coomer
+                            ? coomerDomain
+                            : kemonoDomain,
                         errorWidget: _buildImagePlaceholder(context),
                       )
                     : _buildImagePlaceholder(context),
@@ -292,11 +296,7 @@ class PostCard extends StatelessWidget {
                 ),
 
                 // Media count badge (top-right)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _buildMediaBadges(),
-                ),
+                Positioned(top: 8, right: 8, child: _buildMediaBadges()),
 
                 // Video play button overlay
                 if (post.hasVideo && !post.hasImage)
@@ -345,7 +345,11 @@ class PostCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (post.hasVideo && !post.hasImage)
-          _badge(Icons.videocam_rounded, '${post.videoCount}', Colors.redAccent),
+          _badge(
+            Icons.videocam_rounded,
+            '${post.videoCount}',
+            Colors.redAccent,
+          ),
         if (post.hasImage && post.hasVideo) ...[
           _badge(
             Icons.photo_library_rounded,
@@ -353,7 +357,11 @@ class PostCard extends StatelessWidget {
             AppTheme.primaryColor,
           ),
           const SizedBox(width: 4),
-          _badge(Icons.videocam_rounded, '${post.videoCount}', Colors.redAccent),
+          _badge(
+            Icons.videocam_rounded,
+            '${post.videoCount}',
+            Colors.redAccent,
+          ),
         ],
         if (post.hasImage && !post.hasVideo && post.imageCount > 1)
           _badge(
@@ -420,11 +428,7 @@ class PostCard extends StatelessWidget {
           const SizedBox(width: 16),
 
           // Share/external button
-          _actionBtn(
-            context: context,
-            icon: Icons.send_rounded,
-            onTap: onTap,
-          ),
+          _actionBtn(context: context, icon: Icons.send_rounded, onTap: onTap),
 
           const Spacer(),
 
@@ -568,10 +572,10 @@ class PostCard extends StatelessWidget {
   String _getCreatorAvatarUrl(SettingsProvider settings) {
     final domain =
         (post.service == 'fansly' ||
-                post.service == 'onlyfans' ||
-                post.service == 'candfans')
-            ? 'https://${settings.cleanCoomerDomain}'
-            : 'https://${settings.cleanKemonoDomain}';
+            post.service == 'onlyfans' ||
+            post.service == 'candfans')
+        ? 'https://${settings.cleanCoomerDomain}'
+        : 'https://${settings.cleanKemonoDomain}';
     return '$domain/data/avatars/${post.service}/${post.user}/avatar.jpg';
   }
 
@@ -620,7 +624,9 @@ class _PostOptionsSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.4),
+              color: AppTheme.getSecondaryTextColor(
+                context,
+              ).withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -641,8 +647,9 @@ class _PostOptionsSheet extends StatelessWidget {
           ),
 
           Divider(
-            color: (isDark ? AppTheme.darkBorderColor : AppTheme.lightBorderColor)
-                .withValues(alpha: 0.6),
+            color:
+                (isDark ? AppTheme.darkBorderColor : AppTheme.lightBorderColor)
+                    .withValues(alpha: 0.6),
             height: 16,
           ),
 

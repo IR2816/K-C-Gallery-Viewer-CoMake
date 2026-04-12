@@ -23,20 +23,27 @@ class SearchHistoryEntry {
     'frequency': frequency,
   };
 
-  factory SearchHistoryEntry.fromJson(Map<String, dynamic> json) => SearchHistoryEntry(
-    query: json['query'] as String? ?? '',
-    type: json['type'] as String? ?? 'creator',
-    timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
-    frequency: json['frequency'] as int? ?? 1,
-  );
-
-  SearchHistoryEntry copyWith({String? query, String? type, DateTime? timestamp, int? frequency}) =>
+  factory SearchHistoryEntry.fromJson(Map<String, dynamic> json) =>
       SearchHistoryEntry(
-        query: query ?? this.query,
-        type: type ?? this.type,
-        timestamp: timestamp ?? this.timestamp,
-        frequency: frequency ?? this.frequency,
+        query: json['query'] as String? ?? '',
+        type: json['type'] as String? ?? 'creator',
+        timestamp:
+            DateTime.tryParse(json['timestamp'] as String? ?? '') ??
+            DateTime.now(),
+        frequency: json['frequency'] as int? ?? 1,
       );
+
+  SearchHistoryEntry copyWith({
+    String? query,
+    String? type,
+    DateTime? timestamp,
+    int? frequency,
+  }) => SearchHistoryEntry(
+    query: query ?? this.query,
+    type: type ?? this.type,
+    timestamp: timestamp ?? this.timestamp,
+    frequency: frequency ?? this.frequency,
+  );
 }
 
 /// Manages search history with type-aware tracking and frequency counting.
@@ -73,7 +80,9 @@ class SearchHistoryProvider with ChangeNotifier {
   List<SearchHistoryEntry> getSuggestions(String query, {String? type}) {
     if (query.trim().isEmpty) return [];
     final q = query.toLowerCase();
-    var results = _history.where((e) => e.query.toLowerCase().startsWith(q)).toList();
+    var results = _history
+        .where((e) => e.query.toLowerCase().startsWith(q))
+        .toList();
     if (type != null) {
       results = results.where((e) => e.type == type).toList();
     }
@@ -107,12 +116,23 @@ class SearchHistoryProvider with ChangeNotifier {
       // Update frequency and move to top
       final entry = _history[index];
       _history.removeAt(index);
-      _history.insert(0, entry.copyWith(timestamp: DateTime.now(), frequency: entry.frequency + 1));
+      _history.insert(
+        0,
+        entry.copyWith(
+          timestamp: DateTime.now(),
+          frequency: entry.frequency + 1,
+        ),
+      );
     } else {
       // Add new entry
       _history.insert(
         0,
-        SearchHistoryEntry(query: trimmed, type: type, timestamp: DateTime.now(), frequency: 1),
+        SearchHistoryEntry(
+          query: trimmed,
+          type: type,
+          timestamp: DateTime.now(),
+          frequency: 1,
+        ),
       );
     }
 

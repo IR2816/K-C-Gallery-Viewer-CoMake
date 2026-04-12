@@ -193,7 +193,8 @@ class DataUsageTracker extends ChangeNotifier {
     });
   }
 
-  static DateTime dayKey(DateTime date) => DateTime(date.year, date.month, date.day);
+  static DateTime dayKey(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   static UsageCategory categorizeRequest(
     String url, {
@@ -217,7 +218,8 @@ class DataUsageTracker extends ChangeNotifier {
         lowerUrl.contains('thumbnail') ||
         lowerUrl.contains('preview') ||
         (lowerContentType.contains('image/') &&
-            (lowerUrl.contains('/thumbnail/') || lowerUrl.contains('/thumbnails/')));
+            (lowerUrl.contains('/thumbnail/') ||
+                lowerUrl.contains('/thumbnails/')));
     if (isThumb) return UsageCategory.thumbnails;
 
     final isVideo =
@@ -378,7 +380,9 @@ class DataUsageTracker extends ChangeNotifier {
     if (_todayUsage == null || _todayUsage!.date != today) {
       _todayUsage = UsageData(
         date: today,
-        categoryUsage: {for (final category in UsageCategory.values) category: 0},
+        categoryUsage: {
+          for (final category in UsageCategory.values) category: 0,
+        },
         totalUsage: 0,
         sessionCount: incrementSession ? 1 : 0,
       );
@@ -454,7 +458,9 @@ class DataUsageTracker extends ChangeNotifier {
     _usageHistory.add(_todayUsage!);
     _dedupeAndSortHistory();
 
-    final cutoffDate = dayKey(DateTime.now().subtract(const Duration(days: 30)));
+    final cutoffDate = dayKey(
+      DateTime.now().subtract(const Duration(days: 30)),
+    );
     _usageHistory.removeWhere((data) => data.date.isBefore(cutoffDate));
   }
 
@@ -669,7 +675,9 @@ class DataUsageTracker extends ChangeNotifier {
 
   /// Clean old usage data (keep last 30 days)
   Future<void> cleanupOldData() async {
-    final cutoffDate = dayKey(DateTime.now().subtract(const Duration(days: 30)));
+    final cutoffDate = dayKey(
+      DateTime.now().subtract(const Duration(days: 30)),
+    );
     _usageHistory.removeWhere((data) => data.date.isBefore(cutoffDate));
     _recalculateAggregates();
     _notifyThrottled(force: true);
@@ -690,5 +698,4 @@ class DataUsageTracker extends ChangeNotifier {
       'topCategory': getTopDataConsumer().name,
     };
   }
-
 }

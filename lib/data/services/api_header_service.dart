@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 
 class ApiHeaderService {
-  /// Base headers for Kemono/Coomer API requests
+  /// Base headers for Kemono/Coomer API requests.
+  ///
+  /// NOTE: `Accept: text/css` is intentionally non-standard. The Kemono/Coomer
+  /// servers use it as a signal to return raw JSON instead of an HTML page shell.
+  /// Do NOT change it to `application/json` — that will break JSON responses.
   static const Map<String, String> _kemonoCoomerHeaders = {
     'Accept': 'text/css',
     'User-Agent':
@@ -36,7 +40,6 @@ class ApiHeaderService {
     if (additionalHeaders != null) {
       headers.addAll(additionalHeaders);
     }
-    debugPrint('API Headers: ${headers.keys.join(', ')}');
     return headers;
   }
 
@@ -46,7 +49,6 @@ class ApiHeaderService {
     if (referer != null) {
       headers['Referer'] = referer;
     }
-    debugPrint('Media Headers: ${headers.keys.join(', ')}');
     return headers;
   }
 
@@ -55,20 +57,15 @@ class ApiHeaderService {
     String domain, {
     Map<String, String>? additionalHeaders,
   }) {
-    Map<String, String> baseHeaders;
-
-    if (domain.contains('kemono.cr') || domain.contains('coomer.st')) {
-      baseHeaders = _kemonoCoomerHeaders;
-    } else {
-      baseHeaders = _mediaHeaders;
-    }
+    final Map<String, String> baseHeaders =
+        (domain.contains('kemono.cr') || domain.contains('coomer.st'))
+        ? _kemonoCoomerHeaders
+        : _mediaHeaders;
 
     final headers = Map<String, String>.from(baseHeaders);
     if (additionalHeaders != null) {
       headers.addAll(additionalHeaders);
     }
-
-    debugPrint('Headers for $domain: ${headers.keys.join(', ')}');
     return headers;
   }
 
@@ -77,10 +74,6 @@ class ApiHeaderService {
     final hasAccept =
         headers.containsKey('Accept') && headers['Accept'] == 'text/css';
     final hasUserAgent = headers.containsKey('User-Agent');
-
-    debugPrint(
-      'Header validation - Accept: $hasAccept, User-Agent: $hasUserAgent',
-    );
     return hasAccept && hasUserAgent;
   }
 

@@ -41,7 +41,6 @@ class DiscordSearchProvider with ChangeNotifier, AsyncLoadMixin {
     }
   }
 
-
   /// Load popular Discord servers using mbaharip API
   /// GET /kemono/discord (no keyword)
   Future<void> loadPopularServers() async {
@@ -84,7 +83,8 @@ class DiscordSearchProvider with ChangeNotifier, AsyncLoadMixin {
           _popularServers = serversData
               .whereType<Map<String, dynamic>>()
               .where(
-                (json) => json['service']?.toString().toLowerCase() == 'discord',
+                (json) =>
+                    json['service']?.toString().toLowerCase() == 'discord',
               )
               .map(
                 (json) => DiscordServer(
@@ -173,7 +173,8 @@ class DiscordSearchProvider with ChangeNotifier, AsyncLoadMixin {
           _searchResults = serversData
               .whereType<Map<String, dynamic>>()
               .where(
-                (json) => json['service']?.toString().toLowerCase() == 'discord',
+                (json) =>
+                    json['service']?.toString().toLowerCase() == 'discord',
               )
               .map(
                 (json) => DiscordServer(

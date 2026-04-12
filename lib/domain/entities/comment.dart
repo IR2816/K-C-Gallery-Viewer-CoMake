@@ -18,7 +18,6 @@ class Comment {
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
-
     // Handle the actual Kemono API response structure
     return Comment(
       id: json['id']?.toString() ?? '',

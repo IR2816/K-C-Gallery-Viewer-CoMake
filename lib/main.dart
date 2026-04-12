@@ -148,9 +148,14 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider(
-          create: (_) => PostsProvider(repository: repository, settingsProvider: settingsProvider),
+          create: (_) => PostsProvider(
+            repository: repository,
+            settingsProvider: settingsProvider,
+          ),
         ),
-        ChangeNotifierProvider(create: (_) => CommentsProvider(repository: repository)),
+        ChangeNotifierProvider(
+          create: (_) => CommentsProvider(repository: repository),
+        ),
         ChangeNotifierProvider(create: (_) => PopularCreatorsProvider()),
         // Data Usage Tracking
         ChangeNotifierProvider.value(value: dataUsageTracker),
@@ -164,9 +169,13 @@ class MyApp extends StatelessWidget {
         // Bookmark Provider
         ChangeNotifierProvider(create: (_) => BookmarkProvider()..initialize()),
         // Creator Quick Access (recent + local favorites)
-        ChangeNotifierProvider(create: (_) => CreatorQuickAccessProvider()..initialize()),
+        ChangeNotifierProvider(
+          create: (_) => CreatorQuickAccessProvider()..initialize(),
+        ),
         // Search History (tracks searches with frequency)
-        ChangeNotifierProvider(create: (_) => SearchHistoryProvider()..initialize()),
+        ChangeNotifierProvider(
+          create: (_) => SearchHistoryProvider()..initialize(),
+        ),
         // Post Search (server-side keyword search + local tag/title filtering)
         ChangeNotifierProvider(
           create: (ctx) => PostSearchProvider(
@@ -177,12 +186,19 @@ class MyApp extends StatelessWidget {
         // 🚀 NEW: Discord Provider
         ChangeNotifierProvider(
           create: (_) {
-            final dio = Dio()..interceptors.add(DataUsageDioInterceptor(dataUsageTracker));
-            return DiscordProvider(DiscordApiClient(dio));
+            final dio = Dio()
+              ..interceptors.add(DataUsageDioInterceptor(dataUsageTracker));
+            return DiscordProvider(
+              DiscordApiClient(
+                dio,
+                baseUrl: DomainConfig.kemonoApiDomains.first,
+              ),
+            );
           },
         ),
         ChangeNotifierProvider(
-          create: (_) => DiscordSearchProvider(dataUsageTracker: dataUsageTracker),
+          create: (_) =>
+              DiscordSearchProvider(dataUsageTracker: dataUsageTracker),
         ),
       ],
       child: Builder(
@@ -205,20 +221,30 @@ class MyApp extends StatelessWidget {
                 data: mediaQuery.copyWith(
                   textScaler: TextScaler.linear(textScale),
                 ),
-                child: _DataUsageAlertOverlay(child: child ?? const SizedBox.shrink()),
+                child: _DataUsageAlertOverlay(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               );
             },
             home: MainNavigationScreen(),
             onGenerateRoute: (settings) {
               switch (settings.name) {
                 case '/':
-                  return MaterialPageRoute(builder: (context) => MainNavigationScreen());
+                  return MaterialPageRoute(
+                    builder: (context) => MainNavigationScreen(),
+                  );
                 case '/home':
-                  return MaterialPageRoute(builder: (context) => const HomeScreen());
+                  return MaterialPageRoute(
+                    builder: (context) => const HomeScreen(),
+                  );
                 case '/search':
-                  return MaterialPageRoute(builder: (context) => const SearchScreenDual());
+                  return MaterialPageRoute(
+                    builder: (context) => const SearchScreenDual(),
+                  );
                 case '/settings':
-                  return MaterialPageRoute(builder: (context) => const SettingsScreen());
+                  return MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  );
                 case '/discord':
                   return MaterialPageRoute(
                     builder: (context) => const DiscordServerScreen(),
@@ -233,7 +259,9 @@ class MyApp extends StatelessWidget {
                     return MaterialPageRoute(
                       builder: (context) => PostDetailScreen(
                         post: post,
-                        apiSource: DomainResolver.apiSourceForService(post.service),
+                        apiSource: DomainResolver.apiSourceForService(
+                          post.service,
+                        ),
                       ),
                     );
                   }
@@ -246,7 +274,9 @@ class MyApp extends StatelessWidget {
                     return MaterialPageRoute(
                       builder: (context) => CreatorDetailScreen(
                         creator: creator,
-                        apiSource: DomainResolver.apiSourceForService(creator.service),
+                        apiSource: DomainResolver.apiSourceForService(
+                          creator.service,
+                        ),
                       ),
                     );
                   }
@@ -254,7 +284,9 @@ class MyApp extends StatelessWidget {
                     builder: (context) => const MainNavigationScreen(),
                   );
                 default:
-                  return MaterialPageRoute(builder: (context) => MainNavigationScreen());
+                  return MaterialPageRoute(
+                    builder: (context) => MainNavigationScreen(),
+                  );
               }
             },
           );
@@ -341,7 +373,9 @@ class _DataUsageAlertOverlayState extends State<_DataUsageAlertOverlay> {
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
-              tracker.updateLimits(tracker.limits.copyWith(autoDataSaver: true));
+              tracker.updateLimits(
+                tracker.limits.copyWith(autoDataSaver: true),
+              );
             },
             child: const Text('Enable Data Saver'),
           ),

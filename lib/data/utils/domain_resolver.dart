@@ -4,11 +4,7 @@ import '../../utils/logger.dart';
 
 /// Resolves API domains based on a creator/post service.
 class DomainResolver {
-  static const Set<String> _coomerServices = {
-    'onlyfans',
-    'fansly',
-    'candfans',
-  };
+  static const Set<String> _coomerServices = {'onlyfans', 'fansly', 'candfans'};
 
   static const Set<String> _knownKemonoServices = {
     'patreon',
@@ -55,7 +51,10 @@ class DomainResolver {
   }
 
   /// Get the list of API domains (with /api) for fallback.
-  static List<String> getApiDomains({String? service, ApiSource? apiSourceHint}) {
+  static List<String> getApiDomains({
+    String? service,
+    ApiSource? apiSourceHint,
+  }) {
     final source = service != null && service.trim().isNotEmpty
         ? apiSourceForService(service)
         : (apiSourceHint ?? ApiSource.kemono);

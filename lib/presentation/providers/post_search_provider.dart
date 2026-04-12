@@ -134,7 +134,10 @@ class PostSearchProvider extends ChangeNotifier {
       _serverSearchError = null;
     } catch (e) {
       _serverSearchError = 'Search failed: ${e.toString()}';
-      AppLogger.error('PostSearchProvider: server search error: $e', tag: 'PostSearch');
+      AppLogger.error(
+        'PostSearchProvider: server search error: $e',
+        tag: 'PostSearch',
+      );
     } finally {
       _isSearchingServer = false;
       notifyListeners();
@@ -169,7 +172,10 @@ class PostSearchProvider extends ChangeNotifier {
       _serverSearchError = null;
     } catch (e) {
       _serverSearchError = 'Failed to load more results: ${e.toString()}';
-      AppLogger.error('PostSearchProvider: load more error: $e', tag: 'PostSearch');
+      AppLogger.error(
+        'PostSearchProvider: load more error: $e',
+        tag: 'PostSearch',
+      );
     } finally {
       _isLoadingMoreSearch = false;
       notifyListeners();
@@ -200,10 +206,10 @@ class PostSearchProvider extends ChangeNotifier {
 
         // Tag whitelist filter - if any tags selected, post must have at least one
         if (_selectedTagFilters.isNotEmpty) {
-          final postTagsLower =
-              post.tags.map((t) => t.toLowerCase()).toSet();
-          final selectedLower =
-              _selectedTagFilters.map((t) => t.toLowerCase()).toSet();
+          final postTagsLower = post.tags.map((t) => t.toLowerCase()).toSet();
+          final selectedLower = _selectedTagFilters
+              .map((t) => t.toLowerCase())
+              .toSet();
 
           // Check if post has any of the selected tags
           if (!postTagsLower.any((tag) => selectedLower.contains(tag))) {
@@ -213,10 +219,10 @@ class PostSearchProvider extends ChangeNotifier {
 
         // Tag blacklist filter - exclude posts with blacklisted tags
         if (blacklistedTags.isNotEmpty) {
-          final postTagsLower =
-              post.tags.map((t) => t.toLowerCase()).toList();
-          final blacklistedLower =
-              blacklistedTags.map((t) => t.toLowerCase()).toSet();
+          final postTagsLower = post.tags.map((t) => t.toLowerCase()).toList();
+          final blacklistedLower = blacklistedTags
+              .map((t) => t.toLowerCase())
+              .toSet();
 
           if (blacklistedLower.any((tag) => postTagsLower.contains(tag))) {
             return false;
@@ -230,10 +236,7 @@ class PostSearchProvider extends ChangeNotifier {
       _error = null;
       return filtered;
     } catch (e) {
-      AppLogger.error(
-        'Error filtering posts: $e',
-        tag: 'PostSearch',
-      );
+      AppLogger.error('Error filtering posts: $e', tag: 'PostSearch');
       _error = e.toString();
       _searchResults = [];
       return [];

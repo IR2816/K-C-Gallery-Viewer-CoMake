@@ -102,8 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomNav(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppTheme.darkSurfaceColor : AppTheme.lightSurfaceColor;
-    final border =
-        isDark ? AppTheme.darkBorderColor : AppTheme.lightBorderColor;
+    final border = isDark
+        ? AppTheme.darkBorderColor
+        : AppTheme.lightBorderColor;
 
     return Container(
       decoration: BoxDecoration(

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 
 /// Utility class for building organized download paths.
-/// 
+///
 /// This centralizes the logic for:
 /// - Sanitizing path components (creator names, post titles)
 /// - Formatting dates consistently (YYYY-MM-DD)
@@ -23,7 +23,7 @@ class DownloadPathBuilder {
   /// - Control characters (ASCII 0-31)
   static String sanitizePathComponent(String name) {
     if (name.isEmpty) return 'unknown';
-    
+
     var result = name
         // Replace invalid characters with underscores
         .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1F]'), '_')
@@ -33,7 +33,7 @@ class DownloadPathBuilder {
         .replaceAll(RegExp(r'\s+'), ' ')
         // Remove trailing dots and spaces (invalid on some filesystems)
         .replaceAll(RegExp(r'[. ]+$'), '');
-    
+
     return result.isEmpty ? 'unknown' : result;
   }
 
@@ -49,12 +49,12 @@ class DownloadPathBuilder {
   }
 
   /// Build the organized directory path for a download.
-  /// 
+  ///
   /// If [organizeByCreator] is true:
   ///   Returns: {baseDir}/{creator}/{YYYY-MM-DD}_{title}/
   /// Otherwise:
   ///   Returns: {baseDir}/
-  /// 
+  ///
   /// Parameters:
   /// - [baseDir]: The base downloads directory
   /// - [creatorName]: Name of the creator (will be sanitized)
@@ -77,16 +77,16 @@ class DownloadPathBuilder {
       final sanitizedCreator = sanitizePathComponent(creatorName);
       final formattedDate = formatPostDate(postDate);
       final sanitizedTitle = sanitizePathComponent(postTitle);
-      
-      final organizedPath = 
+
+      final organizedPath =
           '${baseDir.path}/$sanitizedCreator/${formattedDate}_$sanitizedTitle';
       final directory = Directory(organizedPath);
-      
+
       // Create the directory if it doesn't exist
       if (!await directory.exists()) {
         await directory.create(recursive: true);
       }
-      
+
       return directory;
     } catch (e) {
       // Fallback to base directory on error
@@ -95,10 +95,10 @@ class DownloadPathBuilder {
   }
 
   /// Build the complete save path for a file.
-  /// 
+  ///
   /// Combines the download directory with the file name,
   /// handling file conflicts by appending a numeric suffix.
-  /// 
+  ///
   /// Returns the final path as a string.
   static Future<String> buildDownloadFilePath({
     required Directory saveDir,
@@ -106,7 +106,7 @@ class DownloadPathBuilder {
   }) async {
     var finalPath = '${saveDir.path}/$fileName';
     var file = File(finalPath);
-    
+
     // Handle file conflicts
     if (await file.exists()) {
       final nameWithoutExt = fileName.contains('.')
@@ -115,15 +115,17 @@ class DownloadPathBuilder {
       final ext = fileName.contains('.')
           ? fileName.substring(fileName.lastIndexOf('.'))
           : '';
-      
+
       int counter = 1;
-      while (await File('${saveDir.path}/$nameWithoutExt($counter)$ext').exists()) {
+      while (await File(
+        '${saveDir.path}/$nameWithoutExt($counter)$ext',
+      ).exists()) {
         counter++;
       }
-      
+
       finalPath = '${saveDir.path}/$nameWithoutExt($counter)$ext';
     }
-    
+
     return finalPath;
   }
 
@@ -138,16 +140,16 @@ class DownloadPathBuilder {
   /// Extract file extension from a URL or file name.
   static String getFileExtension(String fileNameOrUrl) {
     if (!fileNameOrUrl.contains('.')) return '';
-    
+
     // Remove query parameters from URL
     final withoutQuery = fileNameOrUrl.split('?').first;
     if (!withoutQuery.contains('.')) return '';
-    
+
     return '.${withoutQuery.split('.').last.toLowerCase()}';
   }
 
   /// Build a descriptive message for the organized path.
-  /// 
+  ///
   /// Example output: "Saving to Creator Name/2025-03-20_Post Title/"
   static String buildPathDisplayMessage({
     required String creatorName,

@@ -66,7 +66,6 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
     }
   }
 
-
   bool _isImageFileName(String? filename) {
     if (filename == null) return false;
     final name = filename.toLowerCase();
@@ -112,8 +111,9 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
     return _contentTypeCache.putIfAbsent(url, () async {
       try {
         final client = TrackedHttpClientFactory.getTrackedClient();
-        final headers =
-            ApiHeaderService.getMediaHeaders(referer: 'https://kemono.cr/');
+        final headers = ApiHeaderService.getMediaHeaders(
+          referer: 'https://kemono.cr/',
+        );
         final response = await client
             .head(Uri.parse(url), headers: headers)
             .timeout(const Duration(seconds: 8));
@@ -201,10 +201,12 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor =
-        isDark ? const Color(0xFF1E1F22) : AppTheme.getBackgroundColor(context);
-    final appBarColor =
-        isDark ? const Color(0xFF2B2D31) : AppTheme.getSurfaceColor(context);
+    final bgColor = isDark
+        ? const Color(0xFF1E1F22)
+        : AppTheme.getBackgroundColor(context);
+    final appBarColor = isDark
+        ? const Color(0xFF2B2D31)
+        : AppTheme.getSurfaceColor(context);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -487,8 +489,8 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
     final thumbnailUrl = mediaItem['thumbnail_url'] as String?;
     final displayUrl =
         useThumbnails && thumbnailUrl != null && thumbnailUrl.isNotEmpty
-            ? thumbnailUrl
-            : rawUrl;
+        ? thumbnailUrl
+        : rawUrl;
 
     if (isImage) {
       Widget imageWidget() {
@@ -500,11 +502,7 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
               tag: heroTag,
               child: AspectRatio(
                 aspectRatio: _singleMediaAspectRatio,
-                child: _buildImageWithLayout(
-                  displayUrl,
-                  rawUrl,
-                  fit: imageFit,
-                ),
+                child: _buildImageWithLayout(displayUrl, rawUrl, fit: imageFit),
               ),
             ),
           ),
@@ -580,8 +578,8 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
     final thumbnailUrl = mediaItem['thumbnail_url'] as String?;
     final displayUrl =
         useThumbnails && thumbnailUrl != null && thumbnailUrl.isNotEmpty
-            ? thumbnailUrl
-            : rawUrl;
+        ? thumbnailUrl
+        : rawUrl;
 
     if (isImage) {
       Widget imageWidget() {
@@ -593,11 +591,7 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
               borderRadius: BorderRadius.circular(12),
               child: AspectRatio(
                 aspectRatio: 1,
-                child: _buildImageWithLayout(
-                  displayUrl,
-                  rawUrl,
-                  fit: imageFit,
-                ),
+                child: _buildImageWithLayout(displayUrl, rawUrl, fit: imageFit),
               ),
             ),
           ),
@@ -661,7 +655,6 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
     return _buildFileItem(attachment);
   }
 
-
   Widget _buildVideoItem(
     Map<String, dynamic> mediaItem, {
     double height = 200,
@@ -710,12 +703,10 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: height,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[900],
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[900],
-                ),
+                placeholder: (context, url) =>
+                    Container(color: Colors.grey[900]),
+                errorWidget: (context, url, error) =>
+                    Container(color: Colors.grey[900]),
               ),
             Container(
               color: Colors.black.withValues(alpha: 0.35),
@@ -846,11 +837,7 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
         return Container(
           color: Colors.grey[900],
           child: const Center(
-            child: Icon(
-              Icons.broken_image,
-              color: Colors.white54,
-              size: 32,
-            ),
+            child: Icon(Icons.broken_image, color: Colors.white54, size: 32),
           ),
         );
       },
@@ -888,7 +875,9 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
                   color: surfaceColor,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.1),
+                    color: AppTheme.getOnSurfaceColor(
+                      context,
+                    ).withValues(alpha: 0.1),
                   ),
                 ),
                 child: InkWell(
@@ -934,11 +923,7 @@ class _DiscordPostDetailScreenState extends State<DiscordPostDetailScreen> {
                           ],
                         ),
                       ),
-                      Icon(
-                        Icons.open_in_new,
-                        color: accentColor,
-                        size: 16,
-                      ),
+                      Icon(Icons.open_in_new, color: accentColor, size: 16),
                     ],
                   ),
                 ),

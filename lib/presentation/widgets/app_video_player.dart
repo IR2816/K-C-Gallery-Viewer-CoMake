@@ -142,7 +142,10 @@ class _AppVideoPlayerState extends State<AppVideoPlayer> {
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(url),
         httpHeaders: headers,
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true, allowBackgroundPlayback: false),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
       );
       _controller = controller;
 

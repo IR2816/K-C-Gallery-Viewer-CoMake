@@ -3,7 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/entities/post_bookmark.dart';
 
-enum BookmarkSortOrder { dateBookmarkedDesc, dateBookmarkedAsc, creatorAZ, ratingDesc }
+enum BookmarkSortOrder {
+  dateBookmarkedDesc,
+  dateBookmarkedAsc,
+  creatorAZ,
+  ratingDesc,
+}
 
 class BookmarkProvider with ChangeNotifier {
   static const _prefsKey = 'post_bookmarks_v1';
@@ -18,8 +23,7 @@ class BookmarkProvider with ChangeNotifier {
 
   List<PostBookmark> get bookmarks => List.unmodifiable(_bookmarks);
 
-  bool isBookmarked(String postId) =>
-      _bookmarks.any((b) => b.postId == postId);
+  bool isBookmarked(String postId) => _bookmarks.any((b) => b.postId == postId);
 
   PostBookmark? getForPost(String postId) {
     try {
@@ -53,7 +57,8 @@ class BookmarkProvider with ChangeNotifier {
     if (existing != null) return existing;
 
     // Count media
-    final mediaCount = post.attachments.length +
+    final mediaCount =
+        post.attachments.length +
         post.file.length +
         (post.embedUrl != null ? 1 : 0);
 

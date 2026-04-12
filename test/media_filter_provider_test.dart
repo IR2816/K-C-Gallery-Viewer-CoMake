@@ -41,17 +41,13 @@ void main() {
 
       test('updates allowedExtensions', () {
         const original = MediaFilterSettings();
-        final updated = original.copyWith(
-          allowedExtensions: {'jpg', 'png'},
-        );
+        final updated = original.copyWith(allowedExtensions: {'jpg', 'png'});
         expect(updated.allowedExtensions, containsAll(['jpg', 'png']));
       });
 
       test('updates blockedExtensions', () {
         const original = MediaFilterSettings();
-        final updated = original.copyWith(
-          blockedExtensions: {'gif'},
-        );
+        final updated = original.copyWith(blockedExtensions: {'gif'});
         expect(updated.blockedExtensions, contains('gif'));
       });
 

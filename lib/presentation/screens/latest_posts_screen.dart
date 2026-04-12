@@ -211,8 +211,8 @@ class _LatestPostsViewState extends State<_LatestPostsView>
                 _RecentCreatorsCarousel(
                   isExpanded: _isRecentlyViewedExpanded,
                   onToggle: () => setState(
-                    () => _isRecentlyViewedExpanded =
-                        !_isRecentlyViewedExpanded,
+                    () =>
+                        _isRecentlyViewedExpanded = !_isRecentlyViewedExpanded,
                   ),
                   onCreatorTap: _navigateToCreatorDetail,
                 ),
@@ -225,13 +225,13 @@ class _LatestPostsViewState extends State<_LatestPostsView>
                           controller: ctrl,
                           scrollController: _scrollController,
                           onPostTap: _navigateToPostDetail,
-                          onCreatorTap: (post) =>
-                              _navigateToCreatorDetail(creatorStubFromPost(post)),
+                          onCreatorTap: (post) => _navigateToCreatorDetail(
+                            creatorStubFromPost(post),
+                          ),
                           onFilterTap: _showFilterBottomSheet,
                         ),
                 ),
-                if ((ctrl.filteredPosts.isNotEmpty ||
-                        ctrl.isInSearchMode) &&
+                if ((ctrl.filteredPosts.isNotEmpty || ctrl.isInSearchMode) &&
                     !ctrl.isSwitchingSource)
                   const _PaginationBar(),
               ],
@@ -310,8 +310,7 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const SizedBox(width: 12),
                 DomainStatusBadge(
-                  apiSource:
-                      postsProvider.currentApiSource?.name ?? 'kemono',
+                  apiSource: postsProvider.currentApiSource?.name ?? 'kemono',
                   compact: true,
                 ),
               ],
@@ -321,8 +320,9 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.getSecondaryTextColor(context)
-                    .withValues(alpha: 0.8),
+                color: AppTheme.getSecondaryTextColor(
+                  context,
+                ).withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -378,11 +378,13 @@ class _FilterInfoBar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: AppTheme.getSurfaceColor(context)
-            .withValues(alpha: isDark ? 0.82 : 0.6),
+        color: AppTheme.getSurfaceColor(
+          context,
+        ).withValues(alpha: isDark ? 0.82 : 0.6),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-            color: AppTheme.getBorderColor(context, opacity: 0.85)),
+          color: AppTheme.getBorderColor(context, opacity: 0.85),
+        ),
         boxShadow: [
           BoxShadow(
             color: isDark
@@ -402,13 +404,13 @@ class _FilterInfoBar extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
-                    color: AppTheme.getCardColor(context)
-                        .withValues(alpha: isDark ? 0.75 : 0.5),
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.pillRadius),
+                    color: AppTheme.getCardColor(
+                      context,
+                    ).withValues(alpha: isDark ? 0.75 : 0.5),
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                     border: Border.all(
-                        color: AppTheme.getBorderColor(context,
-                            opacity: 0.8)),
+                      color: AppTheme.getBorderColor(context, opacity: 0.8),
+                    ),
                   ),
                   child: Row(
                     children: ['kemono', 'coomer'].map((id) {
@@ -427,19 +429,24 @@ class _FilterInfoBar extends StatelessWidget {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 9),
+                    horizontal: 10,
+                    vertical: 9,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.warningColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color:
-                            AppTheme.warningColor.withValues(alpha: 0.34)),
+                      color: AppTheme.warningColor.withValues(alpha: 0.34),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.block_rounded,
-                          size: 14, color: AppTheme.warningColor),
+                      const Icon(
+                        Icons.block_rounded,
+                        size: 14,
+                        color: AppTheme.warningColor,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '$blockedTagCount',
@@ -495,10 +502,12 @@ class _ServiceToggle extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? LinearGradient(colors: [
-                  serviceColor.withValues(alpha: 0.95),
-                  serviceColor.withValues(alpha: 0.72),
-                ])
+              ? LinearGradient(
+                  colors: [
+                    serviceColor.withValues(alpha: 0.95),
+                    serviceColor.withValues(alpha: 0.72),
+                  ],
+                )
               : null,
           borderRadius: BorderRadius.circular(AppTheme.pillRadius),
           border: Border.all(
@@ -525,8 +534,7 @@ class _ServiceToggle extends StatelessWidget {
                 ? Colors.white
                 : AppTheme.getSecondaryTextColor(context),
             fontSize: 12,
-            fontWeight:
-                isSelected ? FontWeight.w700 : FontWeight.w600,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
           ),
         ),
       ),
@@ -568,18 +576,18 @@ class _PostSearchBarState extends State<_PostSearchBar> {
     final accentColor = hasError
         ? Colors.red
         : noResults
-            ? Colors.orange
-            : AppTheme.primaryColor;
+        ? Colors.orange
+        : AppTheme.primaryColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppTheme.getCardColor(context)
-                .withValues(alpha: isDark ? 0.6 : 0.4),
+            color: AppTheme.getCardColor(
+              context,
+            ).withValues(alpha: isDark ? 0.6 : 0.4),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasQuery
@@ -603,28 +611,34 @@ class _PostSearchBarState extends State<_PostSearchBar> {
                       hasError
                           ? Icons.error_outline_rounded
                           : noResults
-                              ? Icons.search_off_rounded
-                              : Icons.search_rounded,
+                          ? Icons.search_off_rounded
+                          : Icons.search_rounded,
                       size: 18,
                       color: hasError
                           ? Colors.red.withValues(alpha: 0.8)
                           : noResults
-                              ? Colors.orange.withValues(alpha: 0.8)
-                              : AppTheme.getSecondaryTextColor(context,
-                                  opacity: 0.6),
+                          ? Colors.orange.withValues(alpha: 0.8)
+                          : AppTheme.getSecondaryTextColor(
+                              context,
+                              opacity: 0.6,
+                            ),
                     ),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: _textCtrl,
                   focusNode: _focusNode,
-                  onChanged: context.read<LatestPostsController>().onSearchQueryChanged,
+                  onChanged: context
+                      .read<LatestPostsController>()
+                      .onSearchQueryChanged,
                   onSubmitted: (q) {
                     context.read<LatestPostsController>().submitSearch(q);
                     if (_scrollCtrl != null) {
-                      _scrollCtrl!.animateTo(0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut);
+                      _scrollCtrl!.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
                     }
                     _focusNode.unfocus();
                   },
@@ -634,8 +648,10 @@ class _PostSearchBarState extends State<_PostSearchBar> {
                     contentPadding: EdgeInsets.zero,
                     isDense: true,
                     hintStyle: TextStyle(
-                      color: AppTheme.getSecondaryTextColor(context,
-                          opacity: 0.5),
+                      color: AppTheme.getSecondaryTextColor(
+                        context,
+                        opacity: 0.5,
+                      ),
                     ),
                   ),
                   style: TextStyle(
@@ -650,7 +666,9 @@ class _PostSearchBarState extends State<_PostSearchBar> {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: accentColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
@@ -676,8 +694,10 @@ class _PostSearchBarState extends State<_PostSearchBar> {
                   child: Icon(
                     Icons.close_rounded,
                     size: 18,
-                    color: AppTheme.getSecondaryTextColor(context,
-                        opacity: 0.6),
+                    color: AppTheme.getSecondaryTextColor(
+                      context,
+                      opacity: 0.6,
+                    ),
                   ),
                 ),
               ],
@@ -690,9 +710,10 @@ class _PostSearchBarState extends State<_PostSearchBar> {
             child: Text(
               ctrl.searchError ?? 'Search failed',
               style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.red,
-                  fontWeight: FontWeight.w500),
+                fontSize: 11,
+                color: Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           )
         else if (noResults)
@@ -715,8 +736,7 @@ class _PostSearchBarState extends State<_PostSearchBar> {
   // _LatestPostsViewState, used to scroll-to-top on search submit.
   ScrollController? get _scrollCtrl {
     try {
-      final state = context
-          .findAncestorStateOfType<_LatestPostsViewState>();
+      final state = context.findAncestorStateOfType<_LatestPostsViewState>();
       return state?._scrollController;
     } catch (_) {
       return null;
@@ -754,22 +774,26 @@ class _RecentCreatorsCarousel extends StatelessWidget {
                 onTap: onToggle,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.history_rounded,
-                              size: 14, color: AppTheme.primaryColor),
+                          const Icon(
+                            Icons.history_rounded,
+                            size: 14,
+                            color: AppTheme.primaryColor,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             'Recently Viewed',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.getSecondaryTextColor(
-                                  context),
+                              color: AppTheme.getSecondaryTextColor(context),
                               letterSpacing: 0.3,
                             ),
                           ),
@@ -781,8 +805,9 @@ class _RecentCreatorsCarousel extends StatelessWidget {
                         child: Icon(
                           Icons.expand_less_rounded,
                           size: 18,
-                          color: AppTheme.getSecondaryTextColor(context)
-                              .withValues(alpha: 0.6),
+                          color: AppTheme.getSecondaryTextColor(
+                            context,
+                          ).withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -797,8 +822,7 @@ class _RecentCreatorsCarousel extends StatelessWidget {
                         height: 90,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           itemCount: recents.length,
                           itemBuilder: (_, i) => _RecentCreatorItem(
                             creator: recents[i],
@@ -813,8 +837,7 @@ class _RecentCreatorsCarousel extends StatelessWidget {
               Divider(
                 height: 8,
                 thickness: 0.5,
-                color: AppTheme.getBorderColor(context)
-                    .withValues(alpha: 0.4),
+                color: AppTheme.getBorderColor(context).withValues(alpha: 0.4),
               ),
             ],
           ),
@@ -840,7 +863,8 @@ class _RecentCreatorItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.read<SettingsProvider>();
-    final isCoomer = creator.service == 'fansly' ||
+    final isCoomer =
+        creator.service == 'fansly' ||
         creator.service == 'onlyfans' ||
         creator.service == 'candfans';
     final domain = isCoomer
@@ -886,10 +910,7 @@ class _RecentCreatorItem extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: isFavorite
                           ? const LinearGradient(
-                              colors: [
-                                Color(0xFFFFD740),
-                                Color(0xFFFF8C00)
-                              ],
+                              colors: [Color(0xFFFFD740), Color(0xFFFF8C00)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             )
@@ -931,8 +952,11 @@ class _RecentCreatorItem extends StatelessWidget {
                           width: 1.5,
                         ),
                       ),
-                      child: const Icon(Icons.star_rounded,
-                          color: Colors.white, size: 9),
+                      child: const Icon(
+                        Icons.star_rounded,
+                        color: Colors.white,
+                        size: 9,
+                      ),
                     ),
                 ],
               ),
@@ -1053,7 +1077,8 @@ class _FeedContent extends StatelessWidget {
 
     if (controller.filteredPosts.isEmpty) {
       return _EmptyState(
-        isFiltered: controller.blockedTags.isNotEmpty ||
+        isFiltered:
+            controller.blockedTags.isNotEmpty ||
             controller.selectedService != 'kemono',
         onFilterTap: onFilterTap,
       );
@@ -1091,42 +1116,43 @@ class _PaginationBar extends StatelessWidget {
       label = (ctrl.isSearching && count == 0)
           ? 'Searching…'
           : ctrl.isLoadingMoreSearch
-              ? 'Loading more results…'
-              : ctrl.searchHasMore
-                  ? '$count results · scroll for more'
-                  : '$count results · all loaded';
+          ? 'Loading more results…'
+          : ctrl.searchHasMore
+          ? '$count results · scroll for more'
+          : '$count results · all loaded';
     } else {
       final total = ctrl.filteredPosts.length;
       showSpinner = ctrl.isLoadingMore;
       label = ctrl.isLoadingMore
           ? 'Loading more…'
           : (ctrl.hasMore
-              ? '$total loaded · scroll for more'
-              : '$total posts · all loaded');
+                ? '$total loaded · scroll for more'
+                : '$total posts · all loaded');
     }
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 108),
-      padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.getCardColor(context)
-                .withValues(alpha: isDark ? 0.94 : 0.8),
-            AppTheme.getElevatedSurfaceColorContext(context)
-                .withValues(alpha: isDark ? 0.94 : 0.8),
+            AppTheme.getCardColor(
+              context,
+            ).withValues(alpha: isDark ? 0.94 : 0.8),
+            AppTheme.getElevatedSurfaceColorContext(
+              context,
+            ).withValues(alpha: isDark ? 0.94 : 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-            color: AppTheme.getBorderColor(context, opacity: 0.9)),
+          color: AppTheme.getBorderColor(context, opacity: 0.9),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black
-                .withValues(alpha: isDark ? 0.25 : 0.1),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.1),
             blurRadius: 18,
             spreadRadius: -10,
             offset: const Offset(0, 10),
@@ -1140,11 +1166,7 @@ class _PaginationBar extends StatelessWidget {
             const SizedBox(
               width: 14,
               height: 14,
-              child: AppSkeleton(
-                width: 14,
-                height: 14,
-                shape: BoxShape.circle,
-              ),
+              child: AppSkeleton(width: 14, height: 14, shape: BoxShape.circle),
             ),
             const SizedBox(width: 8),
           ],
@@ -1179,8 +1201,7 @@ class _FeedBackground extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   AppTheme.getBackgroundColor(context),
-                  AppTheme.getBackgroundColor(context)
-                      .withValues(alpha: 0.98),
+                  AppTheme.getBackgroundColor(context).withValues(alpha: 0.98),
                 ],
               ),
             ),
@@ -1189,8 +1210,7 @@ class _FeedBackground extends StatelessWidget {
         Positioned(
           top: -130,
           left: -70,
-          child: _GlowOrb(
-              color: AppTheme.primaryColor.withValues(alpha: 0.10)),
+          child: _GlowOrb(color: AppTheme.primaryColor.withValues(alpha: 0.10)),
         ),
         Positioned(
           top: 20,
@@ -1218,9 +1238,7 @@ class _GlowOrb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, Colors.transparent],
-        ),
+        gradient: RadialGradient(colors: [color, Colors.transparent]),
       ),
     );
   }
@@ -1343,9 +1361,10 @@ class _ApiErrorState extends StatelessWidget {
               Text(
                 isRetrying ? 'Connecting...' : 'API Unavailable',
                 style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -1364,17 +1383,20 @@ class _ApiErrorState extends StatelessWidget {
                   onTap: onRetry,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [
-                        AppTheme.primaryColor.withValues(alpha: 0.9),
-                        AppTheme.primaryColor.withValues(alpha: 0.7),
-                      ]),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryColor.withValues(alpha: 0.9),
+                          AppTheme.primaryColor.withValues(alpha: 0.7),
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              AppTheme.primaryColor.withValues(alpha: 0.3),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -1383,15 +1405,19 @@ class _ApiErrorState extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.refresh_rounded,
-                            color: Colors.white, size: 18),
+                        Icon(
+                          Icons.refresh_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Try Again',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
@@ -1425,11 +1451,11 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeColor =
-        accentColor ?? AppTheme.getSecondaryTextColor(context);
+    final activeColor = accentColor ?? AppTheme.getSecondaryTextColor(context);
     final isActive = accentColor != null;
-    final bgColor = AppTheme.getElevatedSurfaceColorContext(context)
-        .withValues(alpha: isDark ? 0.84 : 0.6);
+    final bgColor = AppTheme.getElevatedSurfaceColorContext(
+      context,
+    ).withValues(alpha: isDark ? 0.84 : 0.6);
 
     return GestureDetector(
       onTap: onTap,
@@ -1439,10 +1465,12 @@ class _ActionButton extends StatelessWidget {
         margin: margin,
         decoration: BoxDecoration(
           gradient: isActive
-              ? LinearGradient(colors: [
-                  activeColor.withValues(alpha: 0.24),
-                  activeColor.withValues(alpha: 0.14),
-                ])
+              ? LinearGradient(
+                  colors: [
+                    activeColor.withValues(alpha: 0.24),
+                    activeColor.withValues(alpha: 0.14),
+                  ],
+                )
               : null,
           color: isActive ? null : bgColor,
           borderRadius: BorderRadius.circular(14),
@@ -1454,8 +1482,7 @@ class _ActionButton extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: (isActive ? activeColor : Colors.black).withValues(
-                alpha:
-                    isDark ? (isActive ? 0.2 : 0.25) : 0.08,
+                alpha: isDark ? (isActive ? 0.2 : 0.25) : 0.08,
               ),
               blurRadius: 12,
               spreadRadius: -6,
@@ -1464,12 +1491,15 @@ class _ActionButton extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: child ??
-              Icon(icon,
-                  size: 20,
-                  color: isActive
-                      ? activeColor
-                      : AppTheme.getSecondaryTextColor(context)),
+          child:
+              child ??
+              Icon(
+                icon,
+                size: 20,
+                color: isActive
+                    ? activeColor
+                    : AppTheme.getSecondaryTextColor(context),
+              ),
         ),
       ),
     );
@@ -1510,9 +1540,10 @@ class _FilterBottomSheet extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Text('Filter Posts',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Filter Posts',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
                 const Spacer(),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
@@ -1526,25 +1557,25 @@ class _FilterBottomSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Service',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Service',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   children: ['kemono', 'coomer'].map((service) {
-                    final isSelected =
-                        ctrl.selectedService == service;
+                    final isSelected = ctrl.selectedService == service;
                     return FilterChip(
                       label: Text(service.toUpperCase()),
                       selected: isSelected,
                       onSelected: (selected) {
                         if (selected) onServiceSelected(service);
                       },
-                      backgroundColor:
-                          Colors.grey.withValues(alpha: 0.2),
-                      selectedColor:
-                          AppTheme.primaryColor.withValues(alpha: 0.2),
+                      backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                      selectedColor: AppTheme.primaryColor.withValues(
+                        alpha: 0.2,
+                      ),
                       labelStyle: TextStyle(
                         color: isSelected
                             ? AppTheme.primaryColor
@@ -1563,15 +1594,19 @@ class _FilterBottomSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Blocked Tags',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Blocked Tags',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       '${ctrl.blockedTags.length} tags are blocked',
                       style: TextStyle(
-                          color: AppTheme.getOnSurfaceColor(context)),
+                        color: AppTheme.getOnSurfaceColor(context),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Expanded(
@@ -1586,20 +1621,22 @@ class _FilterBottomSheet extends StatelessWidget {
                           itemBuilder: (_, i) {
                             final tag = ctrl.blockedTags[i];
                             return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 2),
+                              padding: const EdgeInsets.symmetric(vertical: 2),
                               child: Row(
                                 children: [
-                                  Icon(Icons.block,
-                                      size: 16,
-                                      color: Colors.red[400]),
+                                  Icon(
+                                    Icons.block,
+                                    size: 16,
+                                    color: Colors.red[400],
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       tag,
                                       style: TextStyle(
                                         color: AppTheme.getOnSurfaceColor(
-                                            context),
+                                          context,
+                                        ),
                                         fontSize: 14,
                                       ),
                                     ),
@@ -1608,9 +1645,11 @@ class _FilterBottomSheet extends StatelessWidget {
                                     onPressed: () => context
                                         .read<TagFilterProvider>()
                                         .removeFromBlacklist(tag),
-                                    icon: Icon(Icons.close,
-                                        size: 16,
-                                        color: Colors.grey[600]),
+                                    icon: Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.grey[600],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1665,23 +1704,28 @@ class _DomainTransitionOverlayState extends State<_DomainTransitionOverlay>
     );
     _fade = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.0, 0.3, curve: Curves.easeIn)),
+        parent: _ctrl,
+        curve: const Interval(0.0, 0.3, curve: Curves.easeIn),
+      ),
     );
     _scale = Tween<double>(begin: 0.5, end: 1.2).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.0, 0.5, curve: Curves.elasticOut)),
+        parent: _ctrl,
+        curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+      ),
     );
     _rotation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.2, 0.8, curve: Curves.easeInOut)),
+        parent: _ctrl,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeInOut),
+      ),
     );
     _ctrl.forward().then(
-          (_) => Future.delayed(const Duration(milliseconds: 500),
-              widget.onAnimationComplete),
-        );
+      (_) => Future.delayed(
+        const Duration(milliseconds: 500),
+        widget.onAnimationComplete,
+      ),
+    );
   }
 
   @override
@@ -1722,8 +1766,7 @@ class _DomainTransitionOverlayState extends State<_DomainTransitionOverlay>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            AppTheme.primaryColor.withValues(alpha: 0.3),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -1736,9 +1779,13 @@ class _DomainTransitionOverlayState extends State<_DomainTransitionOverlay>
                         icon: _iconFor(widget.fromDomain),
                         opacity: Tween<double>(begin: 1, end: 0).animate(
                           CurvedAnimation(
-                              parent: _ctrl,
-                              curve: const Interval(0.0, 0.4,
-                                  curve: Curves.easeOut)),
+                            parent: _ctrl,
+                            curve: const Interval(
+                              0.0,
+                              0.4,
+                              curve: Curves.easeOut,
+                            ),
+                          ),
                         ),
                       ),
                       _DomainLabel(
@@ -1746,24 +1793,33 @@ class _DomainTransitionOverlayState extends State<_DomainTransitionOverlay>
                         icon: _iconFor(widget.toDomain),
                         opacity: Tween<double>(begin: 0, end: 1).animate(
                           CurvedAnimation(
-                              parent: _ctrl,
-                              curve: const Interval(0.6, 1.0,
-                                  curve: Curves.easeIn)),
+                            parent: _ctrl,
+                            curve: const Interval(
+                              0.6,
+                              1.0,
+                              curve: Curves.easeIn,
+                            ),
+                          ),
                         ),
                       ),
                       Positioned.fill(
                         child: FadeTransition(
-                          opacity:
-                              Tween<double>(begin: 0, end: 1).animate(
+                          opacity: Tween<double>(begin: 0, end: 1).animate(
                             CurvedAnimation(
-                                parent: _ctrl,
-                                curve: const Interval(0.3, 0.7,
-                                    curve: Curves.easeInOut)),
+                              parent: _ctrl,
+                              curve: const Interval(
+                                0.3,
+                                0.7,
+                                curve: Curves.easeInOut,
+                              ),
+                            ),
                           ),
                           child: Center(
-                            child: Icon(Icons.arrow_forward,
-                                color: Colors.white.withValues(alpha: 0.8),
-                                size: 24),
+                            child: Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white.withValues(alpha: 0.8),
+                              size: 24,
+                            ),
                           ),
                         ),
                       ),

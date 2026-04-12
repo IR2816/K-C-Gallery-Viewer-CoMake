@@ -143,8 +143,7 @@ void main() {
         expect(provider.isPostBlocked(['NSFW']), isTrue);
       });
 
-      test('returns false when blacklist is empty regardless of post tags',
-          () {
+      test('returns false when blacklist is empty regardless of post tags', () {
         expect(provider.isPostBlocked(['nsfw', 'explicit']), isFalse);
       });
 
@@ -164,9 +163,18 @@ void main() {
       test('filters out posts with blocked tags', () async {
         await provider.addToBlacklist('nsfw');
         final posts = [
-          {'title': 'safe post', 'tags': ['art']},
-          {'title': 'blocked post', 'tags': ['nsfw']},
-          {'title': 'another safe', 'tags': ['photo']},
+          {
+            'title': 'safe post',
+            'tags': ['art'],
+          },
+          {
+            'title': 'blocked post',
+            'tags': ['nsfw'],
+          },
+          {
+            'title': 'another safe',
+            'tags': ['photo'],
+          },
         ];
         final result = provider.filterPosts(
           posts,
@@ -182,8 +190,12 @@ void main() {
       test('returns empty list when all posts are blocked', () async {
         await provider.addToBlacklist('nsfw');
         final posts = [
-          {'tags': ['nsfw']},
-          {'tags': ['nsfw', 'explicit']},
+          {
+            'tags': ['nsfw'],
+          },
+          {
+            'tags': ['nsfw', 'explicit'],
+          },
         ];
         final result = provider.filterPosts(
           posts,
@@ -196,7 +208,9 @@ void main() {
     group('getBlockedCount', () {
       test('returns 0 when blacklist is empty', () {
         final posts = [
-          {'tags': ['nsfw']},
+          {
+            'tags': ['nsfw'],
+          },
         ];
         expect(
           provider.getBlockedCount(
@@ -210,9 +224,15 @@ void main() {
       test('counts blocked posts correctly', () async {
         await provider.addToBlacklist('nsfw');
         final posts = [
-          {'tags': ['art']},
-          {'tags': ['nsfw']},
-          {'tags': ['nsfw', 'photo']},
+          {
+            'tags': ['art'],
+          },
+          {
+            'tags': ['nsfw'],
+          },
+          {
+            'tags': ['nsfw', 'photo'],
+          },
         ];
         expect(
           provider.getBlockedCount(

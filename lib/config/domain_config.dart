@@ -30,29 +30,17 @@ class DomainConfig {
 
   // Get API base URL for given domain
   static String getApiBaseUrl(String domain) {
-    if (domain.contains('coomer')) {
-      return 'https://$domain/api';
-    } else {
-      return 'https://$domain/api';
-    }
+    return 'https://$domain/api';
   }
 
   // Get media base URL for given domain
   static String getMediaBaseUrl(String domain) {
-    if (domain.contains('coomer')) {
-      return 'https://n4.$domain';
-    } else {
-      return 'https://n4.$domain';
-    }
+    return 'https://n4.$domain';
   }
 
   // Get thumbnail base URL for given domain
   static String getThumbnailBaseUrl(String domain) {
-    if (domain.contains('coomer')) {
-      return 'https://img.$domain/thumbnail/data';
-    } else {
-      return 'https://img.$domain/thumbnail/data';
-    }
+    return 'https://img.$domain/thumbnail/data';
   }
 
   // Get all API domains for fallback
@@ -94,17 +82,15 @@ class DomainConfig {
 
   // Get domain suggestions for user
   static List<String> getDomainSuggestions() {
-    return [
-      'kemono.cr',
-      'coomer.st',
-    ];
+    return ['kemono.cr', 'coomer.st'];
   }
 
   // Get HTTP headers for CDN requests based on domain
   static Map<String, String> getCdnHeaders(String domain) {
     return {
       'Accept': 'image/*, video/*, */*',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Referer': 'https://$domain/',
       'Origin': 'https://$domain',
       'Accept-Encoding': 'gzip, deflate',

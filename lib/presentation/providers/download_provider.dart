@@ -102,8 +102,8 @@ class DownloadProvider extends ChangeNotifier {
   DownloadProvider({
     required DownloadManager downloadManager,
     DataUsageTracker? dataUsageTracker,
-  })  : _downloadManager = downloadManager,
-        _dataUsageTracker = dataUsageTracker;
+  }) : _downloadManager = downloadManager,
+       _dataUsageTracker = dataUsageTracker;
 
   List<DownloadItem> get downloads => List.unmodifiable(_downloads);
 
@@ -167,8 +167,7 @@ class DownloadProvider extends ChangeNotifier {
       // Browser-like headers; use the referer provided at queue time so that
       // both Kemono (kemono.cr) and Coomer (coomer.st) CDN anti-hotlink checks
       // pass correctly.
-      final effectiveReferer =
-          download.referer ?? _defaultReferer;
+      final effectiveReferer = download.referer ?? _defaultReferer;
       final browserHeaders = {
         "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -219,7 +218,9 @@ class DownloadProvider extends ChangeNotifier {
       );
 
       final fileSize = download.savePath != null
-          ? await File(download.savePath!).length().catchError((_) => download.totalBytes)
+          ? await File(
+              download.savePath!,
+            ).length().catchError((_) => download.totalBytes)
           : download.totalBytes;
       final completionDelta = fileSize - trackedBytes;
       if (completionDelta > 0) {

@@ -80,9 +80,21 @@ class PostModel extends Post {
     debugPrint('=== END MEDIA DEBUG ===');
 
     // Safe parsing with type checking
-    final added = JsonFieldUtils.dateTime(postData, 'added', defaultValue: DateTime.now());
-    final published = JsonFieldUtils.dateTime(postData, 'published', defaultValue: DateTime.now());
-    final edited = JsonFieldUtils.dateTime(postData, 'edited', defaultValue: DateTime.now());
+    final added = JsonFieldUtils.dateTime(
+      postData,
+      'added',
+      defaultValue: DateTime.now(),
+    );
+    final published = JsonFieldUtils.dateTime(
+      postData,
+      'published',
+      defaultValue: DateTime.now(),
+    );
+    final edited = JsonFieldUtils.dateTime(
+      postData,
+      'edited',
+      defaultValue: DateTime.now(),
+    );
     final embed = JsonFieldUtils.map(postData, 'embed');
 
     return PostModel(
@@ -101,7 +113,7 @@ class PostModel extends Post {
           defaultValue: JsonFieldUtils.string(postData, 'text'),
         ),
       ),
-        embedUrl: JsonFieldUtils.string(embed, 'url').isNotEmpty
+      embedUrl: JsonFieldUtils.string(embed, 'url').isNotEmpty
           ? JsonFieldUtils.string(embed, 'url')
           : null,
       sharedFile: JsonFieldUtils.string(postData, 'shared_file'),
@@ -121,11 +133,7 @@ class PostModel extends Post {
                     )
                     .toList() ??
                 [],
-      tags: JsonFieldUtils.list(
-        postData,
-        'tags',
-        (e) => e.toString(),
-      ),
+      tags: JsonFieldUtils.list(postData, 'tags', (e) => e.toString()),
       saved: JsonFieldUtils.boolValue(postData, 'saved'),
     );
   }

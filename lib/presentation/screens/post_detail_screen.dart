@@ -395,9 +395,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                _currentPost.title.isNotEmpty
-                    ? _currentPost.title
-                    : 'Post',
+                _currentPost.title.isNotEmpty ? _currentPost.title : 'Post',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 17,
@@ -664,8 +662,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Remove', style: TextStyle(color: Colors.red)),
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -673,9 +670,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     if (confirmed == true) {
       await provider.removeBookmark(_currentPost.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bookmark removed')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Bookmark removed')));
       }
     }
   }
@@ -809,7 +806,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                 final settings = ctx.read<SettingsProvider>();
                 final kemonoDomain = settings.cleanKemonoDomain;
                 final coomerDomain = settings.cleanCoomerDomain;
-                
+
                 final thumbnailUrl = _currentPost.getThumbnailUrl(
                   _activeApiSource,
                   kemonoDomain: kemonoDomain,
@@ -1744,7 +1741,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             videoName: mediaItem['name'] ?? 'Video',
             apiSource: _activeApiSource.name,
             postCreator: _currentPost.user,
-            postDate: DownloadPathBuilder.formatPostDate(_currentPost.published),
+            postDate: DownloadPathBuilder.formatPostDate(
+              _currentPost.published,
+            ),
             postTitle: _currentPost.title,
           ),
         ),
@@ -1757,9 +1756,15 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             mediaItems: _collectAndSortMedia(),
             initialIndex: index,
             apiSource: _activeApiSource,
-            postCreator: DownloadPathBuilder.sanitizePathComponent(_currentPost.user),
-            postDate: DownloadPathBuilder.formatPostDate(_currentPost.published),
-            postTitle: DownloadPathBuilder.sanitizePathComponent(_currentPost.title),
+            postCreator: DownloadPathBuilder.sanitizePathComponent(
+              _currentPost.user,
+            ),
+            postDate: DownloadPathBuilder.formatPostDate(
+              _currentPost.published,
+            ),
+            postTitle: DownloadPathBuilder.sanitizePathComponent(
+              _currentPost.title,
+            ),
           ),
         ),
       );
@@ -3409,8 +3414,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     // Strip leading slash, then strip any existing 'data/' prefix so that
     // API paths like '/data/ab/cd/file.jpg' don't produce /data/data/...
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    final strippedPath =
-        cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
+    final strippedPath = cleanPath.startsWith('data/')
+        ? cleanPath.substring(5)
+        : cleanPath;
 
     return '$baseUrl/$strippedPath';
   }
@@ -3624,7 +3630,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             runSpacing: 6,
             children: _currentPost.tags.map((tag) {
               final tagColor =
-                  _tagColorPalette[tag.hashCode.abs() % _tagColorPalette.length];
+                  _tagColorPalette[tag.hashCode.abs() %
+                      _tagColorPalette.length];
               final accent = Theme.of(context).brightness == Brightness.dark
                   ? tagColor
                   : _getLightModeColor(tagColor);
@@ -4215,7 +4222,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       for (final item in allMediaItems) {
         try {
           final url = item['url'] as String;
-          String fileName = (item['name'] as String?) ??
+          String fileName =
+              (item['name'] as String?) ??
               url
                   .split('/')
                   .lastWhere(

@@ -44,12 +44,15 @@ class _DomainStatusBadgeState extends State<DomainStatusBadge>
 
     final baseColor = _colorForSource(widget.apiSource);
     _previousColor = baseColor;
-    _colorAnimation = ColorTween(begin: baseColor, end: baseColor)
-        .animate(_controller);
+    _colorAnimation = ColorTween(
+      begin: baseColor,
+      end: baseColor,
+    ).animate(_controller);
 
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.08,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -63,9 +66,10 @@ class _DomainStatusBadgeState extends State<DomainStatusBadge>
 
   void _triggerAnimation(Color from, Color to) {
     _previousColor = from;
-    _colorAnimation = ColorTween(begin: from, end: to).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _colorAnimation = ColorTween(
+      begin: from,
+      end: to,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.forward(from: 0);
   }
 
@@ -101,9 +105,7 @@ class _DomainStatusBadgeState extends State<DomainStatusBadge>
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(widget.compact ? 6 : 8),
-                    border: Border.all(
-                      color: color.withValues(alpha: 0.5),
-                    ),
+                    border: Border.all(color: color.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

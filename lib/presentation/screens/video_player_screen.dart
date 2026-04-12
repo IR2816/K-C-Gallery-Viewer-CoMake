@@ -360,7 +360,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
       if (!mounted) return;
       final settings = context.read<SettingsProvider>();
-      
+
       // Build organized directory if we have post info
       Directory saveDir = downloadsDirectory;
       if (settings.organizeDownloads &&
@@ -382,7 +382,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       );
 
       if (!mounted) return;
-      
+
       // Route through DownloadProvider so progress shows in Download Manager
       context.read<DownloadProvider>().addDownload(
         name: fileName,
@@ -391,7 +391,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         creatorName: widget.postCreator,
         service: widget.apiSource,
       );
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Download started: $fileName — check Download Manager'),

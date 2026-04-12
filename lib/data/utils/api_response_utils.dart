@@ -4,7 +4,8 @@ class ApiResponseUtils {
   /// Detects whether the given response body looks like HTML instead of JSON.
   static bool isHtmlResponse(String body) {
     final trimmed = body.trimLeft();
-    return trimmed.startsWith('<!') || trimmed.toLowerCase().startsWith('<html');
+    return trimmed.startsWith('<!') ||
+        trimmed.toLowerCase().startsWith('<html');
   }
 
   /// Unwraps common list-containing shapes into a flat list.

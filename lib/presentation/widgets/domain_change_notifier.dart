@@ -67,9 +67,10 @@ class _DomainChangeNotifierState extends State<DomainChangeNotifier>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
 
@@ -96,7 +97,8 @@ class _DomainChangeNotifierState extends State<DomainChangeNotifier>
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: MediaQuery.of(context).viewInsets.bottom +
+      bottom:
+          MediaQuery.of(context).viewInsets.bottom +
           MediaQuery.of(context).padding.bottom +
           16,
       left: 16,
@@ -115,9 +117,7 @@ class _DomainChangeNotifierState extends State<DomainChangeNotifier>
                 color: Theme.of(context).brightness == Brightness.dark
                     ? const Color(0xFF1C1C2E)
                     : Colors.white,
-                border: Border.all(
-                  color: _accentColor.withValues(alpha: 0.4),
-                ),
+                border: Border.all(color: _accentColor.withValues(alpha: 0.4)),
                 boxShadow: [
                   BoxShadow(
                     color: _accentColor.withValues(alpha: 0.2),
@@ -152,8 +152,9 @@ class _DomainChangeNotifierState extends State<DomainChangeNotifier>
                               strikethrough: true,
                             ),
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
                               child: Icon(
                                 Icons.arrow_forward_rounded,
                                 size: 12,
@@ -209,8 +210,7 @@ class _DomainChangeNotifierState extends State<DomainChangeNotifier>
     );
   }
 
-  Widget _domainChip(String domain, Color color,
-      {bool strikethrough = false}) {
+  Widget _domainChip(String domain, Color color, {bool strikethrough = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

@@ -59,10 +59,7 @@ class _DefaultErrorState extends StatelessWidget {
           Text(message, textAlign: TextAlign.center),
           if (onRetry != null) ...[
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ],
       ),

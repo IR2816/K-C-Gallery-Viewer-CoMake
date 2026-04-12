@@ -43,19 +43,27 @@ class OptimizedMediaLoader {
 
     if (isHighQuality && !isThumbnail) {
       // Use high-quality data domain
-      final cdnDomain = finalDomain.contains('coomer') ? 'n4.$finalDomain' : 'n4.$finalDomain';
+      final cdnDomain = finalDomain.contains('coomer')
+          ? 'n4.$finalDomain'
+          : 'n4.$finalDomain';
       return 'https://$cdnDomain/data/$cleanPath';
     }
 
     if (isThumbnail || isLowQuality) {
       // Use thumbnail domain
-      final thumbDomain = finalDomain.contains('coomer') ? 'img.$finalDomain' : 'img.$finalDomain';
-      final stripped = cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
+      final thumbDomain = finalDomain.contains('coomer')
+          ? 'img.$finalDomain'
+          : 'img.$finalDomain';
+      final stripped = cleanPath.startsWith('data/')
+          ? cleanPath.substring(5)
+          : cleanPath;
       return 'https://$thumbDomain/thumbnail/data/$stripped';
     }
 
     // Default: medium quality (usually n4 subdomain)
-    final cdnDomain = finalDomain.contains('coomer') ? 'n4.$finalDomain' : 'n4.$finalDomain';
+    final cdnDomain = finalDomain.contains('coomer')
+        ? 'n4.$finalDomain'
+        : 'n4.$finalDomain';
     final url = 'https://$cdnDomain/data/$cleanPath';
 
     AppLogger.mediaUrl(
@@ -86,7 +94,8 @@ class OptimizedMediaLoader {
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
 
     // Determine if coomer based on apiSource or domain
-    final isCoomer = apiSource == 'coomer' || (domain != null && domain.contains('coomer'));
+    final isCoomer =
+        apiSource == 'coomer' || (domain != null && domain.contains('coomer'));
     final finalDomain = domain ?? (isCoomer ? 'coomer.st' : 'kemono.cr');
 
     // Return all possible URL formats except the first one (already tried)
@@ -242,7 +251,7 @@ class _FallbackImageState extends State<FallbackImage> {
     if (widget.domain != null && widget.domain!.isNotEmpty) {
       return DomainConfig.getCdnHeaders(widget.domain!);
     }
-    
+
     // Fallback to apiSource-based headers
     final referer = widget.apiSource == 'coomer'
         ? 'https://coomer.st/'

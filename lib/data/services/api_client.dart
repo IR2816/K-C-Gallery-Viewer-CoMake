@@ -67,7 +67,7 @@ class ApiClient {
   String? get lastSuccessfulDomain => _lastSuccessfulDomain;
 
   ApiClient({http.Client? client})
-      : client = client ?? TrackedHttpClientFactory.getTrackedClient();
+    : client = client ?? TrackedHttpClientFactory.getTrackedClient();
 
   Future<List<dynamic>> getJsonList({
     required String endpoint,
@@ -88,7 +88,7 @@ class ApiClient {
     final response = await _tryWithFallback(
       endpoint: endpoint,
       apiSource: apiSource,
-    service: service,
+      service: service,
       headers: headers,
       headerVariants: headerVariants,
     );
@@ -148,7 +148,7 @@ class ApiClient {
     final response = await _tryWithFallback(
       endpoint: endpoint,
       apiSource: apiSource,
-    service: service,
+      service: service,
       headers: headers,
       headerVariants: headerVariants,
     );
@@ -191,7 +191,8 @@ class ApiClient {
     Map<String, String>? headers,
     List<Map<String, String>>? headerVariants,
   }) async {
-    final cacheKey = '${apiSource.name}_${service ?? 'nosvc'}_${endpoint}_${headerVariants?.length ?? 0}';
+    final cacheKey =
+        '${apiSource.name}_${service ?? 'nosvc'}_${endpoint}_${headerVariants?.length ?? 0}';
 
     final inFlight = _cache.getInFlight(cacheKey);
     if (inFlight != null) {
@@ -292,13 +293,7 @@ class ApiClient {
     }
 
     return headerVariants
-        .map(
-          (variant) => {
-            ...defaultHeaders,
-            ...variant,
-            ...?headers,
-          },
-        )
+        .map((variant) => {...defaultHeaders, ...variant, ...?headers})
         .toList();
   }
 
@@ -310,7 +305,7 @@ class ApiClient {
     return domains.isNotEmpty
         ? domains
         : (apiSource == ApiSource.coomer
-            ? DomainConfig.coomerApiDomains
-            : DomainConfig.kemonoApiDomains);
+              ? DomainConfig.coomerApiDomains
+              : DomainConfig.kemonoApiDomains);
   }
 }

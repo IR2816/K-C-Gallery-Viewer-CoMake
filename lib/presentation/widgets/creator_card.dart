@@ -47,9 +47,10 @@ class _CreatorCardState extends State<CreatorCard>
       duration: const Duration(milliseconds: 180),
       vsync: this,
     );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
-    );
+    _scaleAnim = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
   }
 
   @override
@@ -59,7 +60,8 @@ class _CreatorCardState extends State<CreatorCard>
   }
 
   String _avatarUrl() {
-    final domain = (widget.creator.service == 'fansly' ||
+    final domain =
+        (widget.creator.service == 'fansly' ||
             widget.creator.service == 'onlyfans' ||
             widget.creator.service == 'candfans')
         ? 'https://coomer.st'
@@ -82,8 +84,9 @@ class _CreatorCardState extends State<CreatorCard>
 
     return Consumer<CreatorsProvider>(
       builder: (context, provider, _) {
-        final isFavorite =
-            provider.favoriteCreators.contains(widget.creator.id);
+        final isFavorite = provider.favoriteCreators.contains(
+          widget.creator.id,
+        );
 
         return GestureDetector(
           onTapDown: (_) => _animController.forward(),
@@ -92,14 +95,14 @@ class _CreatorCardState extends State<CreatorCard>
           onTap: widget.onTap,
           child: AnimatedBuilder(
             animation: _scaleAnim,
-            builder: (context, child) => Transform.scale(
-              scale: _scaleAnim.value,
-              child: child,
-            ),
+            builder: (context, child) =>
+                Transform.scale(scale: _scaleAnim.value, child: child),
             child: Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.darkCardColor : AppTheme.lightCardColor,
+                color: isDark
+                    ? AppTheme.darkCardColor
+                    : AppTheme.lightCardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isDark
@@ -158,8 +161,9 @@ class _CreatorCardState extends State<CreatorCard>
                                     color: AppTheme.warningColor.withValues(
                                       alpha: 0.15,
                                     ),
-                                    borderRadius:
-                                        BorderRadius.circular(AppTheme.pillRadius),
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.pillRadius,
+                                    ),
                                   ),
                                   child: const Text(
                                     'EXP',
@@ -280,8 +284,9 @@ class _CreatorCardState extends State<CreatorCard>
                           boxShadow: isFavorite
                               ? [
                                   BoxShadow(
-                                    color:
-                                        AppTheme.primaryColor.withValues(alpha: 0.3),
+                                    color: AppTheme.primaryColor.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 10,
                                     spreadRadius: -6,
                                     offset: const Offset(0, 4),

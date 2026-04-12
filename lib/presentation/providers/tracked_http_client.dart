@@ -31,7 +31,9 @@ class TrackedHttpClient extends http.BaseClient {
           },
           handleDone: (sink) {
             final fallbackBytes = response.contentLength ?? 0;
-            final bytesToTrack = streamedBytes > 0 ? streamedBytes : fallbackBytes;
+            final bytesToTrack = streamedBytes > 0
+                ? streamedBytes
+                : fallbackBytes;
             if (bytesToTrack > 0) {
               _tracker.trackUsage(bytesToTrack, category: category);
             }
@@ -144,12 +146,17 @@ class TrackedHttpClientFactory {
     final tracker = _tracker;
     if (tracker == null) {
       if (kDebugMode) {
-        debugPrint('DataUsageTracker not initialized. Using regular HTTP client.');
+        debugPrint(
+          'DataUsageTracker not initialized. Using regular HTTP client.',
+        );
       }
       return RetryHttpClient(http.Client());
     }
 
-    _cachedClient ??= TrackedHttpClient(RetryHttpClient(http.Client()), tracker);
+    _cachedClient ??= TrackedHttpClient(
+      RetryHttpClient(http.Client()),
+      tracker,
+    );
     return _cachedClient!;
   }
 
@@ -190,10 +197,7 @@ class ManualUsageTracker {
   void trackThumbnailLoad(String url, int bytes) {
     _tracker.trackUsage(
       bytes,
-      category: DataUsageTracker.categorizeRequest(
-        url,
-        contentType: 'image/*',
-      ),
+      category: DataUsageTracker.categorizeRequest(url, contentType: 'image/*'),
     );
   }
 

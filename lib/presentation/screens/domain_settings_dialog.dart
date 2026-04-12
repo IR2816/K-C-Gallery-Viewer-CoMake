@@ -72,11 +72,13 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
 
   void _validateInputs() {
     setState(() {
-      _kemonoValid = _kemonoCtrl.text.isEmpty ||
+      _kemonoValid =
+          _kemonoCtrl.text.isEmpty ||
           DomainConfig.isValidDomain(
             DomainConfig.cleanDomain(_kemonoCtrl.text),
           );
-      _coomerValid = _coomerCtrl.text.isEmpty ||
+      _coomerValid =
+          _coomerCtrl.text.isEmpty ||
           DomainConfig.isValidDomain(
             DomainConfig.cleanDomain(_coomerCtrl.text),
           );
@@ -154,10 +156,13 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
       child: FadeTransition(
         opacity: _fadeAnim,
         child: Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 40,
+          ),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -171,7 +176,9 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                          color: const Color(
+                            0xFF6366F1,
+                          ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -246,7 +253,8 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
                       ),
                       const SizedBox(width: 8),
                       AnimatedOpacity(
-                        opacity: (_hasChanges &&
+                        opacity:
+                            (_hasChanges &&
                                 _kemonoValid &&
                                 _coomerValid &&
                                 !_isSaving)
@@ -254,7 +262,8 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
                             : 0.4,
                         duration: const Duration(milliseconds: 200),
                         child: ElevatedButton.icon(
-                          onPressed: (_hasChanges &&
+                          onPressed:
+                              (_hasChanges &&
                                   _kemonoValid &&
                                   _coomerValid &&
                                   !_isSaving)
@@ -302,7 +311,8 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
     final initialValue = label.toLowerCase().contains('kemono')
         ? _initialKemonoDomain
         : _initialCoomerDomain;
-    final isChanged = controller.text.trim() != initialValue &&
+    final isChanged =
+        controller.text.trim() != initialValue &&
         controller.text.trim().isNotEmpty;
 
     return Column(
@@ -324,8 +334,7 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
             if (isChanged)
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
@@ -350,41 +359,43 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
             hintText: hint,
             hintStyle: const TextStyle(fontSize: 13),
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
+              horizontal: 14,
+              vertical: 12,
+            ),
             filled: true,
             fillColor: color.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                  color: color.withValues(alpha: 0.3)),
+              borderSide: BorderSide(color: color.withValues(alpha: 0.3)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                  color: color.withValues(alpha: 0.25)),
+              borderSide: BorderSide(color: color.withValues(alpha: 0.25)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  BorderSide(color: color, width: 1.5),
+              borderSide: BorderSide(color: color, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                  color: Colors.red, width: 1.5),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
             suffixIcon: controller.text.isNotEmpty
                 ? AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
                     child: isValid
-                        ? Icon(Icons.check_circle_rounded,
+                        ? Icon(
+                            Icons.check_circle_rounded,
                             key: const ValueKey('valid'),
                             color: Colors.green,
-                            size: 18)
-                        : const Icon(Icons.cancel_rounded,
+                            size: 18,
+                          )
+                        : const Icon(
+                            Icons.cancel_rounded,
                             key: ValueKey('invalid'),
                             color: Colors.red,
-                            size: 18),
+                            size: 18,
+                          ),
                   )
                 : null,
             errorText: !isValid ? 'Invalid domain format' : null,
@@ -425,13 +436,11 @@ class _DomainSettingsDialogState extends State<DomainSettingsDialog>
                 _validateInputs();
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                      color: color.withValues(alpha: 0.3)),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   d,

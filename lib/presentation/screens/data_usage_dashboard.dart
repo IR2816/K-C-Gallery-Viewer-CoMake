@@ -16,21 +16,9 @@ class DataUsageDashboard extends StatefulWidget {
 
 class _DataUsageDashboardState extends State<DataUsageDashboard> {
   static const double _minThresholdGap = 1.0;
-  Timer? _ticker;
 
   @override
-  void initState() {
-    super.initState();
-    _ticker = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
+  Widget build(BuildContext context) {
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +59,6 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
   }
 
   Widget _buildCurrentSessionCard(DataUsageTracker tracker) {
-    final sessionDuration = DateTime.now().difference(tracker.sessionStart);
     final sessionUsageMB = tracker.getUsageInMB(tracker.sessionUsage);
 
     return Container(
@@ -138,13 +125,7 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '${sessionDuration.inMinutes}m ${sessionDuration.inSeconds % 60}s',
-                    style: AppTheme.bodyStyle.copyWith(
-                      color: AppTheme.getOnSurfaceColor(context),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  _SessionClock(sessionStart: tracker.sessionStart),
                   Text(
                     'Session duration',
                     style: AppTheme.captionStyle.copyWith(
@@ -893,5 +874,64 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
         (warningThreshold.roundToDouble() + _minThresholdGap).clamp(51.0, 99.0);
     final normalizedValue = value.roundToDouble();
     return normalizedValue < minAllowed ? minAllowed : normalizedValue;
+  }
+}
+
+/// A self-contained widget that displays a live mm:ss session duration counter.
+///
+/// It owns its own 1-second [Timer] so only this widget rebuilds every second,
+/// leaving the rest of the dashboard driven purely by [DataUsageTracker] change
+/// notifications.
+class _SessionClock extends StatefulWidget {
+  final DateTime sessionStart;
+
+  const _SessionClock({required this.sessionStart});
+
+  @override
+  State<_SessionClock> createState() => _SessionClockState();
+}
+
+class _SessionClockState extends State<_SessionClock> {
+  late Timer _timer;
+  late Duration _elapsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _elapsed = DateTime.now().difference(widget.sessionStart);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _elapsed = DateTime.now().difference(widget.sessionStart);
+        });
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(_SessionClock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sessionStart != widget.sessionStart) {
+      _elapsed = DateTime.now().difference(widget.sessionStart);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = _elapsed.inMinutes;
+    final seconds = _elapsed.inSeconds % 60;
+    return Text(
+      '${minutes}m ${seconds}s',
+      style: AppTheme.bodyStyle.copyWith(
+        color: AppTheme.getOnSurfaceColor(context),
+        fontWeight: FontWeight.w500,
+      ),
+    );
   }
 }

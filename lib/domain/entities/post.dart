@@ -57,9 +57,11 @@ class Post {
     final baseUrl = 'https://img.$domain/thumbnail/data';
 
     if (attachments.isNotEmpty || file.isNotEmpty) {
-      final firstMedia = attachments.isNotEmpty ? attachments.first : file.first;
+      final firstMedia = attachments.isNotEmpty
+          ? attachments.first
+          : file.first;
       final originalPath = firstMedia.path;
-      
+
       if (originalPath.startsWith('http')) {
         // If it's an external URL and we force thumbnail, we might not have one
         // unless it's a known re-hosted pattern. For now, return original if not forced.
@@ -73,7 +75,7 @@ class Post {
           : originalPath;
       final stripped = clean.startsWith('data/') ? clean.substring(5) : clean;
       final fullUrl = '$baseUrl/$stripped';
-      
+
       return fullUrl;
     }
     return null;
@@ -97,7 +99,8 @@ class Post {
     if (isHighQuality) {
       // Return original URL
       if (file.isNotEmpty) return _buildFullUrl(file.first.path, service);
-      if (attachments.isNotEmpty) return _buildFullUrl(attachments.first.path, service);
+      if (attachments.isNotEmpty)
+        return _buildFullUrl(attachments.first.path, service);
       return null;
     }
 
@@ -116,14 +119,16 @@ class Post {
 
     // Otherwise fallback to original for medium/unknown quality
     if (file.isNotEmpty) return _buildFullUrl(file.first.path, service);
-    if (attachments.isNotEmpty) return _buildFullUrl(attachments.first.path, service);
+    if (attachments.isNotEmpty)
+      return _buildFullUrl(attachments.first.path, service);
 
     return null;
   }
 
   String _buildFullUrl(String path, String service) {
     if (path.startsWith('http')) return path;
-    final domain = (service == 'onlyfans' || service == 'fansly' || service == 'candfans')
+    final domain =
+        (service == 'onlyfans' || service == 'fansly' || service == 'candfans')
         ? 'n4.coomer.st'
         : 'n4.kemono.cr';
     final cleanPath = path.startsWith('/') ? path : '/$path';

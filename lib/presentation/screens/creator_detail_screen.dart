@@ -73,7 +73,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   final Map<String, Future<Size>> _imageSizeCache = {};
   // Track ImageStreamListeners so they can be removed in dispose() to avoid leaks.
   final List<({ImageStream stream, ImageStreamListener listener})>
-      _imageStreamListeners = [];
+  _imageStreamListeners = [];
   Future<List<_LinkedAccount>>? _linkedAccountsFuture;
   late ApiSource _activeApiSource;
   final bool _isSwitchingSource = false;
@@ -97,9 +97,9 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     // Record this creator as recently viewed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context
-          .read<CreatorQuickAccessProvider>()
-          .addRecentCreator(widget.creator);
+      context.read<CreatorQuickAccessProvider>().addRecentCreator(
+        widget.creator,
+      );
     });
   }
 
@@ -341,10 +341,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
         (info, _) {
           if (!completer.isCompleted) {
             completer.complete(
-              Size(
-                info.image.width.toDouble(),
-                info.image.height.toDouble(),
-              ),
+              Size(info.image.width.toDouble(), info.image.height.toDouble()),
             );
           }
         },
@@ -375,7 +372,9 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     // Strip leading slash then any existing 'data/' prefix so API paths like
     // '/data/ab/cd/file.jpg' don't produce /data/data/ab/cd/file.jpg.
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    final stripped = cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
+    final stripped = cleanPath.startsWith('data/')
+        ? cleanPath.substring(5)
+        : cleanPath;
     return '$domain/data/$stripped';
   }
 
@@ -482,9 +481,9 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                 width: 18,
                 height: 18,
                 child: AppSkeleton(
-                   width: 18,
-                   height: 18,
-                   shape: BoxShape.circle,
+                  width: 18,
+                  height: 18,
+                  shape: BoxShape.circle,
                 ),
               ),
             ),
@@ -717,9 +716,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                 ],
               ),
             ),
-            child: const AppSkeleton(
-              shape: BoxShape.rectangle,
-            ),
+            child: const AppSkeleton(shape: BoxShape.rectangle),
           );
         },
       ),
@@ -799,8 +796,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
         padding: const EdgeInsets.all(16),
         itemCount: 4,
         itemBuilder: (context, index) => const Padding(
-           padding: EdgeInsets.only(bottom: 16),
-           child: PostGridSkeleton(),
+          padding: EdgeInsets.only(bottom: 16),
+          child: PostGridSkeleton(),
         ),
       );
     }
@@ -1061,7 +1058,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       int columnCount = 2;
       if (screenWidth > 600) columnCount = 3;
       if (screenWidth > 900) columnCount = 4;
-      
+
       return MasonryGridView.builder(
         padding: const EdgeInsets.all(4),
         gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
@@ -1089,7 +1086,9 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       final hasActiveFilters = settings.hideNsfw || blockedTags.isNotEmpty;
       return AppEmptyState(
         icon: Icons.photo_library_outlined,
-        title: hasActiveFilters ? 'No media matches your filters' : 'No media yet',
+        title: hasActiveFilters
+            ? 'No media matches your filters'
+            : 'No media yet',
         message: hasActiveFilters
             ? 'Try changing filters in Settings'
             : 'This creator hasn\'t posted any media yet',
