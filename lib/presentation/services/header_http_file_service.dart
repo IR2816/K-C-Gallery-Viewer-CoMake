@@ -72,7 +72,6 @@ class _TrackedFileServiceResponse implements FileServiceResponse {
               bytesToTrack,
               category: DataUsageTracker.categorizeRequest(
                 url,
-                contentType: inner.contentType,
               ),
             );
           }
@@ -84,9 +83,6 @@ class _TrackedFileServiceResponse implements FileServiceResponse {
 
   @override
   int? get contentLength => inner.contentLength;
-
-  @override
-  String? get contentType => inner.contentType;
 
   @override
   DateTime get validTill => inner.validTill;
