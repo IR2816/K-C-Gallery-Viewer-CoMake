@@ -94,8 +94,8 @@ class CreatorDetailApiHandler extends ChangeNotifier {
     final generation = _generation;
     final effectiveApiSource = apiSource ?? _apiSourceForService(service);
     _currentApiSource = effectiveApiSource;
-    // Keep retry counts low: the inner RetryHttpClient already retries at the
-    // HTTP layer, so a high outer count multiplies the total wait time.
+    // Keep retry counts low: HttpRetryStrategy handles retries at the client
+    // layer, so a high outer count multiplies total connection usage.
     final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
     try {

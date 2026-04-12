@@ -125,9 +125,8 @@ class PostsProvider with ChangeNotifier {
       // Determine API source based on explicit selection first, then service fallback.
       final effectiveApiSource = apiSource ?? _getApiSourceForService(service);
       _currentApiSource = effectiveApiSource;
-      // Keep retry counts low: the inner RetryHttpClient already retries at the
-      // HTTP layer, so a high outer count multiplies the total wait time
-      // dramatically (e.g. 5 outer × 4 inner × 15 s = 300 s before an error).
+      // Keep retry counts low: HttpRetryStrategy handles retries at the client
+      // layer, so a high outer count multiplies total connection usage.
       final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
       await ApiResponseUtils.withRetry(
@@ -323,7 +322,7 @@ class PostsProvider with ChangeNotifier {
         '🔍 DEBUG: loadLatestPosts - Using API source: $effectiveApiSource (locked for this session)',
       );
 
-      final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+      final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
       await ApiResponseUtils.withRetry(
         () async {
@@ -416,7 +415,7 @@ class PostsProvider with ChangeNotifier {
         '🔍 DEBUG: loadMoreLatestPosts - Continuing with ${effectiveApiSource.name} (offset: $_latestPostsOffset)',
       );
 
-      final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+      final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
       await ApiResponseUtils.withRetry(
         () async {
@@ -489,7 +488,7 @@ class PostsProvider with ChangeNotifier {
         '🔍 DEBUG: loadMorePosts - Continuing with ${effectiveApiSource.name} (offset: $_offset)',
       );
 
-      final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+      final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
       await ApiResponseUtils.withRetry(
         () async {
@@ -709,7 +708,7 @@ class PostsProvider with ChangeNotifier {
         '🔍 DEBUG: loadSinglePost using apiSource: $effectiveApiSource for service: $service',
       );
 
-      final maxRetries = effectiveApiSource == ApiSource.coomer ? 6 : 3;
+      final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
 
       await ApiResponseUtils.withRetry(
         () async {
