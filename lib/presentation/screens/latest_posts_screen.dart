@@ -11,10 +11,11 @@ import '../../domain/entities/api_source.dart';
 import '../../domain/entities/creator.dart';
 import '../../domain/entities/post.dart';
 import '../../data/utils/domain_resolver.dart';
+import '../../domain/repositories/kemono_repository.dart';
 import '../controllers/latest_posts_controller.dart';
 import '../providers/creator_quick_access_provider.dart';
+import '../providers/latest_posts_api_handler.dart';
 import '../providers/post_search_provider.dart';
-import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
 import '../theme/app_theme.dart';
@@ -37,12 +38,18 @@ class LatestPostsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (ctx) => LatestPostsController(
-        postsProvider: ctx.read<PostsProvider>(),
-        settingsProvider: ctx.read<SettingsProvider>(),
-        tagFilterProvider: ctx.read<TagFilterProvider>(),
-        postSearchProvider: ctx.read<PostSearchProvider>(),
-      ),
+      create: (ctx) {
+        final handler = LatestPostsApiHandler(
+          repository: ctx.read<KemonoRepository>(),
+          settingsProvider: ctx.read<SettingsProvider>(),
+        );
+        return LatestPostsController(
+          latestPostsHandler: handler,
+          settingsProvider: ctx.read<SettingsProvider>(),
+          tagFilterProvider: ctx.read<TagFilterProvider>(),
+          postSearchProvider: ctx.read<PostSearchProvider>(),
+        );
+      },
       child: const _LatestPostsView(),
     );
   }
@@ -287,8 +294,8 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       titleSpacing: 16,
-      title: Consumer<PostsProvider>(
-        builder: (_, postsProvider, __) => Column(
+      title: Consumer<LatestPostsController>(
+        builder: (_, ctrl, __) => Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -310,7 +317,7 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const SizedBox(width: 12),
                 DomainStatusBadge(
-                  apiSource: postsProvider.currentApiSource?.name ?? 'kemono',
+                  apiSource: ctrl.currentApiSource.name,
                   compact: true,
                 ),
               ],

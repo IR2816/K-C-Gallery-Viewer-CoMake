@@ -6,8 +6,8 @@ import 'package:flutter/services.dart';
 
 import '../../domain/entities/api_source.dart';
 import '../../domain/entities/post.dart';
+import '../providers/latest_posts_api_handler.dart';
 import '../providers/post_search_provider.dart';
-import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
 import '../../utils/logger.dart';
@@ -24,8 +24,11 @@ typedef DomainTransition = ({String from, String to});
 /// reaction, search debouncing) lives here.  The UI layer only:
 ///   - renders widgets driven by the exposed state getters, and
 ///   - calls the public action methods.
+///
+/// Uses [LatestPostsApiHandler] for feed data so the feed's loading and
+/// pagination state is completely isolated from other screens.
 class LatestPostsController extends ChangeNotifier {
-  final PostsProvider _postsProvider;
+  final LatestPostsApiHandler _latestPostsHandler;
   final SettingsProvider _settingsProvider;
   final TagFilterProvider _tagFilterProvider;
   final PostSearchProvider _postSearchProvider;
@@ -55,11 +58,11 @@ class LatestPostsController extends ChangeNotifier {
   static const _searchDebounceDelay = Duration(milliseconds: 500);
 
   LatestPostsController({
-    required PostsProvider postsProvider,
+    required LatestPostsApiHandler latestPostsHandler,
     required SettingsProvider settingsProvider,
     required TagFilterProvider tagFilterProvider,
     required PostSearchProvider postSearchProvider,
-  }) : _postsProvider = postsProvider,
+  }) : _latestPostsHandler = latestPostsHandler,
        _settingsProvider = settingsProvider,
        _tagFilterProvider = tagFilterProvider,
        _postSearchProvider = postSearchProvider,
@@ -81,6 +84,7 @@ class LatestPostsController extends ChangeNotifier {
     _tagFilterProvider.removeListener(_onTagsChanged);
     _postSearchProvider.removeListener(_onSearchProviderChanged);
     _searchDebounce?.cancel();
+    _latestPostsHandler.dispose();
     super.dispose();
   }
 
@@ -92,7 +96,7 @@ class LatestPostsController extends ChangeNotifier {
   bool get isInSearchMode => _postSearchProvider.searchQuery.isNotEmpty;
 
   /// Posts from the feed, filtered by NSFW/tag-blacklist/local-search rules.
-  List<Post> get filteredPosts => _applyFilters(_postsProvider.latestPosts);
+  List<Post> get filteredPosts => _applyFilters(_latestPostsHandler.posts);
 
   // Forward search-provider state so widgets only need one provider.
   List<Post> get searchResults => _postSearchProvider.serverSearchResults;
@@ -119,12 +123,9 @@ class LatestPostsController extends ChangeNotifier {
       AppLogger.debug(
         '🔍 LatestPostsController.loadInitial – API: $currentApiSource',
       );
-      await _postsProvider.loadLatestPosts(
-        refresh: true,
-        apiSource: currentApiSource,
-      );
-      hasMore = _postsProvider.latestPostsHasMore;
-      error = null;
+      await _latestPostsHandler.loadInitial(apiSource: currentApiSource);
+      hasMore = _latestPostsHandler.hasMore;
+      error = _latestPostsHandler.error;
     } catch (e) {
       error = e.toString();
       AppLogger.error(
@@ -144,8 +145,9 @@ class LatestPostsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _postsProvider.loadMoreLatestPosts();
-      hasMore = _postsProvider.latestPostsHasMore;
+      await _latestPostsHandler.loadMore();
+      hasMore = _latestPostsHandler.hasMore;
+      error = _latestPostsHandler.error;
     } catch (e) {
       error = e.toString();
     } finally {
@@ -214,13 +216,13 @@ class LatestPostsController extends ChangeNotifier {
 
   Future<void> _onSettingsChanged() async {
     final settingsApiSource = _settingsProvider.defaultApiSource;
-    // Compare against the API source used for the *feed* (latestPostsApiSource),
+    // Compare against the API source used for the *feed* (handler.apiSource),
     // NOT currentApiSource.  currentApiSource is also overwritten whenever
     // creator or search posts are loaded, so using it here caused spurious feed
     // reloads after visiting a creator whose service lives on a different source
     // (e.g. an OnlyFans creator triggering a "coomer" source, then any setting
     // change triggering _onSettingsChanged would incorrectly detect a mismatch).
-    final currentFeedApiSource = _postsProvider.latestPostsApiSource;
+    final currentFeedApiSource = _latestPostsHandler.apiSource;
     final shouldReload =
         currentFeedApiSource == null ||
         currentFeedApiSource != settingsApiSource;

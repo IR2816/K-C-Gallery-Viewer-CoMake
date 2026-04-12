@@ -16,7 +16,7 @@ import '../../domain/entities/discord_server.dart';
 import '../../domain/repositories/kemono_repository.dart';
 
 // Providers
-import '../providers/posts_provider.dart';
+import '../providers/creator_detail_api_handler.dart';
 import '../providers/creators_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
@@ -36,7 +36,7 @@ import '../widgets/refresh_wrapper.dart';
 /// Creator Detail Screen - Clean & Simple
 ///
 /// Design Principles:
-/// - Single source of truth (PostsProvider)
+/// - Single source of truth (CreatorDetailApiHandler – screen-local)
 /// - Compact utility header (not hero header)
 /// - Simple grid layout for media
 /// - No linkify in preview (PostDetail job)
@@ -63,7 +63,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   final ScrollController _postsScrollController = ScrollController();
   final ScrollController _mediaScrollController = ScrollController();
 
-  // Minimal State (Single Source of Truth: PostsProvider)
+  // Minimal State (Single Source of Truth: CreatorDetailApiHandler)
   double _postsScrollOffset = 0.0;
   double _mediaScrollOffset = 0.0;
 
@@ -78,6 +78,12 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   late ApiSource _activeApiSource;
   final bool _isSwitchingSource = false;
 
+  /// Screen-local API handler – completely isolated from other screens.
+  ///
+  /// Created in [initState] using app-level providers (accessible at init time)
+  /// and disposed in [dispose]. No global state is shared with other screens.
+  late final CreatorDetailApiHandler _apiHandler;
+
   // wantKeepAlive is not used here: CreatorDetailScreen is a Navigator route,
   // and AutomaticKeepAliveClientMixin only prevents deactivation in PageView /
   // TabBarView contexts.  In a Navigator overlay every route is always kept
@@ -88,15 +94,20 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   @override
   void initState() {
     super.initState();
+    // KemonoRepository and SettingsProvider are app-level providers, so they
+    // are accessible through context in initState.
+    _apiHandler = CreatorDetailApiHandler(
+      repository: context.read<KemonoRepository>(),
+      settingsProvider: context.read<SettingsProvider>(),
+    );
     // Keep caller-provided source as truth and only infer from service when missing/ambiguous.
     _activeApiSource = _resolveActiveApiSource(widget.creator.service);
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
-    _loadCreatorPosts();
     _linkedAccountsFuture = _fetchLinkedAccounts();
-    // Record this creator as recently viewed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _loadCreatorPosts();
       context.read<CreatorQuickAccessProvider>().addRecentCreator(
         widget.creator,
       );
@@ -105,6 +116,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
 
   @override
   void dispose() {
+    _apiHandler.dispose();
     // Remove all ImageStreamListeners registered by _getImageSize to prevent
     // memory leaks from listeners that outlive this widget's lifecycle.
     for (final entry in _imageStreamListeners) {
@@ -148,25 +160,24 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     });
   }
 
-  // SIMPLIFIED - Single responsibility: just trigger provider
+  // SIMPLIFIED - Single responsibility: just trigger handler
   Future<void> _loadCreatorPosts() async {
     try {
-      final postsProvider = Provider.of<PostsProvider>(context, listen: false);
-      postsProvider.clearPosts();
+      _apiHandler.clear();
       _cachedMediaItems = [];
       _mediaCacheKey = null;
 
       // Keep the selected API source stable for this creator detail session.
       _activeApiSource = _resolveActiveApiSource(widget.creator.service);
 
-      await postsProvider.loadCreatorPosts(
+      await _apiHandler.loadCreatorPosts(
         widget.creator.service,
         widget.creator.id,
         refresh: true,
         apiSource: _activeApiSource,
       );
     } catch (e) {
-      // Error handling done by provider, no local state needed
+      // Error handling done by handler, no local state needed
     }
   }
 
@@ -424,12 +435,13 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     super.build(context);
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      body: Consumer<PostsProvider>(
-        builder: (context, postsProvider, _) {
+      body: ListenableBuilder(
+        listenable: _apiHandler,
+        builder: (context, _) {
           return CustomScrollView(
             controller: _scrollController,
             slivers: [
-              // âœ… FIXED: SliverAppBar dengan banner di flexible space
+              // ✅ FIXED: SliverAppBar dengan banner di flexible space
               _buildCompactSliverAppBar(),
 
               // Simple Tabs
@@ -440,8 +452,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildPostsTab(postsProvider),
-                    _buildMediaTab(postsProvider),
+                    _buildPostsTab(_apiHandler),
+                    _buildMediaTab(_apiHandler),
                   ],
                 ),
               ),
@@ -782,16 +794,16 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
     return null; // No headers needed for non-Coomer domains
   }
 
-  // SIMPLIFIED - Single Source of Truth from PostsProvider
-  Widget _buildPostsTab(PostsProvider postsProvider) {
+  // SIMPLIFIED - Single Source of Truth from CreatorDetailApiHandler
+  Widget _buildPostsTab(CreatorDetailApiHandler handler) {
     final settings = context.watch<SettingsProvider>();
     final blockedTags = context.watch<TagFilterProvider>().blacklist;
     final visiblePosts = _filterPosts(
-      postsProvider.posts,
+      handler.posts,
       hideNsfw: settings.hideNsfw,
       blockedTags: blockedTags,
     );
-    if (postsProvider.isLoading && postsProvider.posts.isEmpty) {
+    if (handler.isLoading && handler.posts.isEmpty) {
       return ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: 4,
@@ -802,15 +814,15 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       );
     }
 
-    if (postsProvider.error != null && postsProvider.posts.isEmpty) {
+    if (handler.error != null && handler.posts.isEmpty) {
       return AppErrorState(
         title: 'Error loading posts',
-        message: postsProvider.error!,
+        message: handler.error!,
         onRetry: _loadCreatorPosts,
       );
     }
 
-    if (visiblePosts.isEmpty && !postsProvider.isLoading) {
+    if (visiblePosts.isEmpty && !handler.isLoading) {
       final hasActiveFilters = settings.hideNsfw || blockedTags.isNotEmpty;
       return AppEmptyState(
         icon: Icons.article_outlined,
@@ -839,8 +851,8 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                 title: 'Post Stream',
                 subtitle: _buildPostsSummaryText(
                   visiblePosts.length,
-                  postsProvider.posts.length,
-                  postsProvider.hasMore,
+                  handler.posts.length,
+                  handler.hasMore,
                 ),
                 accentColor: _activeApiSource == ApiSource.kemono
                     ? AppTheme.primaryColor
@@ -853,15 +865,13 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                   _buildOverviewChip(
                     icon: Icons.visibility_off_rounded,
                     label:
-                        '${(postsProvider.posts.length - visiblePosts.length).clamp(0, 9999)} hidden',
+                        '${(handler.posts.length - visiblePosts.length).clamp(0, 9999)} hidden',
                   ),
                   _buildOverviewChip(
-                    icon: postsProvider.hasMore
+                    icon: handler.hasMore
                         ? Icons.bolt_rounded
                         : Icons.done_all_rounded,
-                    label: postsProvider.hasMore
-                        ? 'Auto loading'
-                        : 'Fully loaded',
+                    label: handler.hasMore ? 'Auto loading' : 'Fully loaded',
                   ),
                 ],
               ),
@@ -872,8 +882,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    if (index == visiblePosts.length &&
-                        postsProvider.isLoading) {
+                    if (index == visiblePosts.length && handler.isLoading) {
                       return const Padding(
                         padding: EdgeInsets.all(16),
                         child: PostGridSkeleton(),
@@ -884,7 +893,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                     return _buildPostCard(post);
                   },
                   childCount:
-                      visiblePosts.length + (postsProvider.isLoading ? 1 : 0),
+                      visiblePosts.length + (handler.isLoading ? 1 : 0),
                 ),
               ),
             ),
@@ -1042,17 +1051,17 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   }
 
   // Media Tab - Masonry layout to respect image aspect ratio
-  Widget _buildMediaTab(PostsProvider postsProvider) {
+  Widget _buildMediaTab(CreatorDetailApiHandler handler) {
     final settings = context.watch<SettingsProvider>();
     final blockedTags = context.watch<TagFilterProvider>().blacklist;
     final visiblePosts = _filterPosts(
-      postsProvider.posts,
+      handler.posts,
       hideNsfw: settings.hideNsfw,
       blockedTags: blockedTags,
     );
 
     _ensureMediaCache(visiblePosts);
-    if (postsProvider.isLoading && postsProvider.posts.isEmpty) {
+    if (handler.isLoading && handler.posts.isEmpty) {
       // Calculate responsive column count based on screen width
       final screenWidth = MediaQuery.of(context).size.width;
       int columnCount = 2;
@@ -1074,15 +1083,15 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       );
     }
 
-    if (postsProvider.error != null && postsProvider.posts.isEmpty) {
+    if (handler.error != null && handler.posts.isEmpty) {
       return AppErrorState(
         title: 'Error loading media',
-        message: postsProvider.error!,
+        message: handler.error!,
         onRetry: _loadCreatorPosts,
       );
     }
 
-    if (_cachedMediaItems.isEmpty && !postsProvider.isLoading) {
+    if (_cachedMediaItems.isEmpty && !handler.isLoading) {
       final hasActiveFilters = settings.hideNsfw || blockedTags.isNotEmpty;
       return AppEmptyState(
         icon: Icons.photo_library_outlined,
@@ -1699,14 +1708,12 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
   }
 
   bool _handleScrollNotification(ScrollNotification scrollInfo) {
-    final postsProvider = Provider.of<PostsProvider>(context, listen: false);
-
     if (scrollInfo is ScrollEndNotification &&
-        postsProvider.hasMore &&
-        !postsProvider.isLoading &&
+        _apiHandler.hasMore &&
+        !_apiHandler.isLoading &&
         scrollInfo.metrics.extentAfter < 500) {
-      // Trigger load more in provider
-      postsProvider.loadCreatorPosts(
+      // Trigger load more directly on handler
+      _apiHandler.loadCreatorPosts(
         widget.creator.service,
         widget.creator.id,
         refresh: false,
