@@ -97,6 +97,7 @@ class ApiClient {
   static const int _circuitBreakerThreshold = 10;
   static const Duration _circuitBreakerCooldown = Duration(seconds: 10);
   static const int _responseSnippetMaxLength = 200;
+  static const int _maxRateLimitWaitSeconds = 3600;
   static const Duration _defaultRateLimitCooldown = Duration(seconds: 15);
 
   String? _lastSuccessfulDomain;
@@ -381,7 +382,7 @@ class ApiClient {
                 final waitSeconds = retryAfter
                     .difference(DateTime.now())
                     .inSeconds
-                    .clamp(1, 3600);
+                    .clamp(1, _maxRateLimitWaitSeconds);
                 throw RateLimitException(
                   message: 'Rate limited (429). Retry after ${waitSeconds}s.',
                   retryAfter: retryAfter,
