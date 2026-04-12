@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -178,9 +179,7 @@ class DiscordApiClient {
               ? null
               : responseString.replaceAll('\n', ' ').substring(
                   0,
-                  responseString.length > _responseSnippetMaxLength
-                      ? _responseSnippetMaxLength
-                      : responseString.length,
+                  min(responseString.length, _responseSnippetMaxLength),
                 );
 
           ApiLogger.response(

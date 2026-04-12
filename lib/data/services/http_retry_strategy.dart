@@ -46,17 +46,11 @@ class HttpRetryStrategy {
     required bool Function(Object error) isRetryable,
     void Function(int attemptIndex, Object error)? onRetry,
   }) async {
-    Object? lastError;
-    StackTrace? lastStackTrace;
-
     for (var attempt = 0; attempt < policy.maxAttempts; attempt++) {
       final timeout = policy.timeoutForAttempt(attempt);
       try {
         return await operation(attempt, timeout);
       } catch (error, stackTrace) {
-        lastError = error;
-        lastStackTrace = stackTrace;
-
         final shouldRetry = attempt < policy.maxAttempts - 1 && isRetryable(error);
         if (!shouldRetry) {
           Error.throwWithStackTrace(error, stackTrace);
@@ -70,9 +64,6 @@ class HttpRetryStrategy {
       }
     }
 
-    if (lastError != null && lastStackTrace != null) {
-      Error.throwWithStackTrace(lastError!, lastStackTrace!);
-    }
     throw StateError('Retry strategy failed without capturing an error');
   }
 }

@@ -58,7 +58,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         return creators.where((c) => c.service == service).toList();
       }
       return creators;
-    } catch (initialError) {
+    } catch (primaryError) {
       // Fallback: derive creator list from recent posts.
       try {
         final posts = await searchPosts(' ', offset: 0, apiSource: apiSource);
@@ -90,7 +90,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         return creators;
       } catch (fallbackError, fallbackStackTrace) {
         if (fallbackError is ApiException) rethrow;
-        if (initialError is ApiException) rethrow;
+        if (primaryError is ApiException) rethrow;
         throw NetworkRequestException(
           message:
               'Failed to load creators from primary and fallback sources.',

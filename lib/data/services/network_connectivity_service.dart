@@ -45,6 +45,10 @@ class NetworkConnectivityService {
   void enqueueForReconnect(Future<void> Function() request) {
     if (_offlineQueue.length >= _maxQueuedRequests) {
       _offlineQueue.removeFirst();
+      AppLogger.warning(
+        'Offline queue full; dropping oldest queued request.',
+        tag: 'Network',
+      );
     }
     _offlineQueue.add(request);
   }
