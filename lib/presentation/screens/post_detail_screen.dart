@@ -21,6 +21,8 @@ import '../../domain/entities/creator.dart';
 import '../../utils/logger.dart';
 import '../../utils/download_path_builder.dart';
 import '../../data/utils/domain_resolver.dart';
+import '../../domain/repositories/kemono_repository.dart';
+import '../providers/post_detail_api_handler.dart';
 import '../providers/posts_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/comments_provider.dart';
@@ -92,16 +94,23 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   late ApiSource _activeApiSource;
   bool _isSwitchingSource = false;
 
+  /// Screen-local handler for loading the single post's full content.
+  /// Isolated from PostsProvider so it cannot interfere with other screens.
+  late final PostDetailApiHandler _postDetailHandler;
+
   @override
   void initState() {
     super.initState();
     _activeApiSource = widget.apiSource;
     _tabController = TabController(length: 2, vsync: this);
 
+    // Create the standalone handler using app-level repository.
+    _postDetailHandler = PostDetailApiHandler(
+      repository: context.read<KemonoRepository>(),
+    );
+
     // Initialize audio player
     _audioPlayer = AudioPlayer();
-
-    // Set up audio player listeners with lifecycle guards and enhanced features
     _audioPlayer!.onDurationChanged.listen((duration) {
       if (!mounted) return;
       setState(() => _duration = duration);
@@ -154,6 +163,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   void dispose() {
     _tabController.dispose();
     _audioPlayer?.dispose();
+    _postDetailHandler.dispose();
     super.dispose();
   }
 
@@ -167,7 +177,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     );
   }
 
-  /// Load full post data from single post API
+  /// Load full post data from single post API using the screen-local handler.
   Future<void> _loadFullPost() async {
     if (!mounted) return;
 
@@ -177,20 +187,16 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     });
 
     try {
-      final postsProvider = context.read<PostsProvider>();
-
-      // Force fresh API call by clearing any existing cache
-      await postsProvider.loadSinglePost(
-        widget.post.service, // service FIRST
-        widget.post.user, // creatorId SECOND
-        widget.post.id, // postId THIRD
+      // Use the standalone PostDetailApiHandler so this load never interferes
+      // with other screens' state (e.g. LatestPostsScreen, CreatorDetailScreen).
+      await _postDetailHandler.loadSinglePost(
+        widget.post.service,
+        widget.post.user,
+        widget.post.id,
         apiSource: _activeApiSource,
       );
 
-      // Get the updated post data from provider
-      final updatedPost = postsProvider.posts
-          .where((p) => p.id == widget.post.id)
-          .firstOrNull;
+      final updatedPost = _postDetailHandler.post;
 
       if (updatedPost != null) {
         if (mounted) {
