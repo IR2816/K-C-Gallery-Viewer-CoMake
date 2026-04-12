@@ -192,6 +192,8 @@ class LatestPostsApiHandler extends ChangeNotifier {
     final s = error.toString().toLowerCase();
     return s.contains('timeout') ||
         s.contains('connection') ||
+        s.contains('429') ||
+        s.contains('rate limit') ||
         s.contains('503') ||
         s.contains('unavailable') ||
         s.contains('socket') ||

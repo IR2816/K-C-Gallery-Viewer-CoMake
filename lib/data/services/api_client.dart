@@ -97,6 +97,8 @@ class ApiClient {
   static const int _circuitBreakerThreshold = 10;
   static const Duration _circuitBreakerCooldown = Duration(seconds: 10);
   static const int _responseSnippetMaxLength = 200;
+  static const int _maxRateLimitWaitSeconds = 3600;
+  static const Duration _defaultRateLimitCooldown = Duration(seconds: 15);
 
   String? _lastSuccessfulDomain;
 
@@ -375,6 +377,22 @@ class ApiClient {
                 );
               }
 
+              if (response.statusCode == 429) {
+                final now = DateTime.now();
+                final parsedRetryAfter = _resolveRetryAfter(response);
+                final waitSeconds = parsedRetryAfter
+                    .difference(now)
+                    .inSeconds
+                    .clamp(1, _maxRateLimitWaitSeconds);
+                final retryAfter = now.add(Duration(seconds: waitSeconds));
+                throw RateLimitException(
+                  message: 'Rate limited (429). Retry after ${waitSeconds}s.',
+                  retryAfter: retryAfter,
+                  endpoint: endpoint,
+                  requestId: requestId,
+                );
+              }
+
               if (response.statusCode >= 400) {
                 throw HttpStatusException(
                   message: 'Client error ${response.statusCode}',
@@ -486,5 +504,32 @@ class ApiClient {
         : (apiSource == ApiSource.coomer
               ? DomainConfig.coomerApiDomains
               : DomainConfig.kemonoApiDomains);
+  }
+
+  DateTime _resolveRetryAfter(http.Response response) {
+    final now = DateTime.now();
+    final retryAfterRaw = response.headers.entries
+        .firstWhere(
+          (entry) => entry.key.toLowerCase() == 'retry-after',
+          orElse: () => const MapEntry('', ''),
+        )
+        .value
+        .trim();
+
+    if (retryAfterRaw.isEmpty) {
+      return now.add(_defaultRateLimitCooldown);
+    }
+
+    final seconds = int.tryParse(retryAfterRaw);
+    if (seconds != null && seconds > 0) {
+      return now.add(Duration(seconds: seconds));
+    }
+
+    final retryAt = DateTime.tryParse(retryAfterRaw);
+    if (retryAt != null && retryAt.isAfter(now)) {
+      return retryAt;
+    }
+
+    return now.add(_defaultRateLimitCooldown);
   }
 }
