@@ -49,6 +49,7 @@ import 'presentation/screens/discord_server_screen.dart';
 import 'presentation/screens/discord_search_screen.dart';
 import 'presentation/services/header_http_file_service.dart';
 import 'utils/error_handler.dart';
+import 'config/domain_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
