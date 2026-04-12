@@ -89,8 +89,8 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
         return creators;
       } catch (fallbackError, fallbackStackTrace) {
-        if (fallbackError is ApiException) rethrow;
         if (primaryError is ApiException) rethrow;
+        if (fallbackError is ApiException) rethrow;
         throw NetworkRequestException(
           message:
               'Failed to load creators from primary and fallback sources.',
@@ -316,13 +316,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         normalize: (body, decoded) => _parseCssResponse(body, decoded),
       );
       return comments;
-    } catch (e, stackTrace) {
+    } catch (e) {
       AppLogger.debug('🔍 DEBUG: All header variants failed with error: $e');
-      throw mapToApiException(
-        e,
-        endpoint: endpoint,
-        stackTrace: stackTrace,
-      );
+      return [];
     }
   }
 

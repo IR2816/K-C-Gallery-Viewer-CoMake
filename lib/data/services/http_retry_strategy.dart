@@ -23,7 +23,8 @@ class RetryPolicy {
   }
 
   Duration delayForRetry(int retryNumber, Random random) {
-    final cappedMultiplier = 1 << retryNumber;
+    final safeRetry = retryNumber > 20 ? 20 : retryNumber;
+    final cappedMultiplier = 1 << safeRetry;
     final raw = baseDelay.inMilliseconds * cappedMultiplier;
     final capped = raw > maxDelay.inMilliseconds ? maxDelay.inMilliseconds : raw;
     final jitterMs = jitter.inMilliseconds <= 0

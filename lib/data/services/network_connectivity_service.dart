@@ -25,7 +25,7 @@ class NetworkConnectivityService {
     _initialized = true;
     _isOnline = await hasNetworkConnection();
 
-    _subscription = _connectivity.onConnectivityChanged.listen((dynamic value) async {
+    _subscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> value) async {
       final online = _parseConnectivityValue(value);
       _isOnline = online;
       AppLogger.debug('Connectivity changed: online=$online', tag: 'Network');
