@@ -185,10 +185,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.55),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withValues(alpha: 0.55), Colors.transparent],
           ),
         ),
       ),
@@ -207,10 +204,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.6),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withValues(alpha: 0.6), Colors.transparent],
           ),
         ),
       ),
@@ -263,8 +257,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
             child: CircularProgressIndicator(
               value: (event == null || event.expectedTotalBytes == null)
                   ? null
-                  : event.cumulativeBytesLoaded /
-                        event.expectedTotalBytes!,
+                  : event.cumulativeBytesLoaded / event.expectedTotalBytes!,
               strokeWidth: 3,
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
@@ -300,8 +293,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
               child: CircularProgressIndicator(
                 value: (event == null || event.expectedTotalBytes == null)
                     ? null
-                    : event.cumulativeBytesLoaded /
-                          event.expectedTotalBytes!,
+                    : event.cumulativeBytesLoaded / event.expectedTotalBytes!,
                 strokeWidth: 3,
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               ),
@@ -319,7 +311,11 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.broken_image_rounded, color: Colors.white54, size: 56),
+          const Icon(
+            Icons.broken_image_rounded,
+            color: Colors.white54,
+            size: 56,
+          ),
           const SizedBox(height: 12),
           const Text(
             'Failed to load image',
@@ -417,10 +413,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     return FadeTransition(
       opacity: _uiAnimation,
       child: Stack(
-        children: [
-          _buildTopBar(currentMedia),
-          _buildBottomBar(currentMedia),
-        ],
+        children: [_buildTopBar(currentMedia), _buildBottomBar(currentMedia)],
       ),
     );
   }
@@ -570,9 +563,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
             color: Colors.black.withValues(alpha: 0.55),
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.white.withValues(
-                alpha: enabled ? 0.18 : 0.06,
-              ),
+              color: Colors.white.withValues(alpha: enabled ? 0.18 : 0.06),
             ),
           ),
           child: Icon(
@@ -636,9 +627,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
     final url = (mediaItem['url'] ?? '').toString();
     if (url.isEmpty) return;
 
-    var fileName = _getFileName(
-      (mediaItem['name'] ?? url).toString(),
-    );
+    var fileName = _getFileName((mediaItem['name'] ?? url).toString());
     fileName = DownloadPathBuilder.sanitizeFileName(fileName);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -684,7 +673,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
       // Build organized directory using the shared utility
       final settings = context.read<SettingsProvider>();
       Directory saveDir = downloadsDirectory;
-      
+
       if (settings.organizeDownloads &&
           widget.postCreator != null &&
           widget.postDate != null &&
@@ -701,7 +690,11 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer>
             );
           }
         } catch (e) {
-          AppLogger.warning('Failed to parse post date: ${widget.postDate}', tag: 'FileDownload', error: e);
+          AppLogger.warning(
+            'Failed to parse post date: ${widget.postDate}',
+            tag: 'FileDownload',
+            error: e,
+          );
         }
 
         saveDir = await DownloadPathBuilder.buildDownloadDirectory(

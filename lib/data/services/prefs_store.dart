@@ -14,10 +14,7 @@ class PrefsStore {
     final jsonString = prefs.getString(key);
     if (jsonString == null) return <T>[];
     final List<dynamic> decoded = json.decode(jsonString) as List<dynamic>;
-    return decoded
-        .whereType<Map<String, dynamic>>()
-        .map(fromJson)
-        .toList();
+    return decoded.whereType<Map<String, dynamic>>().map(fromJson).toList();
   }
 
   Future<void> saveList<T>(

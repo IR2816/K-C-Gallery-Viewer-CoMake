@@ -14,7 +14,9 @@ class CreatorSearchService {
     String query,
     String service,
   ) async {
-    AppLogger.debug('🔍 DEBUG: CreatorSearchService.searchCreatorsByName called');
+    AppLogger.debug(
+      '🔍 DEBUG: CreatorSearchService.searchCreatorsByName called',
+    );
     AppLogger.debug('🔍 DEBUG: query: "$query", service: "$service"');
 
     try {
@@ -66,7 +68,9 @@ class CreatorSearchService {
       // Check for 'data' field (the actual results array)
       if (data['data'] is List) {
         final dataList = data['data'] as List;
-        AppLogger.debug('🔍 DEBUG: Found data array with ${dataList.length} items');
+        AppLogger.debug(
+          '🔍 DEBUG: Found data array with ${dataList.length} items',
+        );
 
         // Limit results to prevent overwhelming the UI
         final limitedData = dataList.take(10).toList();

@@ -150,14 +150,19 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
       final infos = <_FileInfo>[];
 
       // Recursive scan to capture organized subdirectory files too
-      await for (final entity in dir.list(recursive: true, followLinks: false)) {
+      await for (final entity in dir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
         if (entity is File) {
           final relativePath = entity.path
               .replaceFirst('${dir.path}/', '')
               .replaceFirst('${dir.path}\\', '');
           final parts = relativePath.split(Platform.pathSeparator);
           // Also handle forward-slash separator on all platforms
-          final parts2 = relativePath.contains('/') ? relativePath.split('/') : parts;
+          final parts2 = relativePath.contains('/')
+              ? relativePath.split('/')
+              : parts;
           final segments = parts2.length > parts.length ? parts2 : parts;
 
           String creator = '';
@@ -175,7 +180,12 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
           }
 
           infos.add(
-            _FileInfo(file: entity, fileName: fileName, creator: creator, postFolder: postFolder),
+            _FileInfo(
+              file: entity,
+              fileName: fileName,
+              creator: creator,
+              postFolder: postFolder,
+            ),
           );
         }
       }
@@ -184,7 +194,8 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
         _allFiles = infos;
         _isLoading = false;
         // Reset creator filter if it's no longer valid
-        if (_creatorFilter != null && !infos.any((f) => f.creator == _creatorFilter)) {
+        if (_creatorFilter != null &&
+            !infos.any((f) => f.creator == _creatorFilter)) {
           _creatorFilter = null;
         }
       });
@@ -205,7 +216,16 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
       // Type filter
       final ext = f.fileName.toLowerCase().split('.').last;
       if (_typeFilter == _TypeFilter.images &&
-          !['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg'].contains(ext)) {
+          ![
+            'jpg',
+            'jpeg',
+            'png',
+            'gif',
+            'webp',
+            'bmp',
+            'tiff',
+            'svg',
+          ].contains(ext)) {
         return false;
       }
       if (_typeFilter == _TypeFilter.videos &&
@@ -217,7 +237,16 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
         return false;
       }
       if (_typeFilter == _TypeFilter.documents &&
-          !['pdf', 'doc', 'docx', 'txt', 'zip', 'rar', '7z', 'epub'].contains(ext)) {
+          ![
+            'pdf',
+            'doc',
+            'docx',
+            'txt',
+            'zip',
+            'rar',
+            '7z',
+            'epub',
+          ].contains(ext)) {
         return false;
       }
 
@@ -225,7 +254,8 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
       if (_creatorFilter != null && f.creator != _creatorFilter) return false;
 
       // Search
-      if (_searchQuery.isNotEmpty && !f.fileName.toLowerCase().contains(_searchQuery)) {
+      if (_searchQuery.isNotEmpty &&
+          !f.fileName.toLowerCase().contains(_searchQuery)) {
         return false;
       }
 
@@ -248,8 +278,13 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
   }
 
   List<String> get _allCreators {
-    final creators = _allFiles.map((f) => f.creator).where((c) => c.isNotEmpty).toSet().toList()
-      ..sort();
+    final creators =
+        _allFiles
+            .map((f) => f.creator)
+            .where((c) => c.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     return creators;
   }
 
@@ -292,7 +327,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
             return Column(
               children: [
                 if (activeDownloads.isNotEmpty)
-                  _buildActiveDownloadsSection(activeDownloads, downloadProvider),
+                  _buildActiveDownloadsSection(
+                    activeDownloads,
+                    downloadProvider,
+                  ),
                 const Expanded(child: AppSkeletonList()),
               ],
             );
@@ -307,7 +345,11 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                 _buildSearchBar(),
                 _buildSortAndFilterRow(),
               ],
-              Expanded(child: _allFiles.isEmpty ? _buildEmptyState() : _buildFileList()),
+              Expanded(
+                child: _allFiles.isEmpty
+                    ? _buildEmptyState()
+                    : _buildFileList(),
+              ),
             ],
           );
         },
@@ -332,11 +374,18 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
             _selectedPaths.clear();
           }),
         ),
-        title: Text(_selectedPaths.isEmpty ? 'Select files' : '${_selectedPaths.length} selected'),
+        title: Text(
+          _selectedPaths.isEmpty
+              ? 'Select files'
+              : '${_selectedPaths.length} selected',
+        ),
         actions: [
           TextButton(
             onPressed: _selectAll,
-            child: const Text('Select All', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Select All',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       );
@@ -349,7 +398,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.green.withValues(alpha: 0.8), Colors.green.withValues(alpha: 0.6)],
+            colors: [
+              Colors.green.withValues(alpha: 0.8),
+              Colors.green.withValues(alpha: 0.6),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -400,9 +452,17 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
       ),
       child: Row(
         children: [
-          _statChip(Icons.insert_drive_file_rounded, '${_allFiles.length} files', Colors.green),
+          _statChip(
+            Icons.insert_drive_file_rounded,
+            '${_allFiles.length} files',
+            Colors.green,
+          ),
           const SizedBox(width: 12),
-          _statChip(Icons.storage_rounded, _formatFileSize(_totalSize), Colors.blue),
+          _statChip(
+            Icons.storage_rounded,
+            _formatFileSize(_totalSize),
+            Colors.blue,
+          ),
           const SizedBox(width: 12),
           _statChip(
             Icons.person_rounded,
@@ -414,7 +474,11 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
           if (counts.isNotEmpty)
             GestureDetector(
               onTap: () => _showCreatorStats(counts),
-              child: Icon(Icons.info_outline_rounded, color: Colors.green, size: 18),
+              child: Icon(
+                Icons.info_outline_rounded,
+                color: Colors.green,
+                size: 18,
+              ),
             ),
         ],
       ),
@@ -440,7 +504,8 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
   }
 
   void _showCreatorStats(Map<String, int> counts) {
-    final sorted = counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final sorted = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -452,7 +517,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                 .map(
                   (e) => ListTile(
                     dense: true,
-                    leading: const Icon(Icons.person_rounded, color: Colors.green),
+                    leading: const Icon(
+                      Icons.person_rounded,
+                      color: Colors.green,
+                    ),
                     title: Text(e.key),
                     trailing: Text(
                       '${e.value} file${e.value == 1 ? '' : 's'}',
@@ -463,7 +531,12 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                 .toList(),
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -484,7 +557,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                   onPressed: () => _searchCtrl.clear(),
                 )
               : null,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.4)),
@@ -514,19 +590,31 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
             children: [
               // Sort dropdown
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.4),
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButton<_SortOrder>(
                   value: _sortOrder,
                   underline: const SizedBox(),
                   isDense: true,
-                  style: AppTheme.captionStyle.copyWith(fontWeight: FontWeight.w600),
+                  style: AppTheme.captionStyle.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                   icon: const Icon(Icons.sort, size: 16),
                   items: _SortOrder.values
-                      .map((o) => DropdownMenuItem(value: o, child: Text(_kSortLabels[o]!)))
+                      .map(
+                        (o) => DropdownMenuItem(
+                          value: o,
+                          child: Text(_kSortLabels[o]!),
+                        ),
+                      )
                       .toList(),
                   onChanged: (o) {
                     if (o == null) return;
@@ -540,9 +628,14 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
               if (_allCreators.isNotEmpty)
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.purple.withValues(alpha: 0.4)),
+                      border: Border.all(
+                        color: Colors.purple.withValues(alpha: 0.4),
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButton<String?>(
@@ -550,11 +643,15 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                       underline: const SizedBox(),
                       isDense: true,
                       isExpanded: true,
-                      style: AppTheme.captionStyle.copyWith(fontWeight: FontWeight.w600),
+                      style: AppTheme.captionStyle.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                       icon: const Icon(Icons.person, size: 16),
                       hint: const Text('All creators'),
                       items: [
-                        const DropdownMenuItem<String?>(child: Text('All creators')),
+                        const DropdownMenuItem<String?>(
+                          child: Text('All creators'),
+                        ),
                         ..._allCreators.map(
                           (c) => DropdownMenuItem<String?>(
                             value: c,
@@ -623,7 +720,11 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.download_for_offline, color: Colors.green, size: 20),
+              const Icon(
+                Icons.download_for_offline,
+                color: Colors.green,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Active Downloads (${activeDownloads.length})',
@@ -643,18 +744,26 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                   await Future.delayed(_kDownloadRefreshDelay);
                   if (mounted) _loadDownloadedFiles();
                 },
-                child: const Text('Cancel All', style: TextStyle(color: Colors.red, fontSize: 12)),
+                child: const Text(
+                  'Cancel All',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...activeDownloads.map((d) => _buildActiveDownloadItem(d, downloadProvider)),
+          ...activeDownloads.map(
+            (d) => _buildActiveDownloadItem(d, downloadProvider),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActiveDownloadItem(DownloadItem download, DownloadProvider downloadProvider) {
+  Widget _buildActiveDownloadItem(
+    DownloadItem download,
+    DownloadProvider downloadProvider,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -677,7 +786,9 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
               Expanded(
                 child: Text(
                   download.name,
-                  style: AppTheme.bodyStyle.copyWith(fontWeight: FontWeight.w500),
+                  style: AppTheme.bodyStyle.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -704,7 +815,11 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                   download.status == DownloadStatus.cancelled)
                 IconButton(
                   onPressed: () => downloadProvider.retryDownload(download.id),
-                  icon: const Icon(Icons.refresh, color: Colors.orange, size: 16),
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: Colors.orange,
+                    size: 16,
+                  ),
                   tooltip: 'Retry',
                 ),
             ],
@@ -723,21 +838,31 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                 Text(
                   _formatFileSize(download.downloadedBytes),
                   style: AppTheme.captionStyle.copyWith(
-                    color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.6),
+                    color: AppTheme.getOnSurfaceColor(
+                      context,
+                    ).withValues(alpha: 0.6),
                   ),
                 ),
                 Text(
-                  download.totalBytes > 0 ? _formatFileSize(download.totalBytes) : 'Unknown size',
+                  download.totalBytes > 0
+                      ? _formatFileSize(download.totalBytes)
+                      : 'Unknown size',
                   style: AppTheme.captionStyle.copyWith(
-                    color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.6),
+                    color: AppTheme.getOnSurfaceColor(
+                      context,
+                    ).withValues(alpha: 0.6),
                   ),
                 ),
               ],
             ),
           ],
-          if (download.status == DownloadStatus.failed && download.errorMessage != null) ...[
+          if (download.status == DownloadStatus.failed &&
+              download.errorMessage != null) ...[
             const SizedBox(height: 4),
-            Text(download.errorMessage!, style: AppTheme.captionStyle.copyWith(color: Colors.red)),
+            Text(
+              download.errorMessage!,
+              style: AppTheme.captionStyle.copyWith(color: Colors.red),
+            ),
           ],
         ],
       ),
@@ -764,12 +889,18 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_rounded, size: 48, color: Colors.grey.withValues(alpha: 0.5)),
+            Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: Colors.grey.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 12),
             Text(
               'No files match the current filter',
               style: AppTheme.bodyStyle.copyWith(
-                color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.5),
+                color: AppTheme.getOnSurfaceColor(
+                  context,
+                ).withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -832,7 +963,12 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
             ),
           ),
           const SizedBox(width: 6),
-          Expanded(child: Divider(color: Colors.purple.withValues(alpha: 0.3), thickness: 1)),
+          Expanded(
+            child: Divider(
+              color: Colors.purple.withValues(alpha: 0.3),
+              thickness: 1,
+            ),
+          ),
         ],
       ),
     );
@@ -897,26 +1033,34 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                   Icon(
                     Icons.storage,
                     size: 12,
-                    color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.6),
+                    color: AppTheme.getOnSurfaceColor(
+                      context,
+                    ).withValues(alpha: 0.6),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _formatFileSize(info.sizeBytes),
                     style: AppTheme.captionStyle.copyWith(
-                      color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.6),
+                      color: AppTheme.getOnSurfaceColor(
+                        context,
+                      ).withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Icon(
                     Icons.schedule,
                     size: 12,
-                    color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.6),
+                    color: AppTheme.getOnSurfaceColor(
+                      context,
+                    ).withValues(alpha: 0.6),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(info.lastModified),
                     style: AppTheme.captionStyle.copyWith(
-                      color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.6),
+                      color: AppTheme.getOnSurfaceColor(
+                        context,
+                      ).withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -955,12 +1099,20 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
                   children: [
                     IconButton(
                       onPressed: () => _openFile(info.file),
-                      icon: const Icon(Icons.open_in_new, color: Colors.green, size: 20),
+                      icon: const Icon(
+                        Icons.open_in_new,
+                        color: Colors.green,
+                        size: 20,
+                      ),
                       tooltip: 'Open',
                     ),
                     IconButton(
                       onPressed: () => _deleteFile(info),
-                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                        size: 20,
+                      ),
                       tooltip: 'Delete',
                     ),
                   ],
@@ -974,7 +1126,16 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
 
   IconData _fileTypeIcon(String fileName) {
     final ext = fileName.toLowerCase().split('.').last;
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg'].contains(ext)) {
+    if ([
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'bmp',
+      'tiff',
+      'svg',
+    ].contains(ext)) {
       return Icons.image_rounded;
     }
     if (['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'wmv'].contains(ext)) {
@@ -994,7 +1155,16 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
 
   Color _fileTypeColor(String fileName) {
     final ext = fileName.toLowerCase().split('.').last;
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg'].contains(ext)) {
+    if ([
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'bmp',
+      'tiff',
+      'svg',
+    ].contains(ext)) {
       return Colors.blue;
     }
     if (['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'wmv'].contains(ext)) {
@@ -1038,7 +1208,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
         title: const Text('Delete Files'),
         content: Text('Delete $count selected file${count == 1 ? '' : 's'}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -1083,7 +1256,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
           'file${_allFiles.length == 1 ? '' : 's'} in the KC Download folder.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Clear All', style: TextStyle(color: Colors.red)),
@@ -1190,7 +1366,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error opening file: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error opening file: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -1203,7 +1382,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
         title: const Text('Delete File'),
         content: Text('Delete "${info.fileName}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -1217,7 +1399,10 @@ class _DownloadManagerScreenState extends State<DownloadManagerScreen> {
       await info.file.delete();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File deleted'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('File deleted'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
       await _loadDownloadedFiles();

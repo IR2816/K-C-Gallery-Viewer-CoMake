@@ -333,10 +333,7 @@ void main() {
 
     group('cancelDownload', () {
       test('does not throw for unknown download ID', () {
-        expect(
-          () => provider.cancelDownload('nonexistent'),
-          returnsNormally,
-        );
+        expect(() => provider.cancelDownload('nonexistent'), returnsNormally);
       });
 
       test('does not throw for active download', () {

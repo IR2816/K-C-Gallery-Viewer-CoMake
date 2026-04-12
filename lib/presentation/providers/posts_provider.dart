@@ -57,7 +57,7 @@ class PostsProvider with ChangeNotifier {
   /// creator/search loads and should NOT be used to determine whether the
   /// feed needs a reload.
   ApiSource? get latestPostsApiSource => _latestPostsApiSource;
-  
+
   /// Get display name of current API source (e.g., "Kemono" or "Coomer")
   String get currentApiSourceDisplayName {
     if (_currentApiSource == null) {
@@ -106,7 +106,8 @@ class PostsProvider with ChangeNotifier {
       _offset = 0;
       _posts.clear(); // Clear existing posts to prevent memory leak
       _hasMore = true;
-      _isLoading = false; // Allow this refresh even if a previous load was running
+      _isLoading =
+          false; // Allow this refresh even if a previous load was running
     }
 
     if (_isLoading || !_hasMore) {
@@ -140,7 +141,9 @@ class PostsProvider with ChangeNotifier {
 
           // Discard result if a newer refresh has started since this load began
           if (_loadGeneration != generation) {
-            AppLogger.debug('🔍 DEBUG: Discarding stale load result (generation mismatch)');
+            AppLogger.debug(
+              '🔍 DEBUG: Discarding stale load result (generation mismatch)',
+            );
             return;
           }
 
@@ -153,8 +156,11 @@ class PostsProvider with ChangeNotifier {
           _offset += newPosts.length;
         },
         maxRetries: maxRetries,
-        delay: (attempt) => _retryDelay(effectiveApiSource, attempt,
-            exponentialForCoomer: true),
+        delay: (attempt) => _retryDelay(
+          effectiveApiSource,
+          attempt,
+          exponentialForCoomer: true,
+        ),
       );
     } catch (e) {
       if (_loadGeneration == generation) {
@@ -169,10 +175,7 @@ class PostsProvider with ChangeNotifier {
   }
 
   // HELPER METHOD - User-friendly error messages
-  String _getErrorMessage(
-    dynamic error,
-    ApiSource apiSource,
-  ) {
+  String _getErrorMessage(dynamic error, ApiSource apiSource) {
     final errorString = error.toString().toLowerCase();
 
     if (apiSource == ApiSource.coomer) {
@@ -261,7 +264,9 @@ class PostsProvider with ChangeNotifier {
 
       // Discard result if a newer refresh has started since this load began
       if (_loadGeneration != generation) {
-        AppLogger.debug('🔍 DEBUG: Discarding stale searchPosts result (generation mismatch)');
+        AppLogger.debug(
+          '🔍 DEBUG: Discarding stale searchPosts result (generation mismatch)',
+        );
         return;
       }
 
@@ -294,7 +299,8 @@ class PostsProvider with ChangeNotifier {
     if (refresh) {
       _loadGeneration++; // Invalidate any in-flight load from a previous session
       _latestPostsOffset = 0;
-      _latestPosts.clear(); // Clear latest-posts list (creator _posts are unaffected)
+      _latestPosts
+          .clear(); // Clear latest-posts list (creator _posts are unaffected)
       _latestPostsHasMore = true;
     }
 
@@ -312,7 +318,7 @@ class PostsProvider with ChangeNotifier {
       final effectiveApiSource = apiSource ?? settingsProvider.defaultApiSource;
       _currentApiSource = effectiveApiSource;
       _latestPostsApiSource = effectiveApiSource;
-      
+
       AppLogger.debug(
         '🔍 DEBUG: loadLatestPosts - Using API source: $effectiveApiSource (locked for this session)',
       );
@@ -348,7 +354,9 @@ class PostsProvider with ChangeNotifier {
 
             // Discard result if a newer refresh has started since this load began
             if (_loadGeneration != generation) {
-              AppLogger.debug('🔍 DEBUG: Discarding stale loadLatestPosts result (generation mismatch)');
+              AppLogger.debug(
+                '🔍 DEBUG: Discarding stale loadLatestPosts result (generation mismatch)',
+              );
               return;
             }
 
@@ -368,12 +376,16 @@ class PostsProvider with ChangeNotifier {
           }
         },
         maxRetries: maxRetries,
-        delay: (attempt) => _retryDelay(effectiveApiSource, attempt,
-            exponentialForCoomer: true),
+        delay: (attempt) => _retryDelay(
+          effectiveApiSource,
+          attempt,
+          exponentialForCoomer: true,
+        ),
       );
     } catch (e) {
       if (_loadGeneration == generation) {
-        _error = 'Failed to load latest posts. Please try again or switch API in Settings.';
+        _error =
+            'Failed to load latest posts. Please try again or switch API in Settings.';
         AppLogger.debug('🔍 DEBUG: Final error in loadLatestPosts: $e');
       }
     } finally {
@@ -390,7 +402,8 @@ class PostsProvider with ChangeNotifier {
     if (_isLoading || !_latestPostsHasMore) return;
 
     // Always use the API source that was locked at the start of this latest-posts session.
-    final effectiveApiSource = _latestPostsApiSource ?? settingsProvider.defaultApiSource;
+    final effectiveApiSource =
+        _latestPostsApiSource ?? settingsProvider.defaultApiSource;
 
     _isLoading = true;
     _error = null;
@@ -416,7 +429,9 @@ class PostsProvider with ChangeNotifier {
             );
 
             if (_loadGeneration != generation) {
-              AppLogger.debug('🔍 DEBUG: Discarding stale loadMoreLatestPosts result (generation mismatch)');
+              AppLogger.debug(
+                '🔍 DEBUG: Discarding stale loadMoreLatestPosts result (generation mismatch)',
+              );
               return;
             }
 
@@ -436,8 +451,11 @@ class PostsProvider with ChangeNotifier {
           }
         },
         maxRetries: maxRetries,
-        delay: (attempt) => _retryDelay(effectiveApiSource, attempt,
-            exponentialForCoomer: true),
+        delay: (attempt) => _retryDelay(
+          effectiveApiSource,
+          attempt,
+          exponentialForCoomer: true,
+        ),
       );
     } catch (e) {
       if (_loadGeneration == generation) {
@@ -457,7 +475,8 @@ class PostsProvider with ChangeNotifier {
 
     // Use the SAME API source that was used to load the initial posts
     // DO NOT switch to settingsProvider.defaultApiSource
-    final effectiveApiSource = _currentApiSource ?? settingsProvider.defaultApiSource;
+    final effectiveApiSource =
+        _currentApiSource ?? settingsProvider.defaultApiSource;
 
     _isLoading = true;
     _error = null;
@@ -484,7 +503,9 @@ class PostsProvider with ChangeNotifier {
 
             // Discard result if a newer refresh has started since this load began
             if (_loadGeneration != generation) {
-              AppLogger.debug('🔍 DEBUG: Discarding stale loadMorePosts result (generation mismatch)');
+              AppLogger.debug(
+                '🔍 DEBUG: Discarding stale loadMorePosts result (generation mismatch)',
+              );
               return;
             }
 
@@ -505,8 +526,11 @@ class PostsProvider with ChangeNotifier {
           }
         },
         maxRetries: maxRetries,
-        delay: (attempt) => _retryDelay(effectiveApiSource, attempt,
-            exponentialForCoomer: true),
+        delay: (attempt) => _retryDelay(
+          effectiveApiSource,
+          attempt,
+          exponentialForCoomer: true,
+        ),
       );
     } catch (e) {
       if (_loadGeneration == generation) {
@@ -546,7 +570,9 @@ class PostsProvider with ChangeNotifier {
 
       // Discard result if a newer refresh has started since this load began
       if (_loadGeneration != generation) {
-        AppLogger.debug('🔍 DEBUG: Discarding stale searchByTags result (generation mismatch)');
+        AppLogger.debug(
+          '🔍 DEBUG: Discarding stale searchByTags result (generation mismatch)',
+        );
         return;
       }
 
@@ -714,8 +740,11 @@ class PostsProvider with ChangeNotifier {
           }
         },
         maxRetries: maxRetries,
-        delay: (attempt) => _retryDelay(effectiveApiSource, attempt,
-            exponentialForCoomer: true),
+        delay: (attempt) => _retryDelay(
+          effectiveApiSource,
+          attempt,
+          exponentialForCoomer: true,
+        ),
       );
     } catch (e) {
       _error = _getErrorMessage(e, _currentApiSource ?? ApiSource.kemono);

@@ -122,9 +122,7 @@ class AppEmptyState extends StatelessWidget {
                 onPressed: onAction,
                 icon: const Icon(Icons.refresh),
                 label: Text(actionLabel!),
-                style: TextButton.styleFrom(
-                  foregroundColor: color,
-                ),
+                style: TextButton.styleFrom(foregroundColor: color),
               ),
             ],
           ],
@@ -229,10 +227,7 @@ class AppSkeletonBox extends StatelessWidget {
       child: Container(
         width: width,
         height: height,
-        decoration: BoxDecoration(
-          color: baseColor,
-          borderRadius: borderRadius,
-        ),
+        decoration: BoxDecoration(color: baseColor, borderRadius: borderRadius),
       ),
     );
   }
@@ -242,11 +237,7 @@ class AppSkeletonTile extends StatelessWidget {
   final double height;
   final bool showLeading;
 
-  const AppSkeletonTile({
-    super.key,
-    this.height = 86,
-    this.showLeading = true,
-  });
+  const AppSkeletonTile({super.key, this.height = 86, this.showLeading = true});
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +295,8 @@ class AppSkeletonList extends StatelessWidget {
     return ListView.separated(
       padding: padding,
       shrinkWrap: shrinkWrap,
-      physics: physics ?? (shrinkWrap ? const NeverScrollableScrollPhysics() : null),
+      physics:
+          physics ?? (shrinkWrap ? const NeverScrollableScrollPhysics() : null),
       itemCount: itemCount,
       itemBuilder: (context, index) => const AppSkeletonTile(),
       separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -339,7 +331,8 @@ class AppSkeletonGrid extends StatelessWidget {
     return GridView.builder(
       padding: padding,
       shrinkWrap: shrinkWrap,
-      physics: physics ?? (shrinkWrap ? const NeverScrollableScrollPhysics() : null),
+      physics:
+          physics ?? (shrinkWrap ? const NeverScrollableScrollPhysics() : null),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: crossAxisSpacing,

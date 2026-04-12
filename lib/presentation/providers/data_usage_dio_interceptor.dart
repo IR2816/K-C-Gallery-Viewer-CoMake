@@ -44,7 +44,8 @@ class DataUsageDioInterceptor extends Interceptor {
     if (bytes <= 0) return;
 
     final contentType = response.headers.value(Headers.contentTypeHeader);
-    final category = categoryOverride ??
+    final category =
+        categoryOverride ??
         DataUsageTracker.categorizeRequest(
           response.requestOptions.uri.toString(),
           contentType: contentType,
@@ -55,7 +56,8 @@ class DataUsageDioInterceptor extends Interceptor {
   }
 
   int _resolveResponseBytes(Response response) {
-    final fromHeader = int.tryParse(
+    final fromHeader =
+        int.tryParse(
           response.headers.value(Headers.contentLengthHeader) ?? '',
         ) ??
         0;

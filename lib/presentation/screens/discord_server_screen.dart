@@ -294,7 +294,8 @@ class _DiscordServerScreenState extends State<DiscordServerScreen> {
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: 6,
-                    itemBuilder: (context, index) => const DiscordMessageSkeleton(),
+                    itemBuilder: (context, index) =>
+                        const DiscordMessageSkeleton(),
                   );
                 }
 

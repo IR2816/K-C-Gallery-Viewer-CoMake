@@ -101,8 +101,12 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1F22) : AppTheme.getBackgroundColor(context);
-    final appBarColor = isDark ? const Color(0xFF2B2D31) : AppTheme.getSurfaceColor(context);
+    final bgColor = isDark
+        ? const Color(0xFF1E1F22)
+        : AppTheme.getBackgroundColor(context);
+    final appBarColor = isDark
+        ? const Color(0xFF2B2D31)
+        : AppTheme.getSurfaceColor(context);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -123,7 +127,11 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
                 color: Colors.indigoAccent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.tag_rounded, size: 18, color: Colors.indigoAccent),
+              child: const Icon(
+                Icons.tag_rounded,
+                size: 18,
+                color: Colors.indigoAccent,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -212,8 +220,12 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
     final headerMeta = isEdited ? '$timeText - edited' : timeText;
     final hasText = post.title.isNotEmpty || post.content.isNotEmpty;
     final mediaItems = _getMediaItems(post);
-    final visualMedia = mediaItems.where((item) => item['type'] != 'file').toList();
-    final fileItems = mediaItems.where((item) => item['type'] == 'file').toList();
+    final visualMedia = mediaItems
+        .where((item) => item['type'] != 'file')
+        .toList();
+    final fileItems = mediaItems
+        .where((item) => item['type'] == 'file')
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -243,7 +255,9 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
                     const SizedBox(width: 8),
                     Text(
                       headerMeta,
-                      style: AppTheme.getCaptionStyle(context).copyWith(color: AppTheme.secondaryTextColor),
+                      style: AppTheme.getCaptionStyle(
+                        context,
+                      ).copyWith(color: AppTheme.secondaryTextColor),
                     ),
                   ],
                 ),
@@ -251,7 +265,10 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.getCardColor(context),
                       borderRadius: const BorderRadius.only(
@@ -259,10 +276,21 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
                         bottomLeft: Radius.circular(16),
                         bottomRight: Radius.circular(16),
                       ),
-                      border: Border.all(color: AppTheme.getBorderColor(context).withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.4)),
+                      border: Border.all(
+                        color: AppTheme.getBorderColor(context).withValues(
+                          alpha: Theme.of(context).brightness == Brightness.dark
+                              ? 0.05
+                              : 0.4,
+                        ),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.1 : 0.05),
+                          color: Colors.black.withValues(
+                            alpha:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? 0.1
+                                : 0.05,
+                          ),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -307,8 +335,9 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
                 if (fileItems.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Column(
-                    children:
-                        fileItems.map((item) => _buildFileRow(item)).toList(),
+                    children: fileItems
+                        .map((item) => _buildFileRow(item))
+                        .toList(),
                   ),
                 ],
               ],
@@ -348,7 +377,9 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
           // Strip leading slash and any existing 'data/' prefix to avoid
           // double /data/ when the API path is /data/ab/cd/file.jpg.
           final clean = path.startsWith('/') ? path.substring(1) : path;
-          final stripped = clean.startsWith('data/') ? clean.substring(5) : clean;
+          final stripped = clean.startsWith('data/')
+              ? clean.substring(5)
+              : clean;
           rawUrl = 'https://n2.kemono.cr/data/$stripped';
         }
 
@@ -359,7 +390,9 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
           thumbnailUrl = 'https:$path';
         } else {
           final clean = path.startsWith('/') ? path.substring(1) : path;
-          final stripped = clean.startsWith('data/') ? clean.substring(5) : clean;
+          final stripped = clean.startsWith('data/')
+              ? clean.substring(5)
+              : clean;
           thumbnailUrl = 'https://img.kemono.cr/thumbnail/data/$stripped';
         }
 
@@ -428,8 +461,9 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
     return _contentTypeCache.putIfAbsent(url, () async {
       try {
         final client = TrackedHttpClientFactory.getTrackedClient();
-        final headers =
-            ApiHeaderService.getMediaHeaders(referer: 'https://kemono.cr/');
+        final headers = ApiHeaderService.getMediaHeaders(
+          referer: 'https://kemono.cr/',
+        );
         final response = await client
             .head(Uri.parse(url), headers: headers)
             .timeout(const Duration(seconds: 8));
@@ -497,7 +531,8 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
     final rawUrl = item['url'] as String? ?? '';
     final thumbnailUrl = item['thumbnail_url'] as String?;
     final isGif = item['is_gif'] == true;
-    final displayUrl = settings.loadThumbnails && (thumbnailUrl ?? '').isNotEmpty
+    final displayUrl =
+        settings.loadThumbnails && (thumbnailUrl ?? '').isNotEmpty
         ? thumbnailUrl!
         : rawUrl;
 
@@ -513,8 +548,7 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: AspectRatio(
-                    aspectRatio:
-                        isSingle ? _singleMediaAspectRatio : 1,
+                    aspectRatio: isSingle ? _singleMediaAspectRatio : 1,
                     child: _buildImageWithLayout(
                       displayUrl,
                       rawUrl,
@@ -771,9 +805,9 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
                 Expanded(
                   child: Text(
                     name,
-                    style: AppTheme.getBodyStyle(context).copyWith(
-                      color: AppTheme.getOnSurfaceColor(context),
-                    ),
+                    style: AppTheme.getBodyStyle(
+                      context,
+                    ).copyWith(color: AppTheme.getOnSurfaceColor(context)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -849,10 +883,7 @@ class _DiscordChannelPostsScreenState extends State<DiscordChannelPostsScreen> {
       child: Center(
         child: Text(
           label,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: color, fontWeight: FontWeight.bold),
         ),
       ),
     );

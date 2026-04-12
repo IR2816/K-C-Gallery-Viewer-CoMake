@@ -59,14 +59,14 @@ class LatestPostsController extends ChangeNotifier {
     required SettingsProvider settingsProvider,
     required TagFilterProvider tagFilterProvider,
     required PostSearchProvider postSearchProvider,
-  })  : _postsProvider = postsProvider,
-        _settingsProvider = settingsProvider,
-        _tagFilterProvider = tagFilterProvider,
-        _postSearchProvider = postSearchProvider,
-        selectedService = settingsProvider.defaultApiSource.name,
-        blockedTags = tagFilterProvider.blacklist.toList(),
-        _lastKnownKemonoDomain = settingsProvider.cleanKemonoDomain,
-        _lastKnownCoomerDomain = settingsProvider.cleanCoomerDomain {
+  }) : _postsProvider = postsProvider,
+       _settingsProvider = settingsProvider,
+       _tagFilterProvider = tagFilterProvider,
+       _postSearchProvider = postSearchProvider,
+       selectedService = settingsProvider.defaultApiSource.name,
+       blockedTags = tagFilterProvider.blacklist.toList(),
+       _lastKnownKemonoDomain = settingsProvider.cleanKemonoDomain,
+       _lastKnownCoomerDomain = settingsProvider.cleanCoomerDomain {
     _settingsProvider.addListener(_onSettingsChanged);
     _tagFilterProvider.addListener(_onTagsChanged);
     _postSearchProvider.addListener(_onSearchProviderChanged);
@@ -92,8 +92,7 @@ class LatestPostsController extends ChangeNotifier {
   bool get isInSearchMode => _postSearchProvider.searchQuery.isNotEmpty;
 
   /// Posts from the feed, filtered by NSFW/tag-blacklist/local-search rules.
-  List<Post> get filteredPosts =>
-      _applyFilters(_postsProvider.latestPosts);
+  List<Post> get filteredPosts => _applyFilters(_postsProvider.latestPosts);
 
   // Forward search-provider state so widgets only need one provider.
   List<Post> get searchResults => _postSearchProvider.serverSearchResults;
@@ -159,7 +158,8 @@ class LatestPostsController extends ChangeNotifier {
   void loadMoreSearch() {
     if (_postSearchProvider.isLoadingMoreSearch ||
         _postSearchProvider.isSearching ||
-        !_postSearchProvider.searchHasMore) return;
+        !_postSearchProvider.searchHasMore)
+      return;
     _postSearchProvider.loadMoreSearchResults(apiSource: currentApiSource);
   }
 
@@ -221,7 +221,8 @@ class LatestPostsController extends ChangeNotifier {
     // (e.g. an OnlyFans creator triggering a "coomer" source, then any setting
     // change triggering _onSettingsChanged would incorrectly detect a mismatch).
     final currentFeedApiSource = _postsProvider.latestPostsApiSource;
-    final shouldReload = currentFeedApiSource == null ||
+    final shouldReload =
+        currentFeedApiSource == null ||
         currentFeedApiSource != settingsApiSource;
 
     if (shouldReload) {
@@ -293,11 +294,9 @@ class LatestPostsController extends ChangeNotifier {
       filtered = posts.where((post) {
         if (hideNsfw && _isNsfwPost(post)) return false;
         if (!hasTags) return true;
-        final lowerPostTags =
-            post.tags.map((t) => t.toLowerCase()).toList();
+        final lowerPostTags = post.tags.map((t) => t.toLowerCase()).toList();
         return !blockedTags.any(
-          (blocked) =>
-              lowerPostTags.any((tag) => tag.contains(blocked)),
+          (blocked) => lowerPostTags.any((tag) => tag.contains(blocked)),
         );
       }).toList();
     }

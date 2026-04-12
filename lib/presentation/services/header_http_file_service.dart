@@ -17,7 +17,10 @@ class HeaderHttpFileService extends HttpFileService {
   }
 
   @override
-  Future<FileServiceResponse> get(String url, {Map<String, String>? headers}) async {
+  Future<FileServiceResponse> get(
+    String url, {
+    Map<String, String>? headers,
+  }) async {
     final merged = {...defaultHeaders, ...?headers};
     final response = await super.get(url, headers: merged);
     final tracker = _tracker;
@@ -57,10 +60,13 @@ class _TrackedFileServiceResponse implements FileServiceResponse {
         },
         handleDone: (sink) {
           final isSuccessful = statusCode >= 200 && statusCode < 400;
-          final fallbackBytes = (!hadError && streamedBytes == 0 && isSuccessful)
+          final fallbackBytes =
+              (!hadError && streamedBytes == 0 && isSuccessful)
               ? (contentLength ?? 0)
               : 0;
-          final bytesToTrack = streamedBytes > 0 ? streamedBytes : fallbackBytes;
+          final bytesToTrack = streamedBytes > 0
+              ? streamedBytes
+              : fallbackBytes;
           if (bytesToTrack > 0) {
             tracker.trackUsage(
               bytesToTrack,

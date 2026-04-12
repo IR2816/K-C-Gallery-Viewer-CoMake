@@ -58,7 +58,8 @@ class JsonFieldUtils {
     DateTime? defaultValue,
   }) {
     final value = json[key];
-    if (value == null) return defaultValue ?? DateTime.fromMillisecondsSinceEpoch(0);
+    if (value == null)
+      return defaultValue ?? DateTime.fromMillisecondsSinceEpoch(0);
     if (value is DateTime) return value;
     final parsed = DateTime.tryParse(value.toString());
     return parsed ?? defaultValue ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -76,16 +77,11 @@ class JsonFieldUtils {
     return <T>[];
   }
 
-  static Map<String, dynamic> map(
-    Map<String, dynamic> json,
-    String key,
-  ) {
+  static Map<String, dynamic> map(Map<String, dynamic> json, String key) {
     final value = json[key];
     if (value is Map<String, dynamic>) return value;
     if (value is Map) {
-      return value.map(
-        (k, v) => MapEntry(k.toString(), v),
-      );
+      return value.map((k, v) => MapEntry(k.toString(), v));
     }
     return <String, dynamic>{};
   }

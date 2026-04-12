@@ -84,7 +84,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppTheme.primaryColor.withValues(alpha: 0.14), Colors.transparent],
+              colors: [
+                AppTheme.primaryColor.withValues(alpha: 0.14),
+                Colors.transparent,
+              ],
             ),
           ),
         ),
@@ -92,7 +95,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ShaderMask(
-              shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
+              shaderCallback: (bounds) =>
+                  AppTheme.primaryGradient.createShader(bounds),
               child: const Text(
                 'Settings',
                 style: TextStyle(
@@ -108,7 +112,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.75),
+                color: AppTheme.getSecondaryTextColor(
+                  context,
+                ).withValues(alpha: 0.75),
               ),
             ),
           ],
@@ -152,7 +158,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             ListView(
-              padding: EdgeInsets.only(top: 8, bottom: AppTheme.getBottomContentPadding(context)),
+              padding: EdgeInsets.only(
+                top: 8,
+                bottom: AppTheme.getBottomContentPadding(context),
+              ),
               children: [
                 _buildAppProfileCard(),
                 const SizedBox(height: 24),
@@ -214,7 +223,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: AppTheme.getSecondaryTextColor(context).withValues(alpha: 0.8),
+              color: AppTheme.getSecondaryTextColor(
+                context,
+              ).withValues(alpha: 0.8),
               letterSpacing: 1.2,
             ),
           ),
@@ -230,14 +241,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.getBorderColor(
-            context,
-          ).withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.4),
+          color: AppTheme.getBorderColor(context).withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.4,
+          ),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(
-              alpha: Theme.of(context).brightness == Brightness.dark ? 0.1 : 0.05,
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.1
+                  : 0.05,
             ),
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -256,14 +269,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppTheme.getBorderColor(
-            context,
-          ).withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.4),
+          color: AppTheme.getBorderColor(context).withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.4,
+          ),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(
-              alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.08,
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.2
+                  : 0.08,
             ),
             blurRadius: 15,
             offset: const Offset(0, 8),
@@ -287,7 +302,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 36),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
           ),
           const SizedBox(width: 20),
           // App info
@@ -306,11 +325,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: const Text(
                     'PREMIUM EDITION',
@@ -339,8 +363,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               // Theme Selection
               ListTile(
-                leading: const Icon(Icons.palette_rounded, size: 20, color: Colors.indigoAccent),
-                title: const Text('Theme', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading: const Icon(
+                  Icons.palette_rounded,
+                  size: 20,
+                  color: Colors.indigoAccent,
+                ),
+                title: const Text(
+                  'Theme',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: Text(_getThemeDisplayName(themeProvider.themeMode)),
                 trailing: DropdownButton<ThemeMode>(
                   value: themeProvider.themeMode,
@@ -352,9 +383,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   underline: const SizedBox(),
                   icon: const Icon(Icons.keyboard_arrow_down_rounded),
                   items: const [
-                    DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
-                    DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
-                    DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text('Light'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text('Dark'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text('System'),
+                    ),
                   ],
                 ),
               ),
@@ -363,9 +403,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Text Size
               ListTile(
-                leading: const Icon(Icons.format_size_rounded, size: 20, color: Colors.amber),
-                title: const Text('Text Size', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(_getTextSizeDisplayName(themeProvider.textScale)),
+                leading: const Icon(
+                  Icons.format_size_rounded,
+                  size: 20,
+                  color: Colors.amber,
+                ),
+                title: const Text(
+                  'Text Size',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  _getTextSizeDisplayName(themeProvider.textScale),
+                ),
                 trailing: DropdownButton<double>(
                   value: themeProvider.textScale,
                   onChanged: (double? newTextScale) {
@@ -398,9 +447,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               // Blocked Tags
               ListTile(
-                leading: const Icon(Icons.tag_rounded, size: 20, color: Colors.blueAccent),
-                title: const Text('Blocked Tags', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('${tagFilterProvider.blacklist.length} tags currently blocked'),
+                leading: const Icon(
+                  Icons.tag_rounded,
+                  size: 20,
+                  color: Colors.blueAccent,
+                ),
+                title: const Text(
+                  'Blocked Tags',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${tagFilterProvider.blacklist.length} tags currently blocked',
+                ),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                 onTap: () => _showBlockedTagsScreen(),
               ),
@@ -409,7 +467,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Hide NSFW
               SwitchListTile(
-                secondary: const Icon(Icons.explicit_rounded, size: 20, color: Colors.redAccent),
+                secondary: const Icon(
+                  Icons.explicit_rounded,
+                  size: 20,
+                  color: Colors.redAccent,
+                ),
                 title: const Text(
                   'Hide NSFW Content',
                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -424,12 +486,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Services Filter
               ListTile(
-                leading: const Icon(Icons.hub_rounded, size: 20, color: Colors.teal),
+                leading: const Icon(
+                  Icons.hub_rounded,
+                  size: 20,
+                  color: Colors.teal,
+                ),
                 title: const Text(
                   'Preferred Source',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: Text(_getServiceDisplayName(settingsProvider.defaultApiSource)),
+                subtitle: Text(
+                  _getServiceDisplayName(settingsProvider.defaultApiSource),
+                ),
                 trailing: DropdownButton<ApiSource>(
                   value: settingsProvider.defaultApiSource,
                   onChanged: (ApiSource? newSource) {
@@ -440,7 +508,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   underline: const SizedBox(),
                   icon: const Icon(Icons.keyboard_arrow_down_rounded),
                   items: ApiSource.values.map((source) {
-                    return DropdownMenuItem(value: source, child: Text(source.name.toUpperCase()));
+                    return DropdownMenuItem(
+                      value: source,
+                      child: Text(source.name.toUpperCase()),
+                    );
                   }).toList(),
                 ),
               ),
@@ -459,12 +530,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.grid_view_rounded, size: 20, color: Colors.orangeAccent),
+                leading: const Icon(
+                  Icons.grid_view_rounded,
+                  size: 20,
+                  color: Colors.orangeAccent,
+                ),
                 title: const Text(
                   'Latest Card Style',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: Text(_getPostCardStyleDisplayName(settingsProvider.latestPostCardStyle)),
+                subtitle: Text(
+                  _getPostCardStyleDisplayName(
+                    settingsProvider.latestPostCardStyle,
+                  ),
+                ),
                 trailing: DropdownButton<String>(
                   value: settingsProvider.latestPostCardStyle,
                   onChanged: (String? newStyle) {
@@ -482,9 +561,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(height: 1, indent: 56),
               ListTile(
-                leading: const Icon(Icons.view_column_rounded, size: 20, color: Colors.cyan),
-                title: const Text('Layout Columns', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('${settingsProvider.latestPostsColumns} columns'),
+                leading: const Icon(
+                  Icons.view_column_rounded,
+                  size: 20,
+                  color: Colors.cyan,
+                ),
+                title: const Text(
+                  'Layout Columns',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${settingsProvider.latestPostsColumns} columns',
+                ),
                 trailing: DropdownButton<int>(
                   value: settingsProvider.latestPostsColumns,
                   onChanged: (int? newValue) {
@@ -522,11 +610,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   size: 20,
                   color: Colors.purple,
                 ),
-                title: const Text('Autoplay Videos', style: TextStyle(fontWeight: FontWeight.w600)),
+                title: const Text(
+                  'Autoplay Videos',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text('Play automatically in feed'),
                 activeThumbColor: AppTheme.primaryColor,
                 value: settingsProvider.autoplayVideo,
-                onChanged: (bool value) => settingsProvider.setAutoplayVideo(value),
+                onChanged: (bool value) =>
+                    settingsProvider.setAutoplayVideo(value),
               ),
 
               const Divider(height: 1, indent: 56),
@@ -538,20 +630,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   size: 20,
                   color: Colors.green,
                 ),
-                title: const Text('Optimize Images', style: TextStyle(fontWeight: FontWeight.w600)),
+                title: const Text(
+                  'Optimize Images',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text('Use thumbnails to save data'),
                 activeThumbColor: AppTheme.primaryColor,
                 value: settingsProvider.loadThumbnails,
-                onChanged: (bool value) => settingsProvider.setLoadThumbnails(value),
+                onChanged: (bool value) =>
+                    settingsProvider.setLoadThumbnails(value),
               ),
 
               const Divider(height: 1, indent: 56),
 
               // Image Fit Mode
               ListTile(
-                leading: const Icon(Icons.aspect_ratio_rounded, size: 20, color: Colors.blueAccent),
-                title: const Text('Image Fit Mode', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(_getImageFitDisplayName(settingsProvider.imageFitMode)),
+                leading: const Icon(
+                  Icons.aspect_ratio_rounded,
+                  size: 20,
+                  color: Colors.blueAccent,
+                ),
+                title: const Text(
+                  'Image Fit Mode',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  _getImageFitDisplayName(settingsProvider.imageFitMode),
+                ),
                 trailing: DropdownButton<BoxFit>(
                   value: settingsProvider.imageFitMode,
                   onChanged: (BoxFit? newFit) {
@@ -602,10 +707,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text('Primary source domain'),
-                trailing: DomainStatusBadge(
-                  apiSource: 'kemono',
-                  compact: true,
-                ),
+                trailing: DomainStatusBadge(apiSource: 'kemono', compact: true),
               ),
 
               const Divider(height: 1, indent: 56),
@@ -630,10 +732,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text('Secondary source domain'),
-                trailing: DomainStatusBadge(
-                  apiSource: 'coomer',
-                  compact: true,
-                ),
+                trailing: DomainStatusBadge(apiSource: 'coomer', compact: true),
               ),
 
               const Divider(height: 1, indent: 56),
@@ -682,18 +781,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: Colors.blueAccent,
                   size: 20,
                 ),
-                title: const Text('Download Engine', style: TextStyle(fontWeight: FontWeight.w600)),
+                title: const Text(
+                  'Download Engine',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text('High-speed secure fetching'),
                 trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.green.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: const Text(
                     'OPTIMIZED',
-                    style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 onTap: () => _showDownloadMethodInfo(context),
@@ -703,7 +814,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Browser Info
               ListTile(
-                leading: const Icon(Icons.open_in_new_rounded, color: Colors.blue, size: 20),
+                leading: const Icon(
+                  Icons.open_in_new_rounded,
+                  color: Colors.blue,
+                  size: 20,
+                ),
                 title: const Text(
                   'External Handlers',
                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -717,12 +832,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Organize Downloads
               SwitchListTile(
-                secondary: const Icon(Icons.folder_special_rounded, size: 20, color: Colors.orange),
+                secondary: const Icon(
+                  Icons.folder_special_rounded,
+                  size: 20,
+                  color: Colors.orange,
+                ),
                 title: const Text(
                   'Organize by Creator',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Sort into {creator}/{date}_{title}/ subfolders'),
+                subtitle: const Text(
+                  'Sort into {creator}/{date}_{title}/ subfolders',
+                ),
                 activeThumbColor: AppTheme.primaryColor,
                 value: settingsProvider.organizeDownloads,
                 onChanged: (bool value) {
@@ -780,7 +901,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SizedBox(width: 8),
                         Text(
                           'Direct Download Links',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
                         ),
                       ],
                     ),
@@ -792,7 +916,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 8),
                     const Text(
                       '→ External Browser (Recommended)',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -815,16 +942,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SizedBox(width: 8),
                         Text(
                           'Regular URLs',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text('Streaming URLs, web pages, etc.', style: TextStyle(fontSize: 12)),
+                    const Text(
+                      'Streaming URLs, web pages, etc.',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     const SizedBox(height: 8),
                     const Text(
                       '→ In-App WebView (First Try)',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -847,7 +983,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SizedBox(width: 8),
                         Text(
                           'Why This Approach?',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
                         ),
                       ],
                     ),
@@ -866,7 +1005,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Got it')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
         ],
       ),
     );
@@ -892,11 +1034,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
-            const Text('Platform:', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Platform:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             Text('• Android: Chrome Custom Tabs'),
             Text('• iOS: SFSafariViewController'),
             const SizedBox(height: 12),
-            const Text('Keuntungan:', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Keuntungan:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             const Text('• Server melihat sebagai browser asli'),
             const Text('• Cookie dan TLS browser'),
             const Text('• Tidak ada tab permanen'),
@@ -912,12 +1060,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: const Text(
                 '📱 Solusi terbaik untuk download stabil',
-                style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -937,14 +1093,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final exportMap = <String, dynamic>{
         'export_version': 1,
         'exported_at': DateTime.now().toIso8601String(),
-        'saved_posts':
-            savedPostsJson != null ? json.decode(savedPostsJson) : [],
-        'favorite_creators':
-            favoriteCreatorsJson != null
-                ? json.decode(favoriteCreatorsJson)
-                : [],
-        'bookmarks':
-            bookmarksRaw.map((s) => json.decode(s)).toList(),
+        'saved_posts': savedPostsJson != null
+            ? json.decode(savedPostsJson)
+            : [],
+        'favorite_creators': favoriteCreatorsJson != null
+            ? json.decode(favoriteCreatorsJson)
+            : [],
+        'bookmarks': bookmarksRaw.map((s) => json.decode(s)).toList(),
       };
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(exportMap);
@@ -996,7 +1151,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               // Data Usage Monitor
               ListTile(
-                leading: const Icon(Icons.analytics_rounded, size: 20, color: Colors.blueAccent),
+                leading: const Icon(
+                  Icons.analytics_rounded,
+                  size: 20,
+                  color: Colors.blueAccent,
+                ),
                 title: const Text(
                   'Data Usage Dashboard',
                   style: TextStyle(fontWeight: FontWeight.w600),
@@ -1008,7 +1167,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const DataUsageDashboard()),
+                    MaterialPageRoute(
+                      builder: (context) => const DataUsageDashboard(),
+                    ),
                   );
                 },
               ),
@@ -1017,12 +1178,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Export saved data
               ListTile(
-                leading: const Icon(Icons.upload_file_rounded, size: 20, color: Colors.teal),
+                leading: const Icon(
+                  Icons.upload_file_rounded,
+                  size: 20,
+                  color: Colors.teal,
+                ),
                 title: const Text(
                   'Export Saved Data',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Back up saved posts, bookmarks & favourite creators'),
+                subtitle: const Text(
+                  'Back up saved posts, bookmarks & favourite creators',
+                ),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                 onTap: _exportSavedData,
               ),
@@ -1031,8 +1198,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Cache Size Info
               ListTile(
-                leading: const Icon(Icons.cleaning_services_rounded, size: 20, color: Colors.amber),
-                title: const Text('Disk Cache', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading: const Icon(
+                  Icons.cleaning_services_rounded,
+                  size: 20,
+                  color: Colors.amber,
+                ),
+                title: const Text(
+                  'Disk Cache',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: FutureBuilder<String>(
                   future: _cacheSizeFuture,
                   builder: (context, snapshot) {
@@ -1046,7 +1220,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () => _clearCache(),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.redAccent,
-                    textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
                   ),
                   child: const Text('CLEAR'),
                 ),
@@ -1056,8 +1233,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Search History Tracking
               ListTile(
-                leading: const Icon(Icons.search_rounded, size: 20, color: Colors.purpleAccent),
-                title: const Text('Search History', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading: const Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: Colors.purpleAccent,
+                ),
+                title: const Text(
+                  'Search History',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text('Enable local tracking of searches'),
               ),
               ListTile(
@@ -1084,7 +1268,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           : null,
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.redAccent,
-                        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
                       ),
                       child: const Text('Clear Search History'),
                     );
@@ -1105,8 +1292,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           // Version
           const ListTile(
-            leading: Icon(Icons.verified_rounded, size: 20, color: Colors.green),
-            title: Text('Build Version', style: TextStyle(fontWeight: FontWeight.w600)),
+            leading: Icon(
+              Icons.verified_rounded,
+              size: 20,
+              color: Colors.green,
+            ),
+            title: Text(
+              'Build Version',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: Text('1.0.3-premium'),
           ),
 
@@ -1114,8 +1308,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Data Source
           const ListTile(
-            leading: Icon(Icons.cloud_sync_rounded, size: 20, color: Colors.blueAccent),
-            title: Text('Data Sources', style: TextStyle(fontWeight: FontWeight.w600)),
+            leading: Icon(
+              Icons.cloud_sync_rounded,
+              size: 20,
+              color: Colors.blueAccent,
+            ),
+            title: Text(
+              'Data Sources',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: Text('Kemono & Coomer Decentralized API'),
           ),
 
@@ -1123,8 +1324,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Credits: Official API
           ListTile(
-            leading: const Icon(Icons.auto_stories_rounded, size: 20, color: Colors.orangeAccent),
-            title: const Text('API Documentation', style: TextStyle(fontWeight: FontWeight.w600)),
+            leading: const Icon(
+              Icons.auto_stories_rounded,
+              size: 20,
+              color: Colors.orangeAccent,
+            ),
+            title: const Text(
+              'API Documentation',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: const Text('kemono.cr/documentation'),
             trailing: const Icon(Icons.open_in_new_rounded, size: 14),
             onTap: () => _openLink('https://kemono.cr/documentation/api'),
@@ -1134,8 +1342,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Credits: Search by Name API
           ListTile(
-            leading: const Icon(Icons.code_rounded, size: 20, color: Colors.cyan),
-            title: const Text('Core Engine', style: TextStyle(fontWeight: FontWeight.w600)),
+            leading: const Icon(
+              Icons.code_rounded,
+              size: 20,
+              color: Colors.cyan,
+            ),
+            title: const Text(
+              'Core Engine',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: const Text('Powered by mbahArip API'),
             trailing: const Icon(Icons.open_in_new_rounded, size: 14),
             onTap: () => _openLink('https://github.com/mbahArip/kemono-api'),
@@ -1145,8 +1360,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Disclaimer
           const ListTile(
-            leading: Icon(Icons.gavel_rounded, size: 20, color: Colors.blueGrey),
-            title: Text('Legal Disclaimer', style: TextStyle(fontWeight: FontWeight.w600)),
+            leading: Icon(
+              Icons.gavel_rounded,
+              size: 20,
+              color: Colors.blueGrey,
+            ),
+            title: Text(
+              'Legal Disclaimer',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: Text('Educational viewer & proxy gateway'),
           ),
         ],
@@ -1200,7 +1422,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showBlockedTagsScreen() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const BlockedTagsScreen()));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BlockedTagsScreen()),
+    );
   }
 
   void _clearCache() {
@@ -1210,7 +1435,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Clear Cache'),
         content: const Text('Are you sure you want to clear all cached data?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
@@ -1244,7 +1472,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _cacheSizeFuture = _calculateCacheSize();
     });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cache cleared')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Cache cleared')));
   }
 }
 
@@ -1267,7 +1497,10 @@ class _BlockedTagsScreenState extends State<BlockedTagsScreen> {
   }
 
   void _loadBlockedTags() {
-    final tagFilterProvider = Provider.of<TagFilterProvider>(context, listen: false);
+    final tagFilterProvider = Provider.of<TagFilterProvider>(
+      context,
+      listen: false,
+    );
     setState(() {
       _blockedTags = List.from(tagFilterProvider.blacklist);
     });
@@ -1353,7 +1586,9 @@ class _BlockedTagsScreenState extends State<BlockedTagsScreen> {
                         decoration: BoxDecoration(
                           color: AppTheme.getSurfaceColor(context),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                          border: Border.all(
+                            color: Colors.grey.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: ListTile(
                           title: Text(tag),
@@ -1377,7 +1612,10 @@ class _BlockedTagsScreenState extends State<BlockedTagsScreen> {
     final normalizedTag = tag.trim().toLowerCase();
     if (_blockedTags.contains(normalizedTag)) return;
 
-    final tagFilterProvider = Provider.of<TagFilterProvider>(context, listen: false);
+    final tagFilterProvider = Provider.of<TagFilterProvider>(
+      context,
+      listen: false,
+    );
     tagFilterProvider.addToBlacklist(normalizedTag);
 
     setState(() {
@@ -1385,17 +1623,24 @@ class _BlockedTagsScreenState extends State<BlockedTagsScreen> {
       _tagController.clear();
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Blocked: $normalizedTag')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Blocked: $normalizedTag')));
   }
 
   void _removeTag(String tag) {
-    final tagFilterProvider = Provider.of<TagFilterProvider>(context, listen: false);
+    final tagFilterProvider = Provider.of<TagFilterProvider>(
+      context,
+      listen: false,
+    );
     tagFilterProvider.removeFromBlacklist(tag);
 
     setState(() {
       _blockedTags.remove(tag);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unblocked: $tag')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Unblocked: $tag')));
   }
 }

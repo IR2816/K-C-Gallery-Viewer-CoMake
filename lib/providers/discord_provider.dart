@@ -88,57 +88,54 @@ class DiscordProvider with ChangeNotifier, AsyncLoadMixin {
 
   /// Load channels for a server
   Future<void> loadChannels(String serverId) async {
-    await runAsync(
-      () async {
-        _channelsError = null;
+    await runAsync(() async {
+      _channelsError = null;
 
-        try {
-          // Try to get server with channels first (more efficient)
-          final serverData = await _api.getServerWithChannels(serverId);
+      try {
+        // Try to get server with channels first (more efficient)
+        final serverData = await _api.getServerWithChannels(serverId);
 
-          // Extract channels from server response
-          List<dynamic> channelsData = [];
-          if (serverData['channels'] is List) {
-            channelsData = serverData['channels'] as List;
-          }
-
-          _channels = channelsData
-              .whereType<Map<String, dynamic>>()
-              .map(
-                (e) => DiscordChannel(
-                  id: e['id']?.toString() ?? '',
-                  serverId: e['server_id']?.toString() ?? serverId,
-                  name: e['name']?.toString() ?? '',
-                  parentId: e['parent_channel_id']?.toString(),
-                  isNsfw: e['is_nsfw'] ?? false,
-                  type: e['type'] ?? 11,
-                  position: e['position'] ?? 0,
-                  postCount: e['post_count'] ?? 0,
-                  emoji: e['icon_emoji']?.toString(),
-                ),
-              )
-              .toList();
-
-          _channels.sort((a, b) => a.position.compareTo(b.position));
-        } catch (e) {
-          // Fallback to lookup channels if server endpoint fails
-          try {
-            _channels = await _api.lookupChannels(serverId);
-          } catch (fallbackError) {
-            // Check if this is a 503 error
-            if (e.toString().contains('503') ||
-                fallbackError.toString().contains('503')) {
-              _channelsError =
-                  'Kemono Discord is temporarily unavailable. Please try again later.';
-            } else {
-              _channelsError = e.toString();
-            }
-            rethrow;
-          }
+        // Extract channels from server response
+        List<dynamic> channelsData = [];
+        if (serverData['channels'] is List) {
+          channelsData = serverData['channels'] as List;
         }
-      },
-      setLoading: _setLoadingChannels,
-    );
+
+        _channels = channelsData
+            .whereType<Map<String, dynamic>>()
+            .map(
+              (e) => DiscordChannel(
+                id: e['id']?.toString() ?? '',
+                serverId: e['server_id']?.toString() ?? serverId,
+                name: e['name']?.toString() ?? '',
+                parentId: e['parent_channel_id']?.toString(),
+                isNsfw: e['is_nsfw'] ?? false,
+                type: e['type'] ?? 11,
+                position: e['position'] ?? 0,
+                postCount: e['post_count'] ?? 0,
+                emoji: e['icon_emoji']?.toString(),
+              ),
+            )
+            .toList();
+
+        _channels.sort((a, b) => a.position.compareTo(b.position));
+      } catch (e) {
+        // Fallback to lookup channels if server endpoint fails
+        try {
+          _channels = await _api.lookupChannels(serverId);
+        } catch (fallbackError) {
+          // Check if this is a 503 error
+          if (e.toString().contains('503') ||
+              fallbackError.toString().contains('503')) {
+            _channelsError =
+                'Kemono Discord is temporarily unavailable. Please try again later.';
+          } else {
+            _channelsError = e.toString();
+          }
+          rethrow;
+        }
+      }
+    }, setLoading: _setLoadingChannels);
   }
 
   /// Load posts for a channel
@@ -164,12 +161,10 @@ class DiscordProvider with ChangeNotifier, AsyncLoadMixin {
         } else {
           final existingPosts = _channelPosts[channelId] ?? [];
           final existingIds = existingPosts.map((p) => p.id).toSet();
-          final uniquePosts =
-              posts.where((p) => !existingIds.contains(p.id)).toList();
-          _channelPosts[channelId] = [
-            ...existingPosts,
-            ...uniquePosts,
-          ];
+          final uniquePosts = posts
+              .where((p) => !existingIds.contains(p.id))
+              .toList();
+          _channelPosts[channelId] = [...existingPosts, ...uniquePosts];
           _log(
             '🔍 DEBUG: APPENDED POSTS - ChannelId: $channelId, Added: ${uniquePosts.length}, Total: ${_channelPosts[channelId]?.length}',
           );

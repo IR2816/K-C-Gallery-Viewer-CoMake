@@ -225,7 +225,11 @@ class _SavedScreenState extends State<SavedScreen>
             ),
             TabBarView(
               controller: _tabController,
-              children: const [SavedPostsTab(), FavoriteCreatorsTab(), BookmarksScreen()],
+              children: const [
+                SavedPostsTab(),
+                FavoriteCreatorsTab(),
+                BookmarksScreen(),
+              ],
             ),
           ],
         ),
@@ -251,7 +255,11 @@ class _SavedScreenState extends State<SavedScreen>
             children: [
               _buildSegmentTab(0, 'Posts', Icons.photo_library_rounded),
               _buildSegmentTab(1, 'Creators', Icons.people_alt_rounded),
-              _buildSegmentTabWithCount(2, 'Bookmarks', Icons.bookmarks_rounded),
+              _buildSegmentTabWithCount(
+                2,
+                'Bookmarks',
+                Icons.bookmarks_rounded,
+              ),
             ],
           ),
         );
@@ -313,6 +321,7 @@ class _SavedScreenState extends State<SavedScreen>
       ),
     );
   }
+
   Widget _buildSegmentTabWithCount(int index, String label, IconData icon) {
     final isSelected = _tabController.index == index;
     final count = context.watch<BookmarkProvider>().count;
@@ -559,7 +568,9 @@ class _SavedPostsTabState extends State<SavedPostsTab>
     // Strip leading slash then any existing 'data/' prefix so API paths like
     // '/data/ab/cd/file.jpg' don't produce /data/data/ab/cd/file.jpg.
     final cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    final stripped = cleanPath.startsWith('data/') ? cleanPath.substring(5) : cleanPath;
+    final stripped = cleanPath.startsWith('data/')
+        ? cleanPath.substring(5)
+        : cleanPath;
     return '$domain/data/$stripped';
   }
 
@@ -879,7 +890,9 @@ class _SavedPostsTabState extends State<SavedPostsTab>
                         MaterialPageRoute(
                           builder: (_) => PostDetailScreen(
                             post: post,
-                            apiSource: DomainResolver.apiSourceForService(post.service),
+                            apiSource: DomainResolver.apiSourceForService(
+                              post.service,
+                            ),
                             isFromSavedPosts: true,
                           ),
                         ),
@@ -1337,7 +1350,9 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
                       MaterialPageRoute(
                         builder: (_) => CreatorDetailScreen(
                           creator: creator,
-                          apiSource: DomainResolver.apiSourceForService(creator.service),
+                          apiSource: DomainResolver.apiSourceForService(
+                            creator.service,
+                          ),
                         ),
                       ),
                     );
@@ -1474,7 +1489,9 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
                         MaterialPageRoute(
                           builder: (_) => CreatorDetailScreen(
                             creator: creator,
-                            apiSource: DomainResolver.apiSourceForService(creator.service),
+                            apiSource: DomainResolver.apiSourceForService(
+                              creator.service,
+                            ),
                           ),
                         ),
                       );
@@ -1673,7 +1690,9 @@ class _FavoriteCreatorsTabState extends State<FavoriteCreatorsTab>
                       MaterialPageRoute(
                         builder: (_) => CreatorDetailScreen(
                           creator: creator,
-                          apiSource: DomainResolver.apiSourceForService(creator.service),
+                          apiSource: DomainResolver.apiSourceForService(
+                            creator.service,
+                          ),
                         ),
                       ),
                     );
@@ -1996,8 +2015,10 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                           onPressed: _searchCtrl.clear,
                         )
                       : null,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -2015,7 +2036,8 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                   _buildSortDropdown(),
                   const SizedBox(width: 8),
                   // Creator filter (only when creators exist)
-                  if (creators.isNotEmpty) Expanded(child: _buildCreatorDropdown(creators)),
+                  if (creators.isNotEmpty)
+                    Expanded(child: _buildCreatorDropdown(creators)),
                 ],
               ),
             ),
@@ -2023,17 +2045,17 @@ class _BookmarksScreenState extends State<BookmarksScreen>
             Expanded(
               child: filtered.isEmpty
                   ? provider.count == 0
-                      ? const AppEmptyState(
-                          icon: Icons.bookmarks_outlined,
-                          title: 'No bookmarks yet',
-                          message:
-                              'Tap the bookmark icon on a post to save it here',
-                        )
-                      : const AppEmptyState(
-                          icon: Icons.search_off_rounded,
-                          title: 'No bookmarks match',
-                          message: 'Try adjusting your search or filter',
-                        )
+                        ? const AppEmptyState(
+                            icon: Icons.bookmarks_outlined,
+                            title: 'No bookmarks yet',
+                            message:
+                                'Tap the bookmark icon on a post to save it here',
+                          )
+                        : const AppEmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: 'No bookmarks match',
+                            message: 'Try adjusting your search or filter',
+                          )
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                       itemCount: filtered.length,
@@ -2068,10 +2090,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
         icon: const Icon(Icons.sort, size: 16),
         items: BookmarkSortOrder.values
             .map(
-              (o) => DropdownMenuItem(
-                value: o,
-                child: Text(_kSortLabels[o]!),
-              ),
+              (o) => DropdownMenuItem(value: o, child: Text(_kSortLabels[o]!)),
             )
             .toList(),
         onChanged: (o) {
@@ -2085,9 +2104,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.purple.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButton<String?>(
@@ -2159,10 +2176,9 @@ class _BookmarksScreenState extends State<BookmarksScreen>
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(
-                  alpha:
-                      Theme.of(context).brightness == Brightness.dark
-                          ? 0.2
-                          : 0.06,
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.2
+                      : 0.06,
                 ),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
@@ -2284,10 +2300,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                 Icon(
                   Icons.perm_media_rounded,
                   size: 11,
-                  color: AppTheme.getSecondaryTextColor(
-                    context,
-                    opacity: 0.5,
-                  ),
+                  color: AppTheme.getSecondaryTextColor(context, opacity: 0.5),
                 ),
                 const SizedBox(width: 3),
                 Text(
@@ -2404,13 +2417,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
       edited: bm.bookmarkedDate,
       attachments: [],
       file: bm.thumbnailUrl != null
-          ? [
-              PostFile(
-                id: '',
-                name: 'thumbnail',
-                path: bm.thumbnailUrl!,
-              ),
-            ]
+          ? [PostFile(id: '', name: 'thumbnail', path: bm.thumbnailUrl!)]
           : [],
       tags: [],
       saved: false,
@@ -2468,11 +2475,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          title: Text(
-            bm.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: Text(bm.title, maxLines: 2, overflow: TextOverflow.ellipsis),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -2533,7 +2536,10 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                     children: tags
                         .map(
                           (t) => Chip(
-                            label: Text(t, style: const TextStyle(fontSize: 11)),
+                            label: Text(
+                              t,
+                              style: const TextStyle(fontSize: 11),
+                            ),
                             deleteIcon: const Icon(Icons.close, size: 14),
                             onDeleted: () => setD(() => tags.remove(t)),
                             visualDensity: VisualDensity.compact,

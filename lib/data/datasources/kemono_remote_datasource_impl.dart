@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 
 import '../../domain/entities/api_source.dart';
 import '../../utils/logger.dart';
@@ -23,7 +23,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
   String? get lastSuccessfulDomain => apiClient.lastSuccessfulDomain;
 
   KemonoRemoteDataSourceImpl({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient();
+    : apiClient = apiClient ?? ApiClient();
 
   ApiSource _resolveApiSource(String service, ApiSource provided) {
     final resolved = DomainResolver.apiSourceForService(service);
@@ -48,7 +48,10 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         cacheKey: 'creators_${apiSource.name}',
       );
 
-      final creators = ApiResponseUtils.parseList(jsonList, CreatorModel.fromJson);
+      final creators = ApiResponseUtils.parseList(
+        jsonList,
+        CreatorModel.fromJson,
+      );
 
       if (service != null && service.isNotEmpty && service != 'all') {
         return creators.where((c) => c.service == service).toList();
@@ -140,10 +143,8 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         apiSource: effectiveApiSource,
         service: service,
         cacheKey: '${effectiveApiSource.name}_$endpoint',
-        normalize: (body, decoded) => ApiResponseUtils.unwrapJsonList(
-          decoded,
-          listKeys: const ['posts'],
-        ),
+        normalize: (body, decoded) =>
+            ApiResponseUtils.unwrapJsonList(decoded, listKeys: const ['posts']),
       );
 
       return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
@@ -169,7 +170,8 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         endpoint: endpoint,
         apiSource: effectiveApiSource,
         service: service,
-        cacheKey: 'creator_links_${effectiveApiSource.name}_${service}_$creatorId',
+        cacheKey:
+            'creator_links_${effectiveApiSource.name}_${service}_$creatorId',
         normalize: (body, decoded) {
           if (decoded is List) return decoded;
           if (decoded is Map<String, dynamic>) return [decoded];
@@ -229,10 +231,8 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         endpoint: endpoint,
         apiSource: apiSource,
         cacheKey: '${apiSource.name}_$endpoint',
-        normalize: (body, decoded) => ApiResponseUtils.unwrapJsonList(
-          decoded,
-          listKeys: const ['posts'],
-        ),
+        normalize: (body, decoded) =>
+            ApiResponseUtils.unwrapJsonList(decoded, listKeys: const ['posts']),
       );
 
       return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
@@ -294,19 +294,27 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
   }
 
   List<dynamic> _parseCssResponse(String responseBody, dynamic decoded) {
-    AppLogger.debug('🔍 DEBUG: Parsing CSS response (length: ${responseBody.length})');
-    AppLogger.debug('🔍 DEBUG: Full response body: $responseBody');
+    if (kDebugMode) {
+      AppLogger.debug(
+        '🔍 DEBUG: Parsing CSS response (length: ${responseBody.length})',
+      );
+      AppLogger.debug('🔍 DEBUG: Full response body: $responseBody');
+    }
 
     if (responseBody.trim().isEmpty) {
-      AppLogger.debug('🔍 DEBUG: Empty response body');
+      if (kDebugMode) AppLogger.debug('🔍 DEBUG: Empty response body');
       return [];
     }
 
     // Check if response is HTML error page
     if (responseBody.trim().startsWith('<!') ||
         responseBody.trim().startsWith('<html')) {
-      AppLogger.debug('🔍 DEBUG: Response is HTML error page');
-      AppLogger.debug('🔍 DEBUG: HTML content: ${responseBody.substring(0, 200)}...');
+      if (kDebugMode) {
+        AppLogger.debug('🔍 DEBUG: Response is HTML error page');
+        AppLogger.debug(
+          '🔍 DEBUG: HTML content: ${responseBody.substring(0, 200)}...',
+        );
+      }
       return [];
     }
 
@@ -316,22 +324,31 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       try {
         parsed = json.decode(responseBody);
       } catch (e) {
-        AppLogger.debug('🔍 DEBUG: Direct JSON parsing failed: $e');
+        if (kDebugMode)
+          AppLogger.debug('🔍 DEBUG: Direct JSON parsing failed: $e');
       }
     }
 
     if (parsed != null) {
       if (parsed is List) {
-        AppLogger.debug(
-          '🔍 DEBUG: Successfully parsed direct JSON list with ${parsed.length} items',
-        );
+        if (kDebugMode) {
+          AppLogger.debug(
+            '🔍 DEBUG: Successfully parsed direct JSON list with ${parsed.length} items',
+          );
+        }
         return parsed;
       } else if (parsed is Map<String, dynamic>) {
-        AppLogger.debug('🔍 DEBUG: Parsed JSON object, checking for comments field');
-        if (parsed['comments'] is List) {
+        if (kDebugMode) {
           AppLogger.debug(
-            '🔍 DEBUG: Found comments field with ${parsed['comments'].length} items',
+            '🔍 DEBUG: Parsed JSON object, checking for comments field',
           );
+        }
+        if (parsed['comments'] is List) {
+          if (kDebugMode) {
+            AppLogger.debug(
+              '🔍 DEBUG: Found comments field with ${parsed['comments'].length} items',
+            );
+          }
           return parsed['comments'];
         }
         return [parsed];
@@ -352,23 +369,29 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         if (match.start >= scanEnd) break;
 
         final potentialJson = match.group(0)!;
-        AppLogger.debug(
-          '🔍 DEBUG: Found potential JSON: ${potentialJson.substring(0, potentialJson.length > 100 ? 100 : potentialJson.length)}...',
-        );
+        if (kDebugMode) {
+          AppLogger.debug(
+            '🔍 DEBUG: Found potential JSON: ${potentialJson.substring(0, potentialJson.length > 100 ? 100 : potentialJson.length)}...',
+          );
+        }
 
         try {
           final dynamic decoded = json.decode(potentialJson);
           if (decoded is List) {
-            AppLogger.debug(
-              '🔍 DEBUG: Successfully parsed JSON list with ${decoded.length} items',
-            );
+            if (kDebugMode) {
+              AppLogger.debug(
+                '🔍 DEBUG: Successfully parsed JSON list with ${decoded.length} items',
+              );
+            }
             return decoded;
           } else if (decoded is Map<String, dynamic>) {
-            AppLogger.debug('🔍 DEBUG: Successfully parsed JSON object');
+            if (kDebugMode)
+              AppLogger.debug('🔍 DEBUG: Successfully parsed JSON object');
             return [decoded]; // Wrap single object
           }
         } catch (e) {
-          AppLogger.debug('🔍 DEBUG: Failed to parse potential JSON: $e');
+          if (kDebugMode)
+            AppLogger.debug('🔍 DEBUG: Failed to parse potential JSON: $e');
           continue;
         }
       }
@@ -394,13 +417,16 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         }
       }
 
-      AppLogger.debug('🔍 DEBUG: No valid JSON found in CSS response');
+      if (kDebugMode)
+        AppLogger.debug('🔍 DEBUG: No valid JSON found in CSS response');
       return [];
     } catch (e) {
-      AppLogger.debug('🔍 DEBUG: Error parsing CSS response: $e');
-      AppLogger.debug(
-        '🔍 DEBUG: CSS response content: ${responseBody.substring(0, 500)}...',
-      );
+      if (kDebugMode) {
+        AppLogger.debug('🔍 DEBUG: Error parsing CSS response: $e');
+        AppLogger.debug(
+          '🔍 DEBUG: CSS response content: ${responseBody.substring(0, 500)}...',
+        );
+      }
       return [];
     }
   }

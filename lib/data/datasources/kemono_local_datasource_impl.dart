@@ -11,7 +11,7 @@ class KemonoLocalDataSourceImpl implements KemonoLocalDataSource {
   final PrefsStore prefsStore;
 
   KemonoLocalDataSourceImpl({required this.prefs})
-      : prefsStore = PrefsStore(prefs: prefs);
+    : prefsStore = PrefsStore(prefs: prefs);
 
   static const String _favoriteCreatorsKey = 'favorite_creators';
   static const String _savedPostsKey = 'saved_posts';

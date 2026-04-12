@@ -81,10 +81,8 @@ class _AppSkeletonState extends State<AppSkeleton>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor =
-        isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor =
-        isDark ? Colors.grey[600]! : Colors.grey[100]!;
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[600]! : Colors.grey[100]!;
 
     return AnimatedBuilder(
       animation: _animation,
@@ -167,7 +165,10 @@ class PostGridSkeleton extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AppSkeleton.rounded(height: 12, width: double.infinity),
+                          AppSkeleton.rounded(
+                            height: 12,
+                            width: double.infinity,
+                          ),
                           const SizedBox(height: 4),
                           AppSkeleton.rounded(height: 10, width: 60),
                         ],
@@ -265,10 +266,7 @@ class DetailScreenSkeleton extends StatelessWidget {
           ),
         ),
         // Media area
-        AppSkeleton.rounded(
-          height: 300,
-          borderRadius: 0,
-        ),
+        AppSkeleton.rounded(height: 300, borderRadius: 0),
         // Action bar
         Padding(
           padding: const EdgeInsets.all(16),

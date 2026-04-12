@@ -16,7 +16,8 @@ import '../../utils/logger.dart';
 class CreatorsProvider with ChangeNotifier {
   final KemonoRepository repository;
   final SettingsProvider settingsProvider;
-  final CreatorIndexManager? indexManager; // Optional, for backward compatibility
+  final CreatorIndexManager?
+  indexManager; // Optional, for backward compatibility
 
   CreatorsProvider({
     required this.repository,
@@ -43,7 +44,8 @@ class CreatorsProvider with ChangeNotifier {
   // ==================== Kemono API Getters ====================
   List<Creator> get creators => _creators;
   bool get isLoading => _isLoading;
-  bool get loading => _isLoading; // Alias for backward compatibility with mbaharip API
+  bool get loading =>
+      _isLoading; // Alias for backward compatibility with mbaharip API
   String? get error => _error;
   String? get selectedService => _selectedService;
   List<String> get favoriteCreators => _favoriteCreators.toList();
@@ -59,7 +61,6 @@ class CreatorsProvider with ChangeNotifier {
   bool get isReady => false; // Always false since we don't use index
   int get indexSize => 0; // Always 0 since we don't use index
   bool get hasNameSearchResults => _nameSearchResults.isNotEmpty;
-
 
   // ==================== Kemono API Methods ====================
 
@@ -320,7 +321,9 @@ class CreatorsProvider with ChangeNotifier {
         'Found ${results.length} creators by name (limited to ${_nameSearchResults.length})',
         tag: 'CreatorSearch',
       );
-      AppLogger.debug('🔍 DEBUG: Final results count: ${_nameSearchResults.length}');
+      AppLogger.debug(
+        '🔍 DEBUG: Final results count: ${_nameSearchResults.length}',
+      );
       AppLogger.debug(
         '🔍 DEBUG: _nameSearchResults list: ${_nameSearchResults.map((r) => r.name).toList()}',
       );
@@ -377,4 +380,3 @@ class CreatorsProvider with ChangeNotifier {
     };
   }
 }
-

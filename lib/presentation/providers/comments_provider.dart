@@ -30,7 +30,10 @@ class CommentsProvider with ChangeNotifier {
   ) async {
     // Always reload for different posts - fix state sticking issue
     if (_currentPostId != postId || _currentService != service) {
-      AppLogger.debug('New post detected, clearing previous comments', tag: 'Comments');
+      AppLogger.debug(
+        'New post detected, clearing previous comments',
+        tag: 'Comments',
+      );
       _comments.clear();
     }
 
@@ -38,7 +41,10 @@ class CommentsProvider with ChangeNotifier {
     if (_currentPostId == postId &&
         _currentService == service &&
         _comments.isNotEmpty) {
-      AppLogger.debug('Same post already loaded, skipping reload', tag: 'Comments');
+      AppLogger.debug(
+        'Same post already loaded, skipping reload',
+        tag: 'Comments',
+      );
       return;
     }
 

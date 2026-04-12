@@ -426,7 +426,9 @@ class _PopularCreatorsSectionState extends State<PopularCreatorsSection> {
               MaterialPageRoute(
                 builder: (context) => CreatorDetailScreen(
                   creator: creator,
-                  apiSource: DomainResolver.apiSourceForService(creator.service),
+                  apiSource: DomainResolver.apiSourceForService(
+                    creator.service,
+                  ),
                 ),
               ),
             );
@@ -662,5 +664,4 @@ class _PopularCreatorsSectionState extends State<PopularCreatorsSection> {
       'Upgrade-Insecure-Requests': '1',
     };
   }
-
 }

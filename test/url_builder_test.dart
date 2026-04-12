@@ -129,8 +129,10 @@ void main() {
       test('builds kemono thumbnail URL from /data/ path', () {
         const path =
             '/data/a4/41/a441621b83f7bf93d7ff1972fb7848233ac5e253c93365e451c0f00022d502a0.jpg';
-        final result =
-            MediaPreviewResolver.getThumbnailUrlFromPath(path, 'kemono');
+        final result = MediaPreviewResolver.getThumbnailUrlFromPath(
+          path,
+          'kemono',
+        );
         expect(
           result,
           'https://img.kemono.cr/thumbnail/data/a4/41/a441621b83f7bf93d7ff1972fb7848233ac5e253c93365e451c0f00022d502a0.jpg',
@@ -140,8 +142,10 @@ void main() {
       test('builds coomer thumbnail URL from /data/ path', () {
         const path =
             '/data/56/0b/560b7d65dc462caebf9a1530d95bd47374a0fdf2e40a585c83f3046b4ab1ba1e.jpg';
-        final result =
-            MediaPreviewResolver.getThumbnailUrlFromPath(path, 'coomer');
+        final result = MediaPreviewResolver.getThumbnailUrlFromPath(
+          path,
+          'coomer',
+        );
         expect(
           result,
           'https://img.coomer.st/thumbnail/data/56/0b/560b7d65dc462caebf9a1530d95bd47374a0fdf2e40a585c83f3046b4ab1ba1e.jpg',
@@ -149,8 +153,10 @@ void main() {
       });
 
       test('returns empty string for empty path', () {
-        final result =
-            MediaPreviewResolver.getThumbnailUrlFromPath('', 'kemono');
+        final result = MediaPreviewResolver.getThumbnailUrlFromPath(
+          '',
+          'kemono',
+        );
         expect(result, isEmpty);
       });
 
@@ -164,22 +170,20 @@ void main() {
 
       test('strips query parameters before building thumbnail URL', () {
         const path = '/data/ab/cd/image.jpg?f=some-query';
-        final result =
-            MediaPreviewResolver.getThumbnailUrlFromPath(path, 'kemono');
-        expect(
-          result,
-          'https://img.kemono.cr/thumbnail/data/ab/cd/image.jpg',
+        final result = MediaPreviewResolver.getThumbnailUrlFromPath(
+          path,
+          'kemono',
         );
+        expect(result, 'https://img.kemono.cr/thumbnail/data/ab/cd/image.jpg');
       });
 
       test('strips fragment before building thumbnail URL', () {
         const path = '/data/ab/cd/image.jpg#section';
-        final result =
-            MediaPreviewResolver.getThumbnailUrlFromPath(path, 'kemono');
-        expect(
-          result,
-          'https://img.kemono.cr/thumbnail/data/ab/cd/image.jpg',
+        final result = MediaPreviewResolver.getThumbnailUrlFromPath(
+          path,
+          'kemono',
         );
+        expect(result, 'https://img.kemono.cr/thumbnail/data/ab/cd/image.jpg');
       });
     });
 

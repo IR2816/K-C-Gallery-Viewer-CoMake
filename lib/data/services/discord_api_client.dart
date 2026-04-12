@@ -13,7 +13,11 @@ import 'api_header_service.dart';
 class DiscordApiClient {
   final Dio _dio;
 
-  DiscordApiClient(this._dio);
+  /// Base API URL (e.g. `https://kemono.cr/api`). Injected so the client
+  /// respects user-configured domains rather than hardcoding a host.
+  final String baseUrl;
+
+  DiscordApiClient(this._dio, {this.baseUrl = 'https://kemono.cr/api'});
 
   void _log(String message) {
     if (kDebugMode) {
@@ -26,7 +30,7 @@ class DiscordApiClient {
   Future<List<DiscordChannel>> lookupChannels(String serverId) async {
     try {
       final response = await _dio.get(
-        'https://kemono.cr/api/v1/discord/channel/lookup/$serverId',
+        '$baseUrl/v1/discord/channel/lookup/$serverId',
         options: Options(
           headers: ApiHeaderService.kemonoHeaders,
           validateStatus: (status) {
@@ -96,7 +100,7 @@ class DiscordApiClient {
     );
 
     try {
-      final url = 'https://kemono.cr/api/v1/discord/channel/$channelId';
+      final url = '$baseUrl/v1/discord/channel/$channelId';
       _log('🔍 DEBUG: MAKING REQUEST TO: $url?offset=$offset');
 
       final response = await _dio.get(
@@ -177,7 +181,7 @@ class DiscordApiClient {
   Future<List<DiscordServer>> getServers() async {
     try {
       final response = await _dio.get(
-        'https://kemono.cr/api/v1/discord/server',
+        '$baseUrl/v1/discord/server',
         options: Options(
           headers: ApiHeaderService.kemonoHeaders,
           validateStatus: (status) {
@@ -239,7 +243,7 @@ class DiscordApiClient {
   Future<Map<String, dynamic>> getServerWithChannels(String serverId) async {
     try {
       final response = await _dio.get(
-        'https://kemono.cr/api/v1/discord/server/$serverId',
+        '$baseUrl/v1/discord/server/$serverId',
         options: Options(
           headers: ApiHeaderService.kemonoHeaders,
           validateStatus: (status) {

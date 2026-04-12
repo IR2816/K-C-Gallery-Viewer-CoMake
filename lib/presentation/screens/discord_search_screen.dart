@@ -128,10 +128,12 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor =
-        isDark ? const Color(0xFF1E1F22) : AppTheme.getBackgroundColor(context);
-    final appBarColor =
-        isDark ? const Color(0xFF2B2D31) : AppTheme.getSurfaceColor(context);
+    final bgColor = isDark
+        ? const Color(0xFF1E1F22)
+        : AppTheme.getBackgroundColor(context);
+    final appBarColor = isDark
+        ? const Color(0xFF2B2D31)
+        : AppTheme.getSurfaceColor(context);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -179,8 +181,9 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
 
   Widget _buildSearchBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fieldColor =
-        isDark ? const Color(0xFF2B2D31) : Theme.of(context).cardColor;
+    final fieldColor = isDark
+        ? const Color(0xFF2B2D31)
+        : Theme.of(context).cardColor;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -203,7 +206,9 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
-                    color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.6),
+                    color: AppTheme.getOnSurfaceColor(
+                      context,
+                    ).withValues(alpha: 0.6),
                   ),
                   onPressed: () {
                     _searchController.clear();
@@ -242,11 +247,7 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
   }
 
   Widget _buildErrorState(String error, VoidCallback retry) {
-    return AppErrorState(
-      title: 'Search Error',
-      message: error,
-      onRetry: retry,
-    );
+    return AppErrorState(title: 'Search Error', message: error, onRetry: retry);
   }
 
   Widget _buildNoResultsState() {
@@ -284,7 +285,9 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
                 },
                 backgroundColor: Theme.of(context).cardColor,
                 side: BorderSide(
-                  color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.2),
+                  color: AppTheme.getOnSurfaceColor(
+                    context,
+                  ).withValues(alpha: 0.2),
                 ),
               );
             }).toList(),
@@ -298,7 +301,9 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
                   Icon(
                     Icons.discord,
                     size: 64,
-                    color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.3),
+                    color: AppTheme.getOnSurfaceColor(
+                      context,
+                    ).withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -364,8 +369,10 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 
-              Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.1,
+            color: Colors.black.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.3
+                  : 0.1,
             ),
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -524,8 +531,7 @@ class _DiscordSearchScreenState extends State<DiscordSearchScreen>
   List<DiscordServer> _paginateResults(List<DiscordServer> results) {
     if (results.isEmpty) return [];
     final totalPages = (results.length / _pageSize).ceil();
-    final safePage =
-        _currentPage >= totalPages ? totalPages - 1 : _currentPage;
+    final safePage = _currentPage >= totalPages ? totalPages - 1 : _currentPage;
     if (safePage != _currentPage) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;

@@ -20,36 +20,36 @@ class _CreatorEntry {
   });
 
   Creator toCreator() => Creator(
-        id: id,
-        service: service,
-        name: name,
-        indexed: indexed,
-        updated: updated,
-      );
+    id: id,
+    service: service,
+    name: name,
+    indexed: indexed,
+    updated: updated,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'service': service,
-        'name': name,
-        'indexed': indexed,
-        'updated': updated,
-      };
+    'id': id,
+    'service': service,
+    'name': name,
+    'indexed': indexed,
+    'updated': updated,
+  };
 
   factory _CreatorEntry.fromJson(Map<String, dynamic> json) => _CreatorEntry(
-        id: json['id'] as String? ?? '',
-        service: json['service'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        indexed: (json['indexed'] as num?)?.toInt() ?? 0,
-        updated: (json['updated'] as num?)?.toInt() ?? 0,
-      );
+    id: json['id'] as String? ?? '',
+    service: json['service'] as String? ?? '',
+    name: json['name'] as String? ?? '',
+    indexed: (json['indexed'] as num?)?.toInt() ?? 0,
+    updated: (json['updated'] as num?)?.toInt() ?? 0,
+  );
 
   factory _CreatorEntry.fromCreator(Creator creator) => _CreatorEntry(
-        id: creator.id,
-        service: creator.service,
-        name: creator.name,
-        indexed: creator.indexed,
-        updated: creator.updated,
-      );
+    id: creator.id,
+    service: creator.service,
+    name: creator.name,
+    indexed: creator.indexed,
+    updated: creator.updated,
+  );
 }
 
 /// Provides quick access to recently-viewed and locally-favorited creators.
@@ -80,8 +80,7 @@ class CreatorQuickAccessProvider with ChangeNotifier {
       _favorites.map((e) => e.toCreator()).toList();
 
   /// Returns [true] if the creator with [creatorId] is locally favorited.
-  bool isFavorite(String creatorId) =>
-      _favorites.any((e) => e.id == creatorId);
+  bool isFavorite(String creatorId) => _favorites.any((e) => e.id == creatorId);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
@@ -156,7 +155,9 @@ class CreatorQuickAccessProvider with ChangeNotifier {
           final map = jsonDecode(s) as Map<String, dynamic>;
           _recent.add(_CreatorEntry.fromJson(map));
         } catch (e) {
-          debugPrint('CreatorQuickAccessProvider: skipping corrupt recent – $e');
+          debugPrint(
+            'CreatorQuickAccessProvider: skipping corrupt recent – $e',
+          );
         }
       }
     } catch (e) {
@@ -187,7 +188,8 @@ class CreatorQuickAccessProvider with ChangeNotifier {
           _favorites.add(_CreatorEntry.fromJson(map));
         } catch (e) {
           debugPrint(
-              'CreatorQuickAccessProvider: skipping corrupt favorite – $e');
+            'CreatorQuickAccessProvider: skipping corrupt favorite – $e',
+          );
         }
       }
     } catch (e) {

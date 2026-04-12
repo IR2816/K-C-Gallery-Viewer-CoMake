@@ -37,7 +37,9 @@ class KemonoRepositoryImpl implements KemonoRepository {
         .toSet();
 
     return creators.map((creator) {
-      final isFavorited = favoriteKeys.contains('${creator.id}:${creator.service}');
+      final isFavorited = favoriteKeys.contains(
+        '${creator.id}:${creator.service}',
+      );
       return creator.copyWith(favorited: isFavorited);
     }).toList();
   }

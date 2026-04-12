@@ -119,12 +119,12 @@ class PostGrid extends StatelessWidget {
 /// only carry the creator's ID and service, so this helper assembles the
 /// smallest valid [Creator] that satisfies the navigation contract.
 Creator creatorStubFromPost(Post post) => Creator(
-      id: post.user,
-      name: post.user,
-      service: post.service,
-      indexed: 0,
-      updated: 0,
-    );
+  id: post.user,
+  name: post.user,
+  service: post.service,
+  indexed: 0,
+  updated: 0,
+);
 
 /// Staggered fade-in + slide-up animation applied to each grid tile.
 ///
@@ -162,9 +162,10 @@ class _StaggeredFadeItemState extends State<StaggeredFadeItem>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _opacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
     _slide = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
@@ -185,8 +186,7 @@ class _StaggeredFadeItemState extends State<StaggeredFadeItem>
     if (!mounted) return;
     _ctrl.reset();
     final delay = Duration(
-      milliseconds:
-          widget.index.clamp(0, _maxStaggeredItems) * _delayPerItemMs,
+      milliseconds: widget.index.clamp(0, _maxStaggeredItems) * _delayPerItemMs,
     );
     Future.delayed(delay, () {
       if (mounted) _ctrl.forward();
