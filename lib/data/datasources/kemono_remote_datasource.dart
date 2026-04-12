@@ -3,6 +3,7 @@ import '../models/post_model.dart';
 import '../../domain/entities/api_source.dart';
 
 abstract class KemonoRemoteDataSource {
+  /// Throws typed data-layer exceptions on failures.
   Future<List<CreatorModel>> getCreators({
     String? service,
     ApiSource apiSource = ApiSource.kemono,

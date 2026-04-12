@@ -5,10 +5,14 @@ import 'package:http/http.dart' as http;
 import '../../config/domain_config.dart';
 import '../../domain/entities/api_source.dart';
 import '../../presentation/providers/tracked_http_client.dart';
+import '../../utils/api_logger.dart';
 import '../../utils/logger.dart';
+import '../exceptions/api_exceptions.dart';
 import '../utils/api_response_utils.dart';
 import '../utils/domain_resolver.dart';
 import 'api_header_service.dart';
+import 'http_retry_strategy.dart';
+import 'network_connectivity_service.dart';
 
 class _ApiCacheEntry {
   final dynamic data;
@@ -51,6 +55,15 @@ class _ApiCache {
     _cache[key] = _ApiCacheEntry(data, DateTime.now());
   }
 
+  void invalidate(String key) {
+    _cache.remove(key);
+  }
+
+  void clear() {
+    _cache.clear();
+    _inFlightRequests.clear();
+  }
+
   Future<http.Response>? getInFlight(String key) => _inFlightRequests[key];
   void setInFlight(String key, Future<http.Response> request) {
     _inFlightRequests[key] = request;
@@ -58,16 +71,68 @@ class _ApiCache {
   }
 }
 
+class _CircuitBreakerState {
+  int failures = 0;
+  DateTime? openedUntil;
+
+  bool get isOpen {
+    final until = openedUntil;
+    if (until == null) return false;
+    return DateTime.now().isBefore(until);
+  }
+
+  void onSuccess() {
+    failures = 0;
+    openedUntil = null;
+  }
+
+  void onFailure({required int threshold, required Duration cooldown}) {
+    failures += 1;
+    if (failures >= threshold) {
+      openedUntil = DateTime.now().add(cooldown);
+    }
+  }
+}
+
 class ApiClient {
   final http.Client client;
   final _ApiCache _cache = _ApiCache();
+  final HttpRetryStrategy _retryStrategy;
+  final NetworkConnectivityService _connectivityService;
   final Map<String, int> _headerVariantWinnerByDomain = {};
+  final Map<String, _CircuitBreakerState> _circuitBreakerByDomain = {};
+
+  static const int _circuitBreakerThreshold = 3;
+  static const Duration _circuitBreakerCooldown = Duration(seconds: 30);
+  static const int _responseSnippetMaxLength = 200;
+
   String? _lastSuccessfulDomain;
 
   String? get lastSuccessfulDomain => _lastSuccessfulDomain;
 
-  ApiClient({http.Client? client})
-    : client = client ?? TrackedHttpClientFactory.getTrackedClient();
+  ApiClient({
+    http.Client? client,
+    HttpRetryStrategy? retryStrategy,
+    NetworkConnectivityService? connectivityService,
+  }) : client = client ?? TrackedHttpClientFactory.getTrackedClient(),
+       _retryStrategy = retryStrategy ??
+           HttpRetryStrategy(
+             policy: const RetryPolicy(
+               maxAttempts: 3,
+               initialTimeout: Duration(seconds: 30),
+               retryTimeout: Duration(seconds: 15),
+               baseDelay: Duration(seconds: 1),
+               maxDelay: Duration(seconds: 4),
+             ),
+           ),
+       _connectivityService = connectivityService ??
+           NetworkConnectivityService.instance {
+    _connectivityService.initialize();
+  }
+
+  void clearCache() => _cache.clear();
+
+  void invalidateCacheKey(String key) => _cache.invalidate(key);
 
   Future<List<dynamic>> getJsonList({
     required String endpoint,
@@ -75,14 +140,19 @@ class ApiClient {
     String? service,
     Map<String, String>? headers,
     String? cacheKey,
+    bool forceRefresh = false,
     List<dynamic> Function(String body, dynamic decoded)? normalize,
     List<Map<String, String>>? headerVariants,
   }) async {
-    if (cacheKey != null) {
+    if (!forceRefresh && cacheKey != null) {
       final cached = _cache.get(cacheKey);
       if (cached != null && cached is List) {
         return List<dynamic>.from(cached);
       }
+    }
+
+    if (forceRefresh && cacheKey != null) {
+      _cache.invalidate(cacheKey);
     }
 
     final response = await _tryWithFallback(
@@ -95,33 +165,37 @@ class ApiClient {
 
     final bodyTrimmed = response.body.trimLeft();
     if (ApiResponseUtils.isHtmlResponse(bodyTrimmed)) {
-      throw Exception(
-        'API returned HTML instead of JSON. Status: ${response.statusCode}',
+      throw ApiParsingException(
+        message: 'API returned HTML instead of JSON.',
+        endpoint: endpoint,
       );
     }
 
     dynamic decoded;
     try {
       decoded = json.decode(bodyTrimmed);
-    } catch (_) {
-      decoded = null;
+    } catch (e, stackTrace) {
+      throw ApiParsingException(
+        message: 'Failed to decode JSON list.',
+        endpoint: endpoint,
+        cause: e,
+        stackTrace: stackTrace,
+      );
     }
 
-    List<dynamic> result;
-    if (normalize != null) {
-      result = normalize(bodyTrimmed, decoded);
-    } else {
-      if (decoded is List) {
-        result = decoded;
-      } else if (decoded is Map<String, dynamic>) {
-        result = ApiResponseUtils.unwrapJsonList(
-          decoded,
-          listKeys: const ['posts', 'data', 'items'],
-        );
-      } else {
-        throw Exception('Unexpected response shape. Expected JSON list.');
-      }
-    }
+    final result = normalize != null
+        ? normalize(bodyTrimmed, decoded)
+        : decoded is List
+        ? decoded
+        : decoded is Map<String, dynamic>
+        ? ApiResponseUtils.unwrapJsonList(
+            decoded,
+            listKeys: const ['posts', 'data', 'items'],
+          )
+        : throw ApiParsingException(
+            message: 'Unexpected response shape. Expected JSON list.',
+            endpoint: endpoint,
+          );
 
     if (cacheKey != null) {
       _cache.set(cacheKey, result);
@@ -135,14 +209,19 @@ class ApiClient {
     String? service,
     Map<String, String>? headers,
     String? cacheKey,
+    bool forceRefresh = false,
     Map<String, dynamic> Function(String body, dynamic decoded)? normalize,
     List<Map<String, String>>? headerVariants,
   }) async {
-    if (cacheKey != null) {
+    if (!forceRefresh && cacheKey != null) {
       final cached = _cache.get(cacheKey);
       if (cached != null && cached is Map<String, dynamic>) {
         return Map<String, dynamic>.from(cached);
       }
+    }
+
+    if (forceRefresh && cacheKey != null) {
+      _cache.invalidate(cacheKey);
     }
 
     final response = await _tryWithFallback(
@@ -155,28 +234,32 @@ class ApiClient {
 
     final bodyTrimmed = response.body.trimLeft();
     if (ApiResponseUtils.isHtmlResponse(bodyTrimmed)) {
-      throw Exception(
-        'API returned HTML instead of JSON. Status: ${response.statusCode}',
+      throw ApiParsingException(
+        message: 'API returned HTML instead of JSON.',
+        endpoint: endpoint,
       );
     }
 
     dynamic decoded;
     try {
       decoded = json.decode(bodyTrimmed);
-    } catch (e) {
-      throw Exception('Failed to decode JSON object: $e');
+    } catch (e, stackTrace) {
+      throw ApiParsingException(
+        message: 'Failed to decode JSON object.',
+        endpoint: endpoint,
+        cause: e,
+        stackTrace: stackTrace,
+      );
     }
 
-    Map<String, dynamic> result;
-    if (normalize != null) {
-      result = normalize(bodyTrimmed, decoded);
-    } else {
-      if (decoded is Map<String, dynamic>) {
-        result = decoded;
-      } else {
-        throw Exception('Unexpected response shape. Expected JSON object.');
-      }
-    }
+    final result = normalize != null
+        ? normalize(bodyTrimmed, decoded)
+        : decoded is Map<String, dynamic>
+        ? decoded
+        : throw ApiParsingException(
+            message: 'Unexpected response shape. Expected JSON object.',
+            endpoint: endpoint,
+          );
 
     if (cacheKey != null) {
       _cache.set(cacheKey, result);
@@ -197,7 +280,7 @@ class ApiClient {
     final inFlight = _cache.getInFlight(cacheKey);
     if (inFlight != null) {
       AppLogger.debug('Deduping request: $endpoint');
-      return await inFlight;
+      return inFlight;
     }
 
     final requestFuture = _executeTryWithFallback(
@@ -208,7 +291,7 @@ class ApiClient {
       headerVariants: headerVariants,
     );
     _cache.setInFlight(cacheKey, requestFuture);
-    return await requestFuture;
+    return requestFuture;
   }
 
   Future<http.Response> _executeTryWithFallback({
@@ -218,12 +301,33 @@ class ApiClient {
     Map<String, String>? headers,
     List<Map<String, String>>? headerVariants,
   }) async {
+    final requestId = ApiLogger.nextRequestId();
+    final hasNetwork = await _connectivityService.hasNetworkConnection();
+    if (!hasNetwork) {
+      throw NetworkUnavailableException(endpoint: endpoint, requestId: requestId);
+    }
+
     final domains = _getDomainsWithService(apiSource, service: service);
     String? lastError;
+    DateTime? earliestRetryAfter;
 
     final defaultHeaders = ApiHeaderService.getApiHeaders();
 
     for (final domain in domains) {
+      final breaker = _circuitBreakerByDomain.putIfAbsent(
+        domain,
+        () => _CircuitBreakerState(),
+      );
+
+      if (breaker.isOpen) {
+        final retryAfter = breaker.openedUntil;
+        if (retryAfter != null &&
+            (earliestRetryAfter == null || retryAfter.isBefore(earliestRetryAfter))) {
+          earliestRetryAfter = retryAfter;
+        }
+        continue;
+      }
+
       final variants = _buildHeaderVariants(
         defaultHeaders,
         headers,
@@ -234,7 +338,7 @@ class ApiClient {
       final order = winnerIndex != null
           ? [
               winnerIndex,
-              for (int j = 0; j < variants.length; j++)
+              for (var j = 0; j < variants.length; j++)
                 if (j != winnerIndex) j,
             ]
           : List.generate(variants.length, (i) => i);
@@ -242,42 +346,136 @@ class ApiClient {
       for (final i in order) {
         final variantHeaders = variants[i];
         final url = '$domain$endpoint';
-        AppLogger.network('GET', url, headers: variantHeaders);
+
         try {
-          final response = await client.get(
-            Uri.parse(url),
-            headers: variantHeaders,
+          final response = await _retryStrategy.execute<http.Response>(
+            operation: (attemptIndex, timeout) async {
+              final startedAt = DateTime.now();
+              ApiLogger.request(
+                requestId: requestId,
+                method: 'GET',
+                url: url,
+                headers: variantHeaders,
+                attempt: attemptIndex + 1,
+              );
+
+              final response = await client
+                  .get(Uri.parse(url), headers: variantHeaders)
+                  .timeout(
+                    timeout,
+                    onTimeout: () => throw RequestTimeoutException(
+                      message: 'Request timed out after ${timeout.inSeconds}s.',
+                      endpoint: endpoint,
+                      requestId: requestId,
+                    ),
+                  );
+
+              final duration = DateTime.now().difference(startedAt);
+              final bodyTrimmed = response.body.trimLeft();
+              final snippet = bodyTrimmed.length > _responseSnippetMaxLength
+                  ? bodyTrimmed.substring(0, _responseSnippetMaxLength)
+                  : bodyTrimmed;
+
+              ApiLogger.response(
+                requestId: requestId,
+                method: 'GET',
+                url: url,
+                statusCode: response.statusCode,
+                duration: duration,
+                bodySnippet: snippet.replaceAll('\n', ' '),
+              );
+
+              if (response.statusCode >= 500) {
+                throw HttpStatusException(
+                  message: 'Server error ${response.statusCode}',
+                  statusCode: response.statusCode,
+                  endpoint: endpoint,
+                  requestId: requestId,
+                );
+              }
+
+              if (response.statusCode >= 400) {
+                throw HttpStatusException(
+                  message: 'Client error ${response.statusCode}',
+                  statusCode: response.statusCode,
+                  endpoint: endpoint,
+                  requestId: requestId,
+                );
+              }
+
+              if (ApiResponseUtils.isHtmlResponse(bodyTrimmed)) {
+                throw ApiParsingException(
+                  message: 'API returned HTML instead of JSON.',
+                  endpoint: endpoint,
+                  requestId: requestId,
+                );
+              }
+
+              return response;
+            },
+            isRetryable: (error) {
+              if (error is ApiException) return error.isRetryable;
+              final mapped = mapToApiException(
+                error,
+                endpoint: endpoint,
+                requestId: requestId,
+              );
+              return mapped.isRetryable;
+            },
+            onRetry: (attemptIndex, error) {
+              AppLogger.warning(
+                'Retrying request $requestId (attempt ${attemptIndex + 2})',
+                tag: 'ApiClient',
+                error: error,
+              );
+            },
           );
 
-          final bodyTrimmed = response.body.trimLeft();
-          final looksLikeHtml = ApiResponseUtils.isHtmlResponse(bodyTrimmed);
+          _headerVariantWinnerByDomain[domain] = i;
+          _lastSuccessfulDomain = domain;
+          breaker.onSuccess();
+          return response;
+        } catch (error, stackTrace) {
+          final mapped = mapToApiException(
+            error,
+            endpoint: endpoint,
+            requestId: requestId,
+            stackTrace: stackTrace,
+          );
 
-          if (response.statusCode >= 200 &&
-              response.statusCode < 400 &&
-              !looksLikeHtml) {
-            _headerVariantWinnerByDomain[domain] = i;
-            _lastSuccessfulDomain = domain;
-            return response;
-          }
+          ApiLogger.failure(
+            requestId: requestId,
+            method: 'GET',
+            url: url,
+            error: mapped,
+            statusCode: mapped.statusCode,
+          );
 
-          final snippet = bodyTrimmed.length > 200
-              ? bodyTrimmed.substring(0, 200)
-              : bodyTrimmed;
-          lastError =
-              'Domain=$domain Status=${response.statusCode} Html=$looksLikeHtml Snippet=${snippet.replaceAll('\n', ' ')}';
+          lastError = mapped.toString();
+          breaker.onFailure(
+            threshold: _circuitBreakerThreshold,
+            cooldown: _circuitBreakerCooldown,
+          );
 
-          if (response.statusCode == 404) {
-            // Try next domain on 404.
+          if (mapped is HttpStatusException && mapped.statusCode == 404) {
             break;
           }
-        } catch (e) {
-          lastError = 'Domain=$domain Exception=$e';
         }
       }
     }
 
-    throw Exception(
-      'All domains failed for endpoint: $endpoint. Last error: $lastError',
+    if (earliestRetryAfter != null) {
+      throw CircuitBreakerOpenException(
+        retryAfter: earliestRetryAfter,
+        endpoint: endpoint,
+        requestId: requestId,
+      );
+    }
+
+    throw NetworkRequestException(
+      message: 'All domains failed for endpoint: $endpoint. Last error: $lastError',
+      endpoint: endpoint,
+      requestId: requestId,
     );
   }
 

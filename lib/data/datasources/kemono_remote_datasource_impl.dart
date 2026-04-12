@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 
 import '../../domain/entities/api_source.dart';
 import '../../utils/logger.dart';
+import '../exceptions/api_exceptions.dart';
 import '../models/creator_model.dart';
 import '../models/post_model.dart';
 import '../services/api_client.dart';
@@ -57,7 +58,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         return creators.where((c) => c.service == service).toList();
       }
       return creators;
-    } catch (_) {
+    } catch (primaryError, primaryStackTrace) {
       // Fallback: derive creator list from recent posts.
       try {
         final posts = await searchPosts(' ', offset: 0, apiSource: apiSource);
@@ -87,8 +88,20 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         }
 
         return creators;
-      } catch (_) {
-        return [];
+      } catch (fallbackError, fallbackStackTrace) {
+        if (primaryError is ApiException) {
+          Error.throwWithStackTrace(primaryError, primaryStackTrace);
+        }
+        if (fallbackError is ApiException) {
+          Error.throwWithStackTrace(fallbackError, fallbackStackTrace);
+        }
+        throw NetworkRequestException(
+          message:
+              'Failed to load creators from primary and fallback sources.',
+          endpoint: endpoint,
+          cause: fallbackError,
+          stackTrace: fallbackStackTrace,
+        );
       }
     }
   }
@@ -117,9 +130,13 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         'KemonoRemoteDataSource: getCreator success: ${jsonMap['name']} (${jsonMap['id']})',
       );
       return CreatorModel.fromJson(jsonMap);
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('KemonoRemoteDataSource: getCreator error ($endpoint): $e');
-      throw Exception('Error fetching creator ($endpoint): $e');
+      throw mapToApiException(
+        e,
+        endpoint: endpoint,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -148,8 +165,12 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       );
 
       return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
-    } catch (e) {
-      throw Exception('Error fetching posts ($endpoint): $e');
+    } catch (e, stackTrace) {
+      throw mapToApiException(
+        e,
+        endpoint: endpoint,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -179,8 +200,12 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         },
       );
       return jsonList;
-    } catch (e) {
-      throw Exception('Error fetching creator links ($endpoint): $e');
+    } catch (e, stackTrace) {
+      throw mapToApiException(
+        e,
+        endpoint: endpoint,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -209,8 +234,12 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       );
 
       return PostModel.fromJson(jsonMap);
-    } catch (e) {
-      throw Exception('Error fetching post ($endpoint): $e');
+    } catch (e, stackTrace) {
+      throw mapToApiException(
+        e,
+        endpoint: endpoint,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -236,8 +265,12 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       );
 
       return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
-    } catch (e) {
-      throw Exception('Error searching posts ($endpoint): $e');
+    } catch (e, stackTrace) {
+      throw mapToApiException(
+        e,
+        endpoint: endpoint,
+        stackTrace: stackTrace,
+      );
     }
   }
 
