@@ -378,11 +378,13 @@ class ApiClient {
               }
 
               if (response.statusCode == 429) {
-                final retryAfter = _resolveRetryAfter(response);
-                final waitSeconds = retryAfter
-                    .difference(DateTime.now())
+                final now = DateTime.now();
+                final parsedRetryAfter = _resolveRetryAfter(response);
+                final waitSeconds = parsedRetryAfter
+                    .difference(now)
                     .inSeconds
                     .clamp(1, _maxRateLimitWaitSeconds);
+                final retryAfter = now.add(Duration(seconds: waitSeconds));
                 throw RateLimitException(
                   message: 'Rate limited (429). Retry after ${waitSeconds}s.',
                   retryAfter: retryAfter,
