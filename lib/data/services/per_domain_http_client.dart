@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../exceptions/api_exceptions.dart';
 import '../../domain/entities/api_source.dart';
 import 'api_client.dart';
 
@@ -10,7 +11,7 @@ import 'api_client.dart';
 ///   connections and vice versa.
 /// - **Independent circuit breakers** — one domain tripping its breaker has
 ///   zero impact on the other domain's requests.
-/// - **Per-domain throttling** — at most one request every 500 ms per domain,
+/// - **Per-domain throttling** — at most one request every 1000 ms per domain,
 ///   preventing thundering-herd bursts during pagination.
 class PerDomainHttpClient {
   final ApiClient _kemonoClient;
@@ -24,8 +25,10 @@ class PerDomainHttpClient {
 
   DateTime? _lastKemonoRequest;
   DateTime? _lastCoomerRequest;
+  DateTime? _kemonoRateLimitedUntil;
+  DateTime? _coomerRateLimitedUntil;
 
-  static const Duration _minRequestInterval = Duration(milliseconds: 500);
+  static const Duration _minRequestInterval = Duration(milliseconds: 1000);
 
   /// Creates a [PerDomainHttpClient] with explicit [ApiClient] instances.
   ///
@@ -61,16 +64,21 @@ class PerDomainHttpClient {
     List<Map<String, String>>? headerVariants,
   }) async {
     await _throttle(apiSource);
-    return clientFor(apiSource).getJsonList(
-      endpoint: endpoint,
-      apiSource: apiSource,
-      service: service,
-      headers: headers,
-      cacheKey: cacheKey,
-      forceRefresh: forceRefresh,
-      normalize: normalize,
-      headerVariants: headerVariants,
-    );
+    try {
+      return clientFor(apiSource).getJsonList(
+        endpoint: endpoint,
+        apiSource: apiSource,
+        service: service,
+        headers: headers,
+        cacheKey: cacheKey,
+        forceRefresh: forceRefresh,
+        normalize: normalize,
+        headerVariants: headerVariants,
+      );
+    } on RateLimitException catch (error) {
+      _recordRateLimit(apiSource, error.retryAfter);
+      rethrow;
+    }
   }
 
   /// Throttled wrapper for [ApiClient.getJsonObject].
@@ -85,16 +93,21 @@ class PerDomainHttpClient {
     List<Map<String, String>>? headerVariants,
   }) async {
     await _throttle(apiSource);
-    return clientFor(apiSource).getJsonObject(
-      endpoint: endpoint,
-      apiSource: apiSource,
-      service: service,
-      headers: headers,
-      cacheKey: cacheKey,
-      forceRefresh: forceRefresh,
-      normalize: normalize,
-      headerVariants: headerVariants,
-    );
+    try {
+      return clientFor(apiSource).getJsonObject(
+        endpoint: endpoint,
+        apiSource: apiSource,
+        service: service,
+        headers: headers,
+        cacheKey: cacheKey,
+        forceRefresh: forceRefresh,
+        normalize: normalize,
+        headerVariants: headerVariants,
+      );
+    } on RateLimitException catch (error) {
+      _recordRateLimit(apiSource, error.retryAfter);
+      rethrow;
+    }
   }
 
   /// Clears the in-memory response cache on both domain clients.
@@ -151,6 +164,13 @@ class PerDomainHttpClient {
       }
     }
 
+    final rateLimitedUntil = apiSource == ApiSource.coomer
+        ? _coomerRateLimitedUntil
+        : _kemonoRateLimitedUntil;
+    if (rateLimitedUntil != null && DateTime.now().isBefore(rateLimitedUntil)) {
+      await Future<void>.delayed(rateLimitedUntil.difference(DateTime.now()));
+    }
+
     if (apiSource == ApiSource.coomer) {
       _lastCoomerRequest = DateTime.now();
     } else {
@@ -158,5 +178,19 @@ class PerDomainHttpClient {
     }
 
     completer.complete();
+  }
+
+  void _recordRateLimit(ApiSource apiSource, DateTime retryAfter) {
+    if (apiSource == ApiSource.coomer) {
+      final current = _coomerRateLimitedUntil;
+      _coomerRateLimitedUntil = current == null || retryAfter.isAfter(current)
+          ? retryAfter
+          : current;
+    } else {
+      final current = _kemonoRateLimitedUntil;
+      _kemonoRateLimitedUntil = current == null || retryAfter.isAfter(current)
+          ? retryAfter
+          : current;
+    }
   }
 }

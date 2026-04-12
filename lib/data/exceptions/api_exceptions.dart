@@ -102,6 +102,30 @@ class HttpStatusException extends ApiException {
   bool get isRetryable => isServerError;
 }
 
+class RateLimitException extends ApiException {
+  final DateTime retryAfter;
+
+  const RateLimitException({
+    required String message,
+    required this.retryAfter,
+    int statusCode = 429,
+    String? endpoint,
+    String? requestId,
+    Object? cause,
+    StackTrace? stackTrace,
+  }) : super(
+         message,
+         statusCode: statusCode,
+         endpoint: endpoint,
+         requestId: requestId,
+         cause: cause,
+         stackTrace: stackTrace,
+       );
+
+  @override
+  bool get isRetryable => true;
+}
+
 class ApiParsingException extends ApiException {
   const ApiParsingException({
     required String message,
