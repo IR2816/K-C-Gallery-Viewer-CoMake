@@ -173,13 +173,14 @@ class DiscordApiClient {
               );
 
           final duration = DateTime.now().difference(startedAt);
+          final responseString = response.data?.toString() ?? '';
           final responseSnippet = response.data == null
               ? null
-              : response.data.toString().replaceAll('\n', ' ').substring(
+              : responseString.replaceAll('\n', ' ').substring(
                   0,
-                  response.data.toString().length > _responseSnippetMaxLength
+                  responseString.length > _responseSnippetMaxLength
                       ? _responseSnippetMaxLength
-                      : response.data.toString().length,
+                      : responseString.length,
                 );
 
           ApiLogger.response(

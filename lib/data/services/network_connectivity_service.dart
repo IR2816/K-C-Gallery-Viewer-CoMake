@@ -7,6 +7,7 @@ import '../../utils/logger.dart';
 
 class NetworkConnectivityService {
   NetworkConnectivityService._();
+  static const int _maxQueuedRequests = 100;
 
   static final NetworkConnectivityService instance = NetworkConnectivityService._();
 
@@ -42,8 +43,7 @@ class NetworkConnectivityService {
   }
 
   void enqueueForReconnect(Future<void> Function() request) {
-    const maxQueued = 100;
-    if (_offlineQueue.length >= maxQueued) {
+    if (_offlineQueue.length >= _maxQueuedRequests) {
       _offlineQueue.removeFirst();
     }
     _offlineQueue.add(request);

@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'logger.dart';
 
 class ApiLogger {
+  static const int _maxCounterValue = 1000000;
   static int _counter = 0;
 
   static String nextRequestId() {
-    _counter = (_counter + 1) % 1000000;
+    _counter = (_counter + 1) % _maxCounterValue;
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     return 'req-$timestamp-$_counter';
   }

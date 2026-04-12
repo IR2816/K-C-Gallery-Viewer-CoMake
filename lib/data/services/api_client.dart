@@ -347,7 +347,9 @@ class ApiClient {
       final order = winnerIndex != null
           ? [
               winnerIndex,
-              for (int j = 0; j < variants.length; j++) if (j != winnerIndex) j,
+              ...List<int>.generate(variants.length, (j) => j).where(
+                (j) => j != winnerIndex,
+              ),
             ]
           : List.generate(variants.length, (i) => i);
 
