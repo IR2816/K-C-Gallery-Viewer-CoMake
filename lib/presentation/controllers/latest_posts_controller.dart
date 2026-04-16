@@ -160,8 +160,9 @@ class LatestPostsController extends ChangeNotifier {
   void loadMoreSearch() {
     if (_postSearchProvider.isLoadingMoreSearch ||
         _postSearchProvider.isSearching ||
-        !_postSearchProvider.searchHasMore)
+        !_postSearchProvider.searchHasMore) {
       return;
+    }
     _postSearchProvider.loadMoreSearchResults(apiSource: currentApiSource);
   }
 

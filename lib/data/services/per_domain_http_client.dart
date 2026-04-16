@@ -28,7 +28,7 @@ class PerDomainHttpClient {
   DateTime? _kemonoRateLimitedUntil;
   DateTime? _coomerRateLimitedUntil;
 
-  static const Duration _minRequestInterval = Duration(milliseconds: 1000);
+  static const Duration _minRequestInterval = Duration(milliseconds: 2500);
 
   /// Creates a [PerDomainHttpClient] with explicit [ApiClient] instances.
   ///

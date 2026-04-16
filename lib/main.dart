@@ -51,6 +51,8 @@ import 'presentation/screens/discord_search_screen.dart';
 import 'presentation/services/header_http_file_service.dart';
 import 'utils/error_handler.dart';
 import 'config/domain_config.dart';
+import 'package:toastification/toastification.dart';
+import 'presentation/utils/custom_snackbar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -218,86 +220,88 @@ class MyApp extends StatelessWidget {
           final textScale = context.select<ThemeProvider, double>(
             (p) => p.textScale,
           );
-          return MaterialApp(
-            title: 'KC Gallery Viewer',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeMode,
-            debugShowCheckedModeBanner: false,
-            builder: (context, child) {
-              final mediaQuery = MediaQuery.of(context);
-              return MediaQuery(
-                data: mediaQuery.copyWith(
-                  textScaler: TextScaler.linear(textScale),
-                ),
-                child: _DataUsageAlertOverlay(
-                  child: child ?? const SizedBox.shrink(),
-                ),
-              );
-            },
-            home: MainNavigationScreen(),
-            onGenerateRoute: (settings) {
-              switch (settings.name) {
-                case '/':
-                  return MaterialPageRoute(
-                    builder: (context) => MainNavigationScreen(),
-                  );
-                case '/home':
-                  return MaterialPageRoute(
-                    builder: (context) => const HomeScreen(),
-                  );
-                case '/search':
-                  return MaterialPageRoute(
-                    builder: (context) => const SearchScreenDual(),
-                  );
-                case '/settings':
-                  return MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  );
-                case '/discord':
-                  return MaterialPageRoute(
-                    builder: (context) => const DiscordServerScreen(),
-                  );
-                case '/discord-search':
-                  return MaterialPageRoute(
-                    builder: (context) => const DiscordSearchScreen(),
-                  );
-                case '/post':
-                  final Post? post = settings.arguments as Post?;
-                  if (post != null) {
+          return ToastificationWrapper(
+            child: MaterialApp(
+              title: 'KC Gallery Viewer',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeMode,
+              debugShowCheckedModeBanner: false,
+              builder: (context, child) {
+                final mediaQuery = MediaQuery.of(context);
+                return MediaQuery(
+                  data: mediaQuery.copyWith(
+                    textScaler: TextScaler.linear(textScale),
+                  ),
+                  child: _DataUsageAlertOverlay(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                );
+              },
+              home: const MainNavigationScreen(),
+              onGenerateRoute: (settings) {
+                switch (settings.name) {
+                  case '/':
                     return MaterialPageRoute(
-                      builder: (context) => PostDetailScreen(
-                        post: post,
-                        apiSource: DomainResolver.apiSourceForService(
-                          post.service,
-                        ),
-                      ),
+                      builder: (context) => const MainNavigationScreen(),
                     );
-                  }
-                  return MaterialPageRoute(
-                    builder: (context) => const MainNavigationScreen(),
-                  );
-                case '/creator':
-                  final Creator? creator = settings.arguments as Creator?;
-                  if (creator != null) {
+                  case '/home':
                     return MaterialPageRoute(
-                      builder: (context) => CreatorDetailScreen(
-                        creator: creator,
-                        apiSource: DomainResolver.apiSourceForService(
-                          creator.service,
-                        ),
-                      ),
+                      builder: (context) => const HomeScreen(),
                     );
-                  }
-                  return MaterialPageRoute(
-                    builder: (context) => const MainNavigationScreen(),
-                  );
-                default:
-                  return MaterialPageRoute(
-                    builder: (context) => MainNavigationScreen(),
-                  );
-              }
-            },
+                  case '/search':
+                    return MaterialPageRoute(
+                      builder: (context) => const SearchScreenDual(),
+                    );
+                  case '/settings':
+                    return MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    );
+                  case '/discord':
+                    return MaterialPageRoute(
+                      builder: (context) => const DiscordServerScreen(),
+                    );
+                  case '/discord-search':
+                    return MaterialPageRoute(
+                      builder: (context) => const DiscordSearchScreen(),
+                    );
+                  case '/post':
+                    final Post? post = settings.arguments as Post?;
+                    if (post != null) {
+                      return MaterialPageRoute(
+                        builder: (context) => PostDetailScreen(
+                          post: post,
+                          apiSource: DomainResolver.apiSourceForService(
+                            post.service,
+                          ),
+                        ),
+                      );
+                    }
+                    return MaterialPageRoute(
+                      builder: (context) => const MainNavigationScreen(),
+                    );
+                  case '/creator':
+                    final Creator? creator = settings.arguments as Creator?;
+                    if (creator != null) {
+                      return MaterialPageRoute(
+                        builder: (context) => CreatorDetailScreen(
+                          creator: creator,
+                          apiSource: DomainResolver.apiSourceForService(
+                            creator.service,
+                          ),
+                        ),
+                      );
+                    }
+                    return MaterialPageRoute(
+                      builder: (context) => const MainNavigationScreen(),
+                    );
+                  default:
+                    return MaterialPageRoute(
+                      builder: (context) => const MainNavigationScreen(),
+                    );
+                }
+              },
+            ),
           );
         },
       ),
@@ -352,14 +356,9 @@ class _DataUsageAlertOverlayState extends State<_DataUsageAlertOverlay> {
   }
 
   void _showWarningSnackBar(double percentage) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '⚠️ Data usage warning: ${percentage.toStringAsFixed(1)}% of daily limit used',
-        ),
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 4),
-      ),
+    CustomSnackbar.showWarning(
+      context,
+      'Data usage warning: ${percentage.toStringAsFixed(1)}% of daily limit used',
     );
   }
 

@@ -82,6 +82,7 @@ dependencies:
   flutter_cache_manager: any
   better_player: any
   wakelock_plus: ^1.2.10
+  toastification: ^3.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

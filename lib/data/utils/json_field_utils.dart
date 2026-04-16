@@ -58,8 +58,9 @@ class JsonFieldUtils {
     DateTime? defaultValue,
   }) {
     final value = json[key];
-    if (value == null)
+    if (value == null) {
       return defaultValue ?? DateTime.fromMillisecondsSinceEpoch(0);
+    }
     if (value is DateTime) return value;
     final parsed = DateTime.tryParse(value.toString());
     return parsed ?? defaultValue ?? DateTime.fromMillisecondsSinceEpoch(0);

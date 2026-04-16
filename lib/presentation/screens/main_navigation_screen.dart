@@ -7,7 +7,6 @@ import 'latest_posts_screen.dart';
 import 'search_screen_dual.dart';
 import 'saved_screen.dart';
 import 'settings_screen.dart';
-import 'discord_server_screen.dart';
 
 // Theme
 import '../theme/app_theme.dart';

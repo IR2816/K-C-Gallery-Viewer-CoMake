@@ -99,6 +99,8 @@ class PostDetailApiHandler extends ChangeNotifier {
     return s.contains('timeout') ||
         s.contains('connection') ||
         s.contains('503') ||
+        s.contains('429') ||
+        s.contains('rate limit') ||
         s.contains('unavailable') ||
         s.contains('socket') ||
         s.contains('network');

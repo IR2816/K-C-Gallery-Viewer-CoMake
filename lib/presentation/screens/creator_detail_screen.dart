@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../utils/custom_snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:html/parser.dart' as html_parser;
@@ -1936,43 +1937,14 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
         widget.creator.id,
       );
 
-      final message = isNowFavorited ? 'Added to Saved' : 'Removed from Saved';
-      final backgroundColor = isNowFavorited ? Colors.green : Colors.orange;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                isNowFavorited ? Icons.bookmark : Icons.bookmark_border,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(message),
-            ],
-          ),
-          backgroundColor: backgroundColor,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (isNowFavorited) {
+        CustomSnackbar.showSuccess(context, 'Added to Saved', title: creator.name);
+      } else {
+        CustomSnackbar.showWarning(context, 'Removed from Saved', title: creator.name);
+      }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Text('Failed to save creator: $e'),
-            ],
-          ),
-          backgroundColor: AppTheme.errorColor,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      CustomSnackbar.showError(context, 'Failed to save creator: $e');
     }
   }
 

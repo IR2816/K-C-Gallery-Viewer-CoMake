@@ -42,7 +42,7 @@ class PostsProvider with ChangeNotifier {
 
   // Dedicated post list for the latest-posts feed, kept separate from the
   // creator/search _posts list so the two screens never corrupt each other.
-  List<Post> _latestPosts = [];
+  final List<Post> _latestPosts = [];
 
   List<Post> get posts => _posts;
   List<Post> get latestPosts => _latestPosts;
@@ -217,6 +217,8 @@ class PostsProvider with ChangeNotifier {
     return errorString.contains('timeout') ||
         errorString.contains('connection') ||
         errorString.contains('503') ||
+        errorString.contains('429') ||
+        errorString.contains('rate limit') ||
         errorString.contains('unavailable') ||
         errorString.contains('socket') ||
         errorString.contains('network');

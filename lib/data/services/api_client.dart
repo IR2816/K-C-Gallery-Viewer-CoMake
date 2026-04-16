@@ -112,9 +112,9 @@ class ApiClient {
        _retryStrategy = retryStrategy ??
            HttpRetryStrategy(
              policy: const RetryPolicy(
-               maxAttempts: 2,
-               initialTimeout: Duration(seconds: 10),
-               retryTimeout: Duration(seconds: 10),
+               maxAttempts: 3,
+               initialTimeout: Duration(seconds: 15),
+               retryTimeout: Duration(seconds: 15),
                baseDelay: Duration(seconds: 1),
                maxDelay: Duration(seconds: 4),
              ),

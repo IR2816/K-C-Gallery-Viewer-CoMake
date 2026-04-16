@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+import '../exceptions/api_exceptions.dart';
+
 class RetryPolicy {
   final int maxAttempts;
   final Duration initialTimeout;
@@ -58,7 +60,10 @@ class HttpRetryStrategy {
         }
 
         onRetry?.call(attempt, error);
-        final delay = policy.delayForRetry(attempt, _random);
+        final delay = error is RateLimitException
+            ? error.retryAfter.difference(DateTime.now())
+            : policy.delayForRetry(attempt, _random);
+
         if (delay.inMilliseconds > 0) {
           await Future<void>.delayed(delay);
         }

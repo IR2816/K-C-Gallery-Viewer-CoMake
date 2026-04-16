@@ -123,7 +123,7 @@ class RateLimitException extends ApiException {
        );
 
   @override
-  bool get isRetryable => true;
+  bool get isRetryable => retryAfter.difference(DateTime.now()).inSeconds <= 45;
 }
 
 class ApiParsingException extends ApiException {

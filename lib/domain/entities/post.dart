@@ -99,8 +99,9 @@ class Post {
     if (isHighQuality) {
       // Return original URL
       if (file.isNotEmpty) return _buildFullUrl(file.first.path, service);
-      if (attachments.isNotEmpty)
+      if (attachments.isNotEmpty) {
         return _buildFullUrl(attachments.first.path, service);
+      }
       return null;
     }
 
@@ -119,8 +120,9 @@ class Post {
 
     // Otherwise fallback to original for medium/unknown quality
     if (file.isNotEmpty) return _buildFullUrl(file.first.path, service);
-    if (attachments.isNotEmpty)
+    if (attachments.isNotEmpty) {
       return _buildFullUrl(attachments.first.path, service);
+    }
 
     return null;
   }

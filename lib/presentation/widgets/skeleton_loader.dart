@@ -146,41 +146,39 @@ class PostGridSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image placeholder (randomly sized for masonry effect in a list context, or fixed if we just want a box)
-          AppSkeleton.rounded(
-            height: 180, // Average height for an image
-            borderRadius: 16,
-          ),
           Padding(
             padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                AppSkeleton.circle(size: 32),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSkeleton.rounded(height: 14, width: 120),
+                      const SizedBox(height: 4),
+                      AppSkeleton.rounded(height: 10, width: 80),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          AppSkeleton.rounded(
+            height: 180,
+            borderRadius: 0,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar and Name row
-                Row(
-                  children: [
-                    AppSkeleton.circle(size: 24),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppSkeleton.rounded(
-                            height: 12,
-                            width: double.infinity,
-                          ),
-                          const SizedBox(height: 4),
-                          AppSkeleton.rounded(height: 10, width: 60),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Title/Content lines
-                AppSkeleton.rounded(height: 14, width: double.infinity),
-                const SizedBox(height: 6),
-                AppSkeleton.rounded(height: 14, width: 120),
+                AppSkeleton.rounded(height: 16, width: double.infinity),
+                const SizedBox(height: 8),
+                AppSkeleton.rounded(height: 16, width: double.infinity),
+                const SizedBox(height: 8),
+                AppSkeleton.rounded(height: 16, width: 150),
               ],
             ),
           ),

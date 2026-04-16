@@ -373,8 +373,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       try {
         parsed = json.decode(responseBody);
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           AppLogger.debug('🔍 DEBUG: Direct JSON parsing failed: $e');
+        }
       }
     }
 
@@ -434,13 +435,15 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
             }
             return decoded;
           } else if (decoded is Map<String, dynamic>) {
-            if (kDebugMode)
+            if (kDebugMode) {
               AppLogger.debug('🔍 DEBUG: Successfully parsed JSON object');
+            }
             return [decoded]; // Wrap single object
           }
         } catch (e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             AppLogger.debug('🔍 DEBUG: Failed to parse potential JSON: $e');
+          }
           continue;
         }
       }
@@ -466,8 +469,9 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
         }
       }
 
-      if (kDebugMode)
+      if (kDebugMode) {
         AppLogger.debug('🔍 DEBUG: No valid JSON found in CSS response');
+      }
       return [];
     } catch (e) {
       if (kDebugMode) {
