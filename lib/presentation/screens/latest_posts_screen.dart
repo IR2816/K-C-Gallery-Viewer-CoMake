@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -194,50 +195,62 @@ class _LatestPostsViewState extends State<_LatestPostsView>
 
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
-      appBar: _FeedAppBar(
-        isLoading: ctrl.isLoading,
-        hasBlockedTags: ctrl.blockedTags.isNotEmpty,
-        onRefresh: ctrl.loadInitial,
-        onDownloadManager: _showDownloadManager,
-        onFilter: _showFilterBottomSheet,
-      ),
       body: Stack(
         children: [
           const _FeedBackground(),
           RefreshWrapper(
             onRefresh: ctrl.loadInitial,
-            child: Column(
-              children: [
-                _FilterInfoBar(
-                  selectedService: ctrl.selectedService,
-                  blockedTagCount: ctrl.blockedTags.length,
+            child: CustomScrollView(
+              controller: _scrollController,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              slivers: [
+                _FeedAppBar(
+                  isLoading: ctrl.isLoading,
+                  hasBlockedTags: ctrl.blockedTags.isNotEmpty,
+                  onRefresh: ctrl.loadInitial,
+                  onDownloadManager: _showDownloadManager,
+                  onFilter: _showFilterBottomSheet,
                 ),
-                _RecentCreatorsCarousel(
-                  isExpanded: _isRecentlyViewedExpanded,
-                  onToggle: () => setState(
-                    () =>
-                        _isRecentlyViewedExpanded = !_isRecentlyViewedExpanded,
-                  ),
-                  onCreatorTap: _navigateToCreatorDetail,
-                ),
-                Expanded(
-                  child: ctrl.isSwitchingSource
-                      ? _SwitchingSourceIndicator(
-                          apiSourceName: ctrl.currentApiSource.name,
-                        )
-                      : _FeedContent(
-                          controller: ctrl,
-                          scrollController: _scrollController,
-                          onPostTap: _navigateToPostDetail,
-                          onCreatorTap: (post) => _navigateToCreatorDetail(
-                            creatorStubFromPost(post),
-                          ),
-                          onFilterTap: _showFilterBottomSheet,
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      _FilterInfoBar(
+                        selectedService: ctrl.selectedService,
+                        blockedTagCount: ctrl.blockedTags.length,
+                      ),
+                      _RecentCreatorsCarousel(
+                        isExpanded: _isRecentlyViewedExpanded,
+                        onToggle: () => setState(
+                          () => _isRecentlyViewedExpanded =
+                              !_isRecentlyViewedExpanded,
                         ),
+                        onCreatorTap: _navigateToCreatorDetail,
+                      ),
+                    ],
+                  ),
                 ),
+                if (ctrl.isSwitchingSource)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _SwitchingSourceIndicator(
+                      apiSourceName: ctrl.currentApiSource.name,
+                    ),
+                  )
+                else
+                  _FeedContent(
+                    controller: ctrl,
+                    scrollController: _scrollController,
+                    onPostTap: _navigateToPostDetail,
+                    onCreatorTap: (post) =>
+                        _navigateToCreatorDetail(creatorStubFromPost(post)),
+                    onFilterTap: _showFilterBottomSheet,
+                  ),
                 if ((ctrl.filteredPosts.isNotEmpty || ctrl.isInSearchMode) &&
                     !ctrl.isSwitchingSource)
-                  const _PaginationBar(),
+                  const SliverToBoxAdapter(child: _PaginationBar()),
               ],
             ),
           ),
@@ -253,7 +266,7 @@ class _LatestPostsViewState extends State<_LatestPostsView>
 
 // ── AppBar ──────────────────────────────────────────────────────────────────
 
-class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
+class _FeedAppBar extends StatelessWidget {
   final bool isLoading;
   final bool hasBlockedTags;
   final VoidCallback onRefresh;
@@ -269,24 +282,31 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(84);
-
-  @override
   Widget build(BuildContext context) {
-    return AppBar(
-      toolbarHeight: 84,
-      backgroundColor: Colors.transparent,
+    return SliverAppBar(
+      floating: true,
+      snap: true,
+      toolbarHeight: 90,
+      backgroundColor: AppTheme.getBackgroundColor(
+        context,
+      ).withValues(alpha: 0.75),
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
-      scrolledUnderElevation: 0,
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.primaryColor.withValues(alpha: 0.16),
-              Colors.transparent,
-            ],
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.primaryColor.withValues(alpha: 0.12),
+                  Colors.transparent,
+                ],
+              ),
+            ),
           ),
         ),
       ),
