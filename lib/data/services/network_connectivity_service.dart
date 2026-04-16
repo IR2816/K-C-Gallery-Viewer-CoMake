@@ -9,10 +9,12 @@ class NetworkConnectivityService {
   NetworkConnectivityService._();
   static const int _maxQueuedRequests = 100;
 
-  static final NetworkConnectivityService instance = NetworkConnectivityService._();
+  static final NetworkConnectivityService instance =
+      NetworkConnectivityService._();
 
   final Connectivity _connectivity = Connectivity();
-  final Queue<Future<void> Function()> _offlineQueue = Queue<Future<void> Function()>();
+  final Queue<Future<void> Function()> _offlineQueue =
+      Queue<Future<void> Function()>();
 
   StreamSubscription<dynamic>? _subscription;
   Future<void>? _flushFuture;
@@ -26,7 +28,9 @@ class NetworkConnectivityService {
     _initialized = true;
     _isOnline = await hasNetworkConnection();
 
-    _subscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> value) async {
+    _subscription = _connectivity.onConnectivityChanged.listen((
+      List<ConnectivityResult> value,
+    ) async {
       final online = _parseConnectivityValue(value);
       _isOnline = online;
       AppLogger.debug('Connectivity changed: online=$online', tag: 'Network');
@@ -79,7 +83,11 @@ class NetworkConnectivityService {
       try {
         await callback();
       } catch (e) {
-        AppLogger.warning('Queued offline request failed after reconnect', tag: 'Network', error: e);
+        AppLogger.warning(
+          'Queued offline request failed after reconnect',
+          tag: 'Network',
+          error: e,
+        );
       }
     }
   }

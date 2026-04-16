@@ -28,7 +28,9 @@ class RetryPolicy {
     final safeRetry = retryNumber > 20 ? 20 : retryNumber;
     final cappedMultiplier = 1 << safeRetry;
     final raw = baseDelay.inMilliseconds * cappedMultiplier;
-    final capped = raw > maxDelay.inMilliseconds ? maxDelay.inMilliseconds : raw;
+    final capped = raw > maxDelay.inMilliseconds
+        ? maxDelay.inMilliseconds
+        : raw;
     final jitterMs = jitter.inMilliseconds <= 0
         ? 0
         : random.nextInt(jitter.inMilliseconds + 1);
@@ -54,7 +56,8 @@ class HttpRetryStrategy {
       try {
         return await operation(attempt, timeout);
       } catch (error, stackTrace) {
-        final shouldRetry = attempt < policy.maxAttempts - 1 && isRetryable(error);
+        final shouldRetry =
+            attempt < policy.maxAttempts - 1 && isRetryable(error);
         if (!shouldRetry) {
           Error.throwWithStackTrace(error, stackTrace);
         }

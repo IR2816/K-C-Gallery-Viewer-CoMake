@@ -36,11 +36,12 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
     PerDomainHttpClient? perDomainClient,
     // ignore: deprecated_member_use_from_same_package
     ApiClient? apiClient,
-  }) : _perDomainClient = perDomainClient ??
-            PerDomainHttpClient(
-              kemonoClient: apiClient ?? ApiClient(),
-              coomerClient: apiClient ?? ApiClient(),
-            );
+  }) : _perDomainClient =
+           perDomainClient ??
+           PerDomainHttpClient(
+             kemonoClient: apiClient ?? ApiClient(),
+             coomerClient: apiClient ?? ApiClient(),
+           );
 
   ApiSource _resolveApiSource(String service, ApiSource provided) {
     final resolved = DomainResolver.lockedApiSourceForService(service);
@@ -112,8 +113,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
           Error.throwWithStackTrace(fallbackError, fallbackStackTrace);
         }
         throw NetworkRequestException(
-          message:
-              'Failed to load creators from primary and fallback sources.',
+          message: 'Failed to load creators from primary and fallback sources.',
           endpoint: endpoint,
           cause: fallbackError,
           stackTrace: fallbackStackTrace,
@@ -148,11 +148,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       return CreatorModel.fromJson(jsonMap);
     } catch (e, stackTrace) {
       debugPrint('KemonoRemoteDataSource: getCreator error ($endpoint): $e');
-      throw mapToApiException(
-        e,
-        endpoint: endpoint,
-        stackTrace: stackTrace,
-      );
+      throw mapToApiException(e, endpoint: endpoint, stackTrace: stackTrace);
     }
   }
 
@@ -182,11 +178,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
       return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
     } catch (e, stackTrace) {
-      throw mapToApiException(
-        e,
-        endpoint: endpoint,
-        stackTrace: stackTrace,
-      );
+      throw mapToApiException(e, endpoint: endpoint, stackTrace: stackTrace);
     }
   }
 
@@ -217,11 +209,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
       );
       return jsonList;
     } catch (e, stackTrace) {
-      throw mapToApiException(
-        e,
-        endpoint: endpoint,
-        stackTrace: stackTrace,
-      );
+      throw mapToApiException(e, endpoint: endpoint, stackTrace: stackTrace);
     }
   }
 
@@ -251,11 +239,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
       return PostModel.fromJson(jsonMap);
     } catch (e, stackTrace) {
-      throw mapToApiException(
-        e,
-        endpoint: endpoint,
-        stackTrace: stackTrace,
-      );
+      throw mapToApiException(e, endpoint: endpoint, stackTrace: stackTrace);
     }
   }
 
@@ -282,11 +266,7 @@ class KemonoRemoteDataSourceImpl implements KemonoRemoteDataSource {
 
       return ApiResponseUtils.parseList(jsonList, PostModel.fromJson);
     } catch (e, stackTrace) {
-      throw mapToApiException(
-        e,
-        endpoint: endpoint,
-        stackTrace: stackTrace,
-      );
+      throw mapToApiException(e, endpoint: endpoint, stackTrace: stackTrace);
     }
   }
 

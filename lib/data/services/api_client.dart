@@ -109,7 +109,8 @@ class ApiClient {
     HttpRetryStrategy? retryStrategy,
     NetworkConnectivityService? connectivityService,
   }) : client = client ?? TrackedHttpClientFactory.getTrackedClient(),
-       _retryStrategy = retryStrategy ??
+       _retryStrategy =
+           retryStrategy ??
            HttpRetryStrategy(
              policy: const RetryPolicy(
                maxAttempts: 3,
@@ -119,10 +120,8 @@ class ApiClient {
                maxDelay: Duration(seconds: 4),
              ),
            ),
-       _connectivityService = connectivityService ??
-           NetworkConnectivityService.instance {
-    _connectivityService.initialize();
-  }
+       _connectivityService =
+           connectivityService ?? NetworkConnectivityService.instance;
 
   void clearCache() => _cache.clear();
 
@@ -287,7 +286,10 @@ class ApiClient {
     final requestId = ApiLogger.nextRequestId();
     final hasNetwork = await _connectivityService.hasNetworkConnection();
     if (!hasNetwork) {
-      throw NetworkUnavailableException(endpoint: endpoint, requestId: requestId);
+      throw NetworkUnavailableException(
+        endpoint: endpoint,
+        requestId: requestId,
+      );
     }
 
     final domains = _getDomainsWithService(apiSource, service: service);
@@ -305,7 +307,8 @@ class ApiClient {
       if (breaker.isOpen) {
         final retryAfter = breaker.openedUntil;
         if (retryAfter != null &&
-            (earliestRetryAfter == null || retryAfter.isBefore(earliestRetryAfter))) {
+            (earliestRetryAfter == null ||
+                retryAfter.isBefore(earliestRetryAfter))) {
           earliestRetryAfter = retryAfter;
         }
         continue;
@@ -472,7 +475,8 @@ class ApiClient {
     }
 
     throw NetworkRequestException(
-      message: 'All domains failed for endpoint: $endpoint. Last error: $lastError',
+      message:
+          'All domains failed for endpoint: $endpoint. Last error: $lastError',
       endpoint: endpoint,
       requestId: requestId,
     );

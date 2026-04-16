@@ -1,0 +1,50 @@
+    return MultiProvider(
+      providers: [
+        Provider<KemonoRepository>.value(value: widget.repository),
+        ChangeNotifierProvider(create: (_) => themeProvider),
+        ChangeNotifierProvider(create: (_) => downloadManager),
+        ChangeNotifierProvider(create: (_) => tagFilterProvider),
+        Provider<CreatorIndexManager>.value(value: creatorIndexManager),
+        ChangeNotifierProvider.value(value: settingsProvider),
+        // Quality of Life providers
+        ChangeNotifierProvider(create: (_) => ApiHealthProvider()),
+        ChangeNotifierProvider(create: (_) => SmartBookmarkProvider()),
+        ChangeNotifierProvider(create: (_) => SmartHistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ScrollMemoryProvider()),
+        ChangeNotifierProvider(create: (_) => MediaFilterProvider()),
+        ChangeNotifierProvider(
+          create: (_) => CreatorsProvider(
+            repository: repository,
+            settingsProvider: settingsProvider,
+            indexManager: creatorIndexManager,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PostsProvider(
+            repository: repository,
+            settingsProvider: settingsProvider,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CommentsProvider(repository: repository),
+        ),
+        ChangeNotifierProvider(create: (_) => PopularCreatorsProvider()),
+        // Data Usage Tracking
+        ChangeNotifierProvider.value(value: dataUsageTracker),
+        // Download Provider
+        ChangeNotifierProvider(
+          create: (_) => DownloadProvider(
+            downloadManager: downloadManager,
+            dataUsageTracker: dataUsageTracker,
+          ),
+        ),
+        // Bookmark Provider
+        ChangeNotifierProvider(create: (_) => BookmarkProvider()..initialize()),
+        // Creator Quick Access (recent + local favorites)
+        ChangeNotifierProvider(
+          create: (_) => CreatorQuickAccessProvider()..initialize(),
+        ),
+        // Search History (tracks searches with frequency)
+        ChangeNotifierProvider(
+          create: (_) => SearchHistoryProvider()..initialize(),
+        ),

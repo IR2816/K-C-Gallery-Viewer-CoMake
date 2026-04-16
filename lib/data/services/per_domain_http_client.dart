@@ -64,13 +64,13 @@ class PerDomainHttpClient {
     List<dynamic> Function(String body, dynamic decoded)? normalize,
     List<Map<String, String>>? headerVariants,
   }) async {
-    if(!forceRefresh && cacheKey != null) {
+    if (!forceRefresh && cacheKey != null) {
       final cached = HiveCacheManager.get(cacheKey);
-      if(cached != null && cached is List) {
+      if (cached != null && cached is List) {
         return cached;
       }
     }
-    
+
     await _throttle(apiSource);
     try {
       final result = await clientFor(apiSource).getJsonList(
@@ -83,18 +83,18 @@ class PerDomainHttpClient {
         normalize: normalize,
         headerVariants: headerVariants,
       );
-      if(cacheKey != null) {
+      if (cacheKey != null) {
         HiveCacheManager.set(cacheKey, result);
       }
       return result;
     } on RateLimitException catch (error) {
       _recordRateLimit(apiSource, error.retryAfter);
-      
+
       // Fallback to cache even if rate limited
-      if(cacheKey != null) {
+      if (cacheKey != null) {
         final cached = HiveCacheManager.get(cacheKey);
-        if(cached != null && cached is List) {
-           return cached;
+        if (cached != null && cached is List) {
+          return cached;
         }
       }
       rethrow;
@@ -109,16 +109,16 @@ class PerDomainHttpClient {
     Map<String, String>? headers,
     String? cacheKey,
     bool forceRefresh = false,
-    Map<String, dynamic> Function(String body, dynamic decoded)? normalize,     
+    Map<String, dynamic> Function(String body, dynamic decoded)? normalize,
     List<Map<String, String>>? headerVariants,
   }) async {
-    if(!forceRefresh && cacheKey != null) {
+    if (!forceRefresh && cacheKey != null) {
       final cached = HiveCacheManager.get(cacheKey);
-      if(cached != null && cached is Map) {
+      if (cached != null && cached is Map) {
         return Map<String, dynamic>.from(cached);
       }
     }
-    
+
     await _throttle(apiSource);
     try {
       final result = await clientFor(apiSource).getJsonObject(
@@ -131,21 +131,21 @@ class PerDomainHttpClient {
         normalize: normalize,
         headerVariants: headerVariants,
       );
-      if(cacheKey != null) {
+      if (cacheKey != null) {
         HiveCacheManager.set(cacheKey, result);
       }
       return result;
     } on RateLimitException catch (error) {
       _recordRateLimit(apiSource, error.retryAfter);
-      
+
       // Fallback to cache even if rate limited
-      if(cacheKey != null) {
+      if (cacheKey != null) {
         final cached = HiveCacheManager.get(cacheKey);
-        if(cached != null && cached is Map) {
-           return Map<String, dynamic>.from(cached);
+        if (cached != null && cached is Map) {
+          return Map<String, dynamic>.from(cached);
         }
       }
-      
+
       rethrow;
     }
   }

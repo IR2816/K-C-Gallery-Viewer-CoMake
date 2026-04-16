@@ -56,6 +56,8 @@ import 'package:toastification/toastification.dart';
 import 'presentation/utils/custom_snackbar.dart';
 import 'providers/api_health_provider.dart';
 
+import 'data/services/network_connectivity_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -65,10 +67,11 @@ void main() async {
     // The app continues without Crashlytics; errors are still logged locally.
     debugPrint('Firebase initialization failed: $e');
   }
-  
-  // Initialize Cache
+
+  // Initialize Data Services
   await HiveCacheManager.initialize();
-  
+  await NetworkConnectivityService.instance.initialize();
+
   AppErrorHandler.initialize();
   final prefs = await SharedPreferences.getInstance();
   final dataUsageTracker = DataUsageTracker();
@@ -108,19 +111,19 @@ void main() async {
 
   runApp(
     MyApp(
-      repository: repository,
+            repository: repository,
       sharedPreferences: prefs,
       themeProvider: themeProvider,
-      settingsProvider: settingsProvider,
-      downloadManager: downloadManager,
+            settingsProvider: settingsProvider,
+            downloadManager: downloadManager,
       tagFilterProvider: tagFilterProvider,
       creatorIndexManager: creatorIndexManager,
-      dataUsageTracker: dataUsageTracker,
+            dataUsageTracker: dataUsageTracker,
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final KemonoRepository repository;
   final SharedPreferences sharedPreferences;
   final ThemeProvider themeProvider;
@@ -143,15 +146,26 @@ class MyApp extends StatelessWidget {
   });
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void dispose() {
+    NetworkConnectivityService.instance.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<KemonoRepository>.value(value: repository),
-        ChangeNotifierProvider(create: (_) => themeProvider),
-        ChangeNotifierProvider(create: (_) => downloadManager),
-        ChangeNotifierProvider(create: (_) => tagFilterProvider),
-        Provider<CreatorIndexManager>.value(value: creatorIndexManager),
-        ChangeNotifierProvider.value(value: settingsProvider),
+        Provider<KemonoRepository>.value(value: widget.repository),
+        ChangeNotifierProvider(create: (_) => widget.themeProvider),
+        ChangeNotifierProvider(create: (_) => widget.downloadManager),
+        ChangeNotifierProvider(create: (_) => widget.tagFilterProvider),
+        Provider<CreatorIndexManager>.value(value: widget.creatorIndexManager),
+        ChangeNotifierProvider.value(value: widget.settingsProvider),
         // Quality of Life providers
         ChangeNotifierProvider(create: (_) => ApiHealthProvider()),
         ChangeNotifierProvider(create: (_) => SmartBookmarkProvider()),
@@ -160,28 +174,28 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MediaFilterProvider()),
         ChangeNotifierProvider(
           create: (_) => CreatorsProvider(
-            repository: repository,
-            settingsProvider: settingsProvider,
-            indexManager: creatorIndexManager,
+            repository: widget.repository,
+            settingsProvider: widget.settingsProvider,
+            indexManager: widget.creatorIndexManager,
           ),
         ),
         ChangeNotifierProvider(
           create: (_) => PostsProvider(
-            repository: repository,
-            settingsProvider: settingsProvider,
+            repository: widget.repository,
+            settingsProvider: widget.settingsProvider,
           ),
         ),
         ChangeNotifierProvider(
-          create: (_) => CommentsProvider(repository: repository),
+          create: (_) => CommentsProvider(repository: widget.repository),
         ),
         ChangeNotifierProvider(create: (_) => PopularCreatorsProvider()),
         // Data Usage Tracking
-        ChangeNotifierProvider.value(value: dataUsageTracker),
+        ChangeNotifierProvider.value(value: widget.dataUsageTracker),
         // Download Provider
         ChangeNotifierProvider(
           create: (_) => DownloadProvider(
-            downloadManager: downloadManager,
-            dataUsageTracker: dataUsageTracker,
+            downloadManager: widget.downloadManager,
+            dataUsageTracker: widget.dataUsageTracker,
           ),
         ),
         // Bookmark Provider
@@ -205,7 +219,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) {
             final dio = Dio()
-              ..interceptors.add(DataUsageDioInterceptor(dataUsageTracker));
+              ..interceptors.add(DataUsageDioInterceptor(widget.dataUsageTracker));
             return DiscordProvider(
               DiscordApiClient(
                 dio,
@@ -216,7 +230,7 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) =>
-              DiscordSearchProvider(dataUsageTracker: dataUsageTracker),
+              DiscordSearchProvider(dataUsageTracker: widget.dataUsageTracker),
         ),
       ],
       child: Builder(
@@ -402,3 +416,10 @@ class _DataUsageAlertOverlayState extends State<_DataUsageAlertOverlay> {
   @override
   Widget build(BuildContext context) => widget.child;
 }
+
+
+
+
+
+
+

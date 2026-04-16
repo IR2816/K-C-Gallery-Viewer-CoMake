@@ -165,10 +165,7 @@ class PostGridSkeleton extends StatelessWidget {
               ],
             ),
           ),
-          AppSkeleton.rounded(
-            height: 180,
-            borderRadius: 0,
-          ),
+          AppSkeleton.rounded(height: 180, borderRadius: 0),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(

@@ -70,9 +70,7 @@ class _TrackedFileServiceResponse implements FileServiceResponse {
           if (bytesToTrack > 0) {
             tracker.trackUsage(
               bytesToTrack,
-              category: DataUsageTracker.categorizeRequest(
-                url,
-              ),
+              category: DataUsageTracker.categorizeRequest(url),
             );
           }
           sink.close();

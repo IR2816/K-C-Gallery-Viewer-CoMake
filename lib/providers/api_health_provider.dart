@@ -9,15 +9,18 @@ class ApiHealthProvider extends ChangeNotifier {
   ApiStatus kemonoStatus = ApiStatus.checking;
   ApiStatus coomerStatus = ApiStatus.checking;
 
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 8),
-    receiveTimeout: const Duration(seconds: 8),
-    sendTimeout: const Duration(seconds: 8),
-    validateStatus: (status) => true, // Parse all status codes
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
+      sendTimeout: const Duration(seconds: 8),
+      validateStatus: (status) => true, // Parse all status codes
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    ),
+  );
 
   ApiHealthProvider() {
     checkHealth();

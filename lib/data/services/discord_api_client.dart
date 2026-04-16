@@ -35,7 +35,8 @@ class DiscordApiClient {
     this.baseUrl = 'https://kemono.cr/api',
     HttpRetryStrategy? retryStrategy,
     NetworkConnectivityService? connectivityService,
-  }) : _retryStrategy = retryStrategy ??
+  }) : _retryStrategy =
+           retryStrategy ??
            HttpRetryStrategy(
              policy: const RetryPolicy(
                maxAttempts: 3,
@@ -45,10 +46,8 @@ class DiscordApiClient {
                maxDelay: Duration(seconds: 4),
              ),
            ),
-       _connectivityService = connectivityService ??
-           NetworkConnectivityService.instance {
-    _connectivityService.initialize();
-  }
+       _connectivityService =
+           connectivityService ?? NetworkConnectivityService.instance;
 
   bool get _isCircuitOpen {
     final until = _circuitOpenUntil;
@@ -140,7 +139,10 @@ class DiscordApiClient {
 
     final hasNetwork = await _connectivityService.hasNetworkConnection();
     if (!hasNetwork) {
-      throw NetworkUnavailableException(endpoint: endpoint, requestId: requestId);
+      throw NetworkUnavailableException(
+        endpoint: endpoint,
+        requestId: requestId,
+      );
     }
 
     try {
@@ -167,7 +169,8 @@ class DiscordApiClient {
               .timeout(
                 timeout,
                 onTimeout: () => throw RequestTimeoutException(
-                  message: 'Discord request timed out after ${timeout.inSeconds}s.',
+                  message:
+                      'Discord request timed out after ${timeout.inSeconds}s.',
                   endpoint: endpoint,
                   requestId: requestId,
                 ),
@@ -177,10 +180,12 @@ class DiscordApiClient {
           final responseString = response.data?.toString() ?? '';
           final responseSnippet = response.data == null
               ? null
-              : responseString.replaceAll('\n', ' ').substring(
-                  0,
-                  min(responseString.length, _responseSnippetMaxLength),
-                );
+              : responseString
+                    .replaceAll('\n', ' ')
+                    .substring(
+                      0,
+                      min(responseString.length, _responseSnippetMaxLength),
+                    );
 
           ApiLogger.response(
             requestId: requestId,
@@ -423,8 +428,7 @@ class DiscordApiClient {
     }
 
     throw ApiParsingException(
-      message:
-          'Invalid Discord server response format: ${data.runtimeType}.',
+      message: 'Invalid Discord server response format: ${data.runtimeType}.',
       endpoint: '/v1/discord/server/$serverId',
     );
   }

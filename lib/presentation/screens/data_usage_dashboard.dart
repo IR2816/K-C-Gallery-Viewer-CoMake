@@ -465,7 +465,9 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
                     ? 'Warnings enabled'
                     : 'Warnings disabled',
                 style: AppTheme.captionStyle.copyWith(
-                  color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.7),
+                  color: AppTheme.getOnSurfaceColor(
+                    context,
+                  ).withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -603,14 +605,16 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
               Expanded(
                 child: _buildPeriodItem(
                   label: 'Weekly',
-                  value: '${tracker.getUsageInMB(weekly?.totalUsage ?? 0).toStringAsFixed(2)} MB',
+                  value:
+                      '${tracker.getUsageInMB(weekly?.totalUsage ?? 0).toStringAsFixed(2)} MB',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildPeriodItem(
                   label: 'Monthly',
-                  value: '${tracker.getUsageInMB(monthly?.totalUsage ?? 0).toStringAsFixed(2)} MB',
+                  value:
+                      '${tracker.getUsageInMB(monthly?.totalUsage ?? 0).toStringAsFixed(2)} MB',
                 ),
               ),
             ],
@@ -686,13 +690,19 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(tracked ? Icons.check_circle : Icons.info, size: 16, color: color),
+          Icon(
+            tracked ? Icons.check_circle : Icons.info,
+            size: 16,
+            color: color,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               label,
               style: AppTheme.captionStyle.copyWith(
-                color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.8),
+                color: AppTheme.getOnSurfaceColor(
+                  context,
+                ).withValues(alpha: 0.8),
               ),
             ),
           ),
@@ -768,17 +778,23 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
                 TextField(
                   controller: dailyController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Daily limit (MB)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Daily limit (MB)',
+                  ),
                 ),
                 TextField(
                   controller: weeklyController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Weekly limit (MB)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Weekly limit (MB)',
+                  ),
                 ),
                 TextField(
                   controller: monthlyController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Monthly limit (MB)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Monthly limit (MB)',
+                  ),
                 ),
                 const SizedBox(height: 8),
                 SwitchListTile(
@@ -796,7 +812,9 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
                 const SizedBox(height: 4),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Warning threshold: ${warningThreshold.round()}%'),
+                  child: Text(
+                    'Warning threshold: ${warningThreshold.round()}%',
+                  ),
                 ),
                 Slider(
                   value: warningThreshold,
@@ -814,7 +832,9 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Critical threshold: ${criticalThreshold.round()}%'),
+                  child: Text(
+                    'Critical threshold: ${criticalThreshold.round()}%',
+                  ),
                 ),
                 Slider(
                   value: criticalThreshold,
@@ -867,8 +887,8 @@ class _DataUsageDashboardState extends State<DataUsageDashboard> {
   }
 
   double _normalizeCriticalThreshold(double value, double warningThreshold) {
-    final minAllowed =
-        (warningThreshold.roundToDouble() + _minThresholdGap).clamp(51.0, 99.0);
+    final minAllowed = (warningThreshold.roundToDouble() + _minThresholdGap)
+        .clamp(51.0, 99.0);
     final normalizedValue = value.roundToDouble();
     return normalizedValue < minAllowed ? minAllowed : normalizedValue;
   }

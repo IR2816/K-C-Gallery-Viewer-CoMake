@@ -1133,9 +1133,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
 
       // Share the file
-      await Share.shareXFiles([
-        XFile(file.path, mimeType: 'application/json')
-      ], subject: 'KC Gallery Saved Data Backup', text: 'Exported: saved posts, bookmarks & favourite creators');
+      // ignore: deprecated_member_use
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/json')],
+        subject: 'KC Gallery Saved Data Backup',
+        text: 'Exported: saved posts, bookmarks & favourite creators',
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

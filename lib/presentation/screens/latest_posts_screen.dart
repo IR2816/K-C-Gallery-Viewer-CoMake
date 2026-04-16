@@ -20,7 +20,6 @@ import '../providers/settings_provider.dart';
 import '../providers/tag_filter_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_state_widgets.dart';
-import '../widgets/domain_status_badge.dart';
 import '../widgets/api_health_indicator.dart';
 import '../widgets/post_grid.dart';
 import '../widgets/refresh_wrapper.dart';
@@ -314,10 +313,7 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                DomainStatusBadge(
-                  apiSource: ctrl.currentApiSource.name,
-                  compact: true,
-                ),
+                const ApiHealthIndicator(compact: true),
               ],
             ),
             Text(
@@ -334,12 +330,6 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        const Center(
-          child: Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: ApiHealthIndicator(compact: true),
-          ),
-        ),
         _ActionButton(
           icon: Icons.download_rounded,
           onTap: onDownloadManager,

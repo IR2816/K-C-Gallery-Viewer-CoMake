@@ -36,10 +36,7 @@ class CustomSnackbar {
       alignment: Alignment.topCenter,
       autoCloseDuration: duration,
       animationBuilder: (context, animation, alignment, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
+        return FadeTransition(opacity: animation, child: child);
       },
       borderRadius: BorderRadius.circular(12.0),
       boxShadow: lowModeShadow,
@@ -48,15 +45,45 @@ class CustomSnackbar {
     );
   }
 
-  static void showSuccess(BuildContext context, String message, {String? title}) =>
-      show(context: context, message: message, title: title, type: SnackbarType.success);
+  static void showSuccess(
+    BuildContext context,
+    String message, {
+    String? title,
+  }) => show(
+    context: context,
+    message: message,
+    title: title,
+    type: SnackbarType.success,
+  );
 
-  static void showError(BuildContext context, String message, {String? title}) =>
-      show(context: context, message: message, title: title, type: SnackbarType.error, duration: const Duration(seconds: 5));
+  static void showError(
+    BuildContext context,
+    String message, {
+    String? title,
+  }) => show(
+    context: context,
+    message: message,
+    title: title,
+    type: SnackbarType.error,
+    duration: const Duration(seconds: 5),
+  );
 
-  static void showWarning(BuildContext context, String message, {String? title}) =>
-      show(context: context, message: message, title: title, type: SnackbarType.warning);
+  static void showWarning(
+    BuildContext context,
+    String message, {
+    String? title,
+  }) => show(
+    context: context,
+    message: message,
+    title: title,
+    type: SnackbarType.warning,
+  );
 
   static void showInfo(BuildContext context, String message, {String? title}) =>
-      show(context: context, message: message, title: title, type: SnackbarType.info);
+      show(
+        context: context,
+        message: message,
+        title: title,
+        type: SnackbarType.info,
+      );
 }

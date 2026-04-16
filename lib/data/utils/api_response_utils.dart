@@ -16,7 +16,7 @@ class ApiResponseUtils {
     List<String> listKeys = const ['results', 'data', 'posts'],
   }) {
     if (data is List) return data;
-    if (data is Map<String, dynamic>) {
+    if (data is Map) {
       for (final key in listKeys) {
         final value = data[key];
         if (value is List) return value;
@@ -30,7 +30,10 @@ class ApiResponseUtils {
     List<dynamic> raw,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    return raw.whereType<Map<String, dynamic>>().map(fromJson).toList();
+    return raw
+        .where((e) => e is Map)
+        .map((e) => fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   /// Signals that a retry should stop immediately.

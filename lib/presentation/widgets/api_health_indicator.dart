@@ -6,11 +6,8 @@ import '../theme/app_theme.dart';
 
 class ApiHealthIndicator extends StatelessWidget {
   final bool compact;
-  
-  const ApiHealthIndicator({
-    super.key,
-    this.compact = false,
-  });
+
+  const ApiHealthIndicator({super.key, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +39,9 @@ class ApiHealthIndicator extends StatelessWidget {
                     child: Icon(
                       Icons.refresh_rounded,
                       size: compact ? 14 : 16,
-                      color: AppTheme.getOnSurfaceColor(context).withValues(alpha: 0.7),
+                      color: AppTheme.getOnSurfaceColor(
+                        context,
+                      ).withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -54,10 +53,14 @@ class ApiHealthIndicator extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(BuildContext context, String label, ApiStatus status) {
+  Widget _buildStatusChip(
+    BuildContext context,
+    String label,
+    ApiStatus status,
+  ) {
     Color statusColor;
     String statusTooltip;
-    
+
     switch (status) {
       case ApiStatus.online:
         statusColor = Colors.green;

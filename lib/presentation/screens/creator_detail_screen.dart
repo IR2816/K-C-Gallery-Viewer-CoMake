@@ -893,8 +893,7 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
                     final post = visiblePosts[index];
                     return _buildPostCard(post);
                   },
-                  childCount:
-                      visiblePosts.length + (handler.isLoading ? 1 : 0),
+                  childCount: visiblePosts.length + (handler.isLoading ? 1 : 0),
                 ),
               ),
             ),
@@ -1938,9 +1937,17 @@ class _CreatorDetailScreenState extends State<CreatorDetailScreen>
       );
 
       if (isNowFavorited) {
-        CustomSnackbar.showSuccess(context, 'Added to Saved', title: creator.name);
+        CustomSnackbar.showSuccess(
+          context,
+          'Added to Saved',
+          title: creator.name,
+        );
       } else {
-        CustomSnackbar.showWarning(context, 'Removed from Saved', title: creator.name);
+        CustomSnackbar.showWarning(
+          context,
+          'Removed from Saved',
+          title: creator.name,
+        );
       }
     } catch (e) {
       if (!mounted) return;
