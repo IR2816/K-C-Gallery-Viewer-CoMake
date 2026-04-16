@@ -5,6 +5,7 @@ import '../../utils/logger.dart';
 import '../../config/domain_config.dart';
 import '../data/services/api_header_service.dart';
 import '../presentation/widgets/media_resolver_final.dart';
+import '../presentation/widgets/skeleton_loader.dart';
 import '../presentation/services/custom_cache_manager.dart';
 
 /// Optimized Media Loader for Kemono/Coomer
@@ -329,29 +330,14 @@ class _FallbackImageState extends State<FallbackImage> {
       width: widget.width,
       height: widget.height,
       fit: widget.fit,
+      fadeInDuration: const Duration(milliseconds: 300),
+      fadeOutDuration: const Duration(milliseconds: 200),
       placeholder: (context, url) =>
           widget.placeholder ??
-          Container(
-            width: widget.width,
-            height: widget.height,
-            color: Colors.grey[300],
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(strokeWidth: 2),
-                  SizedBox(height: 8),
-                  Text(
-                    'Loading Media...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          AppSkeleton.rounded(
+            width: widget.width ?? double.infinity,
+            height: widget.height ?? 200,
+            borderRadius: 0,
           ),
       errorWidget: (context, url, error) {
         AppLogger.warning(

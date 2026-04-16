@@ -64,7 +64,7 @@ class _AppShimmerState extends State<AppShimmer>
   }
 }
 
-class AppEmptyState extends StatelessWidget {
+class AppEmptyState extends StatefulWidget {
   final IconData icon;
   final String title;
   final String message;
@@ -83,56 +83,129 @@ class AppEmptyState extends StatelessWidget {
   });
 
   @override
+  State<AppEmptyState> createState() => _AppEmptyStateState();
+}
+
+class _AppEmptyStateState extends State<AppEmptyState>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = accentColor ?? AppTheme.primaryColor;
+    final color = widget.accentColor ?? AppTheme.primaryColor;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(36),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(widget.icon, color: color, size: 40),
+                ),
               ),
-              child: Icon(icon, color: color, size: 36),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: AppTheme.getTitleStyle(
-                context,
-              ).copyWith(color: AppTheme.getOnSurfaceColor(context)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: AppTheme.getBodyStyle(
-                context,
-              ).copyWith(color: AppTheme.secondaryTextColor),
-              textAlign: TextAlign.center,
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 20),
-              TextButton.icon(
-                onPressed: onAction,
-                icon: const Icon(Icons.refresh),
-                label: Text(actionLabel!),
-                style: TextButton.styleFrom(foregroundColor: color),
+              const SizedBox(height: 24),
+              SlideTransition(
+                position: _slideAnimation,
+                child: Column(
+                  children: [
+                    Text(
+                      widget.title,
+                      style: AppTheme.getTitleStyle(context).copyWith(
+                        color: AppTheme.getOnSurfaceColor(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.message,
+                      style: AppTheme.getBodyStyle(
+                        context,
+                      ).copyWith(color: AppTheme.secondaryTextColor),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (widget.actionLabel != null &&
+                        widget.onAction != null) ...[
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: widget.onAction,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: Text(widget.actionLabel!),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class AppErrorState extends StatelessWidget {
+class AppErrorState extends StatefulWidget {
   final String title;
   final String message;
   final VoidCallback? onRetry;
@@ -149,52 +222,121 @@ class AppErrorState extends StatelessWidget {
   });
 
   @override
+  State<AppErrorState> createState() => _AppErrorStateState();
+}
+
+class _AppErrorStateState extends State<AppErrorState>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = accentColor ?? AppTheme.getErrorColor(context);
+    final color = widget.accentColor ?? AppTheme.getErrorColor(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(36),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.error_outline, color: color, size: 40),
+                ),
               ),
-              child: Icon(Icons.error_outline, color: color, size: 36),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: AppTheme.getTitleStyle(
-                context,
-              ).copyWith(color: AppTheme.getOnSurfaceColor(context)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: AppTheme.getBodyStyle(
-                context,
-              ).copyWith(color: AppTheme.secondaryTextColor),
-              textAlign: TextAlign.center,
-            ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: Text(retryLabel),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.white,
+              const SizedBox(height: 24),
+              SlideTransition(
+                position: _slideAnimation,
+                child: Column(
+                  children: [
+                    Text(
+                      widget.title,
+                      style: AppTheme.getTitleStyle(context).copyWith(
+                        color: AppTheme.getOnSurfaceColor(context),
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.message,
+                      style: AppTheme.getBodyStyle(
+                        context,
+                      ).copyWith(color: AppTheme.secondaryTextColor),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (widget.onRetry != null) ...[
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: widget.onRetry,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: Text(widget.retryLabel),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
 
 /// AppTheme — Social Media Style Design System
 ///
@@ -458,6 +459,20 @@ class AppTheme {
         labelMedium: darkButtonTextStyle,
         labelSmall: darkCaptionStyle,
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: SharedAxisPageTransitionsBuilder(
+            transitionType: SharedAxisTransitionType.horizontal,
+          ),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: SharedAxisPageTransitionsBuilder(
+            transitionType: SharedAxisTransitionType.horizontal,
+          ),
+          TargetPlatform.windows: SharedAxisPageTransitionsBuilder(
+            transitionType: SharedAxisTransitionType.horizontal,
+          ),
+        },
+      ),
     );
   }
 
@@ -583,6 +598,20 @@ class AppTheme {
         labelLarge: lightButtonTextStyle,
         labelMedium: lightButtonTextStyle,
         labelSmall: lightCaptionStyle,
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: SharedAxisPageTransitionsBuilder(
+            transitionType: SharedAxisTransitionType.horizontal,
+          ),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: SharedAxisPageTransitionsBuilder(
+            transitionType: SharedAxisTransitionType.horizontal,
+          ),
+          TargetPlatform.windows: SharedAxisPageTransitionsBuilder(
+            transitionType: SharedAxisTransitionType.horizontal,
+          ),
+        },
       ),
     );
   }

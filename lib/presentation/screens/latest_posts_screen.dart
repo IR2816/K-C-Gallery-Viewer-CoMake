@@ -1039,10 +1039,13 @@ class _FeedContent extends StatelessWidget {
         );
       }
       if (!controller.isSearching && controller.searchResults.isEmpty) {
-        return AppEmptyState(
-          icon: Icons.search_off_rounded,
-          title: 'No results for "${controller.searchQuery}"',
-          message: 'Try a different keyword',
+        return SliverFillRemaining(
+          hasScrollBody: false,
+          child: AppEmptyState(
+            icon: Icons.search_off_rounded,
+            title: 'No results for "${controller.searchQuery}"',
+            message: 'Try a different keyword',
+          ),
         );
       }
       return PostGrid(
@@ -1070,18 +1073,24 @@ class _FeedContent extends StatelessWidget {
     }
 
     if (controller.error != null) {
-      return _ApiErrorState(
-        error: controller.error!,
-        onRetry: controller.loadInitial,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _ApiErrorState(
+          error: controller.error!,
+          onRetry: controller.loadInitial,
+        ),
       );
     }
 
     if (controller.filteredPosts.isEmpty) {
-      return _EmptyState(
-        isFiltered:
-            controller.blockedTags.isNotEmpty ||
-            controller.selectedService != 'kemono',
-        onFilterTap: onFilterTap,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _EmptyState(
+          isFiltered:
+              controller.blockedTags.isNotEmpty ||
+              controller.selectedService != 'kemono',
+          onFilterTap: onFilterTap,
+        ),
       );
     }
 
@@ -1305,18 +1314,24 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isFiltered) {
-      return AppEmptyState(
-        icon: Icons.filter_list_off,
-        title: 'All posts hidden by filters',
-        message: 'Try adjusting your filters',
-        actionLabel: 'Manage Filters',
-        onAction: onFilterTap,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: AppEmptyState(
+          icon: Icons.filter_list_off,
+          title: 'All posts hidden by filters',
+          message: 'Try adjusting your filters',
+          actionLabel: 'Manage Filters',
+          onAction: onFilterTap,
+        ),
       );
     }
-    return const AppEmptyState(
-      icon: Icons.article_outlined,
-      title: 'No posts yet',
-      message: 'Pull down to refresh',
+    return const SliverFillRemaining(
+      hasScrollBody: false,
+      child: AppEmptyState(
+        icon: Icons.article_outlined,
+        title: 'No posts yet',
+        message: 'Pull down to refresh',
+      ),
     );
   }
 }

@@ -65,49 +65,56 @@ class PostGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     // Full-screen skeleton when loading initial page.
     if (isLoading && posts.isEmpty) {
-      return MasonryGridView.builder(
+      return SliverPadding(
         padding: _padding,
-        gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columnCount,
+        sliver: SliverMasonryGrid(
+          gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columnCount,
+          ),
+          mainAxisSpacing: _mainAxisSpacing,
+          crossAxisSpacing: _crossAxisSpacing,
+          delegate: SliverChildBuilderDelegate(
+            (_, __) => const PostGridSkeleton(),
+            childCount: _skeletonCount,
+          ),
         ),
-        mainAxisSpacing: _mainAxisSpacing,
-        crossAxisSpacing: _crossAxisSpacing,
-        itemCount: _skeletonCount,
-        itemBuilder: (_, __) => const PostGridSkeleton(),
       );
     }
 
     final skeletonTiles = isLoadingMore ? columnCount : 0;
     final totalCount = posts.length + skeletonTiles;
 
-    return MasonryGridView.builder(
-      controller: controller,
+    return SliverPadding(
       padding: _padding,
-      gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columnCount,
-      ),
-      mainAxisSpacing: _mainAxisSpacing,
-      crossAxisSpacing: _crossAxisSpacing,
-      addAutomaticKeepAlives: false,
-      itemCount: totalCount,
-      itemBuilder: (context, index) {
-        if (index >= posts.length) return const PostGridSkeleton();
+      sliver: SliverMasonryGrid(
+        gridDelegate: SliverSimpleGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columnCount,
+        ),
+        mainAxisSpacing: _mainAxisSpacing,
+        crossAxisSpacing: _crossAxisSpacing,
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index >= posts.length) return const PostGridSkeleton();
 
-        final post = posts[index];
-        return RepaintBoundary(
-          child: StaggeredFadeItem(
-            index: index,
-            epoch: animationEpoch,
-            child: PostCard(
-              post: post,
-              isSingleColumn: _isSingleColumn,
-              apiSource: apiSource,
-              onTap: () => onPostTap(post),
-              onCreatorTap: () => onCreatorTap(post),
-            ),
-          ),
-        );
-      },
+            final post = posts[index];
+            return RepaintBoundary(
+              child: StaggeredFadeItem(
+                index: index,
+                epoch: animationEpoch,
+                child: PostCard(
+                  post: post,
+                  isSingleColumn: _isSingleColumn,
+                  apiSource: apiSource,
+                  onTap: () => onPostTap(post),
+                  onCreatorTap: () => onCreatorTap(post),
+                ),
+              ),
+            );
+          },
+          childCount: totalCount,
+          addAutomaticKeepAlives: false,
+        ),
+      ),
     );
   }
 }
