@@ -31,8 +31,8 @@ class ApiResponseUtils {
     T Function(Map<String, dynamic>) fromJson,
   ) {
     return raw
-        .where((e) => e is Map)
-        .map((e) => fromJson(Map<String, dynamic>.from(e as Map)))
+        .whereType<Map>()
+        .map((e) => fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
 

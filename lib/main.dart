@@ -111,14 +111,14 @@ void main() async {
 
   runApp(
     MyApp(
-            repository: repository,
+      repository: repository,
       sharedPreferences: prefs,
       themeProvider: themeProvider,
-            settingsProvider: settingsProvider,
-            downloadManager: downloadManager,
+      settingsProvider: settingsProvider,
+      downloadManager: downloadManager,
       tagFilterProvider: tagFilterProvider,
       creatorIndexManager: creatorIndexManager,
-            dataUsageTracker: dataUsageTracker,
+      dataUsageTracker: dataUsageTracker,
     ),
   );
 }
@@ -219,7 +219,9 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(
           create: (_) {
             final dio = Dio()
-              ..interceptors.add(DataUsageDioInterceptor(widget.dataUsageTracker));
+              ..interceptors.add(
+                DataUsageDioInterceptor(widget.dataUsageTracker),
+              );
             return DiscordProvider(
               DiscordApiClient(
                 dio,
@@ -416,10 +418,3 @@ class _DataUsageAlertOverlayState extends State<_DataUsageAlertOverlay> {
   @override
   Widget build(BuildContext context) => widget.child;
 }
-
-
-
-
-
-
-

@@ -14,12 +14,14 @@ import 'api_header_service.dart';
 import 'http_retry_strategy.dart';
 import 'network_connectivity_service.dart';
 
+import 'hive_cache_manager.dart';
+
 class _ApiCacheEntry {
   final dynamic data;
   final DateTime timestamp;
   DateTime lastAccessed;
   _ApiCacheEntry(this.data, this.timestamp) : lastAccessed = timestamp;
-  bool get isExpired => DateTime.now().difference(timestamp).inMinutes > 5;
+  bool get isExpired => DateTime.now().difference(timestamp).inMinutes > 15;
 }
 
 class _ApiCache {
@@ -36,6 +38,14 @@ class _ApiCache {
       return entry.data;
     }
     _cache.remove(key);
+
+    // Fallback to Hive cache
+    final hiveData = HiveCacheManager.get(key);
+    if (hiveData != null) {
+      _cache[key] = _ApiCacheEntry(hiveData, DateTime.now());
+      return hiveData;
+    }
+
     return null;
   }
 
@@ -52,6 +62,7 @@ class _ApiCache {
       if (lruKey != null) _cache.remove(lruKey);
     }
     _cache[key] = _ApiCacheEntry(data, DateTime.now());
+    HiveCacheManager.set(key, data);
   }
 
   void invalidate(String key) {
@@ -60,6 +71,7 @@ class _ApiCache {
 
   void clear() {
     _cache.clear();
+    HiveCacheManager.clearCache();
   }
 }
 

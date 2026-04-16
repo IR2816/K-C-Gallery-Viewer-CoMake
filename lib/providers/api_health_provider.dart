@@ -9,6 +9,8 @@ class ApiHealthProvider extends ChangeNotifier {
   ApiStatus kemonoStatus = ApiStatus.checking;
   ApiStatus coomerStatus = ApiStatus.checking;
 
+  Timer? _healthCheckTimer;
+
   final Dio _dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 8),
@@ -24,6 +26,16 @@ class ApiHealthProvider extends ChangeNotifier {
 
   ApiHealthProvider() {
     checkHealth();
+    // Poll health every 2 minutes in the background
+    _healthCheckTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+      checkHealth();
+    });
+  }
+
+  @override
+  void dispose() {
+    _healthCheckTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> checkHealth() async {
