@@ -21,6 +21,7 @@ import '../providers/tag_filter_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_state_widgets.dart';
 import '../widgets/domain_status_badge.dart';
+import '../widgets/api_health_indicator.dart';
 import '../widgets/post_grid.dart';
 import '../widgets/refresh_wrapper.dart';
 import '../widgets/skeleton_loader.dart';
@@ -333,6 +334,12 @@ class _FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: ApiHealthIndicator(compact: true),
+          ),
+        ),
         _ActionButton(
           icon: Icons.download_rounded,
           onTap: onDownloadManager,

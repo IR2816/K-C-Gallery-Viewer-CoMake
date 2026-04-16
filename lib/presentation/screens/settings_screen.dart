@@ -27,6 +27,7 @@ import 'domain_settings_dialog.dart';
 
 // Widgets
 import '../widgets/domain_status_badge.dart';
+import '../widgets/api_health_indicator.dart';
 
 /// 🎯 Settings Screen - Kontrol & Kenyamanan User
 ///
@@ -119,6 +120,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: Center(child: ApiHealthIndicator(compact: true)),
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -1126,11 +1133,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
 
       // Share the file
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/json')],
-        subject: 'KC Gallery Saved Data Backup',
-        text: 'Exported: saved posts, bookmarks & favourite creators',
-      );
+      await Share.shareXFiles([
+        XFile(file.path, mimeType: 'application/json')
+      ], subject: 'KC Gallery Saved Data Backup', text: 'Exported: saved posts, bookmarks & favourite creators');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

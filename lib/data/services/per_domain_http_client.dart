@@ -3,6 +3,7 @@ import 'dart:async';
 import '../exceptions/api_exceptions.dart';
 import '../../domain/entities/api_source.dart';
 import 'api_client.dart';
+import 'hive_cache_manager.dart';
 
 /// Maintains a dedicated [ApiClient] per domain (Kemono and Coomer).
 ///
@@ -63,9 +64,16 @@ class PerDomainHttpClient {
     List<dynamic> Function(String body, dynamic decoded)? normalize,
     List<Map<String, String>>? headerVariants,
   }) async {
+    if(!forceRefresh && cacheKey != null) {
+      final cached = HiveCacheManager.get(cacheKey);
+      if(cached != null && cached is List) {
+        return cached;
+      }
+    }
+    
     await _throttle(apiSource);
     try {
-      return clientFor(apiSource).getJsonList(
+      final result = await clientFor(apiSource).getJsonList(
         endpoint: endpoint,
         apiSource: apiSource,
         service: service,
@@ -75,8 +83,20 @@ class PerDomainHttpClient {
         normalize: normalize,
         headerVariants: headerVariants,
       );
+      if(cacheKey != null) {
+        HiveCacheManager.set(cacheKey, result);
+      }
+      return result;
     } on RateLimitException catch (error) {
       _recordRateLimit(apiSource, error.retryAfter);
+      
+      // Fallback to cache even if rate limited
+      if(cacheKey != null) {
+        final cached = HiveCacheManager.get(cacheKey);
+        if(cached != null && cached is List) {
+           return cached;
+        }
+      }
       rethrow;
     }
   }
@@ -89,12 +109,19 @@ class PerDomainHttpClient {
     Map<String, String>? headers,
     String? cacheKey,
     bool forceRefresh = false,
-    Map<String, dynamic> Function(String body, dynamic decoded)? normalize,
+    Map<String, dynamic> Function(String body, dynamic decoded)? normalize,     
     List<Map<String, String>>? headerVariants,
   }) async {
+    if(!forceRefresh && cacheKey != null) {
+      final cached = HiveCacheManager.get(cacheKey);
+      if(cached != null && cached is Map) {
+        return Map<String, dynamic>.from(cached);
+      }
+    }
+    
     await _throttle(apiSource);
     try {
-      return clientFor(apiSource).getJsonObject(
+      final result = await clientFor(apiSource).getJsonObject(
         endpoint: endpoint,
         apiSource: apiSource,
         service: service,
@@ -104,16 +131,23 @@ class PerDomainHttpClient {
         normalize: normalize,
         headerVariants: headerVariants,
       );
+      if(cacheKey != null) {
+        HiveCacheManager.set(cacheKey, result);
+      }
+      return result;
     } on RateLimitException catch (error) {
       _recordRateLimit(apiSource, error.retryAfter);
+      
+      // Fallback to cache even if rate limited
+      if(cacheKey != null) {
+        final cached = HiveCacheManager.get(cacheKey);
+        if(cached != null && cached is Map) {
+           return Map<String, dynamic>.from(cached);
+        }
+      }
+      
       rethrow;
     }
-  }
-
-  /// Clears the in-memory response cache on both domain clients.
-  void clearCache() {
-    _kemonoClient.clearCache();
-    _coomerClient.clearCache();
   }
 
   /// Invalidates a specific cache key on both domain clients.

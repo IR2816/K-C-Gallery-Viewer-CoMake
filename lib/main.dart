@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'data/services/per_domain_http_client.dart';
+import 'data/services/hive_cache_manager.dart';
 import 'data/datasources/kemono_remote_datasource_impl.dart';
 import 'data/datasources/kemono_local_datasource_impl.dart';
 import 'data/repositories/kemono_repository_impl.dart';
@@ -53,6 +54,7 @@ import 'utils/error_handler.dart';
 import 'config/domain_config.dart';
 import 'package:toastification/toastification.dart';
 import 'presentation/utils/custom_snackbar.dart';
+import 'providers/api_health_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +65,10 @@ void main() async {
     // The app continues without Crashlytics; errors are still logged locally.
     debugPrint('Firebase initialization failed: $e');
   }
+  
+  // Initialize Cache
+  await HiveCacheManager.initialize();
+  
   AppErrorHandler.initialize();
   final prefs = await SharedPreferences.getInstance();
   final dataUsageTracker = DataUsageTracker();
@@ -147,6 +153,7 @@ class MyApp extends StatelessWidget {
         Provider<CreatorIndexManager>.value(value: creatorIndexManager),
         ChangeNotifierProvider.value(value: settingsProvider),
         // Quality of Life providers
+        ChangeNotifierProvider(create: (_) => ApiHealthProvider()),
         ChangeNotifierProvider(create: (_) => SmartBookmarkProvider()),
         ChangeNotifierProvider(create: (_) => SmartHistoryProvider()),
         ChangeNotifierProvider(create: (_) => ScrollMemoryProvider()),
