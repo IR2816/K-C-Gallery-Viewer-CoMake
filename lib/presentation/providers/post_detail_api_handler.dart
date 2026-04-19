@@ -72,8 +72,12 @@ class PostDetailApiHandler extends ChangeNotifier {
         delay: (attempt) => _retryDelay(attempt),
       );
     } catch (e) {
-      _error = e.toString();
-      AppLogger.debug('PostDetailApiHandler: error loading post: $e');
+      if (e is NonRetryableException) {
+        _error = 'Error: ${e.cause.runtimeType} - ${e.cause}';
+      } else {
+        _error = 'Error: ${e.runtimeType} - $e';
+      }
+      AppLogger.debug('PostDetailApiHandler: error loading post: $_error');
     } finally {
       _isLoading = false;
       notifyListeners();
