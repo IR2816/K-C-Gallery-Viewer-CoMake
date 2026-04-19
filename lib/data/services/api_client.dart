@@ -106,7 +106,7 @@ class ApiClient {
   final Map<String, int> _headerVariantWinnerByDomain = {};
   final Map<String, _CircuitBreakerState> _circuitBreakerByDomain = {};
 
-  static const int _circuitBreakerThreshold = 10;
+  static const int _circuitBreakerThreshold = 5;
   static const Duration _circuitBreakerCooldown = Duration(seconds: 10);
   static const int _responseSnippetMaxLength = 200;
   static const int _maxRateLimitWaitSeconds = 3600;
@@ -125,11 +125,11 @@ class ApiClient {
            retryStrategy ??
            HttpRetryStrategy(
              policy: const RetryPolicy(
-               maxAttempts: 3,
-               initialTimeout: Duration(seconds: 15),
-               retryTimeout: Duration(seconds: 15),
-               baseDelay: Duration(seconds: 1),
-               maxDelay: Duration(seconds: 4),
+               maxAttempts: 2,
+               initialTimeout: Duration(seconds: 8),
+               retryTimeout: Duration(seconds: 8),
+               baseDelay: Duration(milliseconds: 500),
+               maxDelay: Duration(seconds: 3),
              ),
            ),
        _connectivityService =

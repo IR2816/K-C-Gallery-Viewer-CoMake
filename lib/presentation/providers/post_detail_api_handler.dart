@@ -47,7 +47,7 @@ class PostDetailApiHandler extends ChangeNotifier {
       'PostDetailApiHandler: loading post $postId, api=${effectiveApiSource.name}',
     );
 
-    final maxRetries = effectiveApiSource == ApiSource.coomer ? 2 : 1;
+    const maxRetries = 3;
 
     try {
       await ApiResponseUtils.withRetry(
@@ -69,7 +69,7 @@ class PostDetailApiHandler extends ChangeNotifier {
           }
         },
         maxRetries: maxRetries,
-        delay: (attempt) => _retryDelay(effectiveApiSource, attempt),
+        delay: (attempt) => _retryDelay(attempt),
       );
     } catch (e) {
       _error = e.toString();
@@ -106,10 +106,8 @@ class PostDetailApiHandler extends ChangeNotifier {
         s.contains('network');
   }
 
-  Duration _retryDelay(ApiSource apiSource, int attempt) {
-    final ms = apiSource == ApiSource.coomer
-        ? 1000 * (1 << attempt)
-        : 500 * (attempt + 1);
-    return Duration(milliseconds: ms.clamp(0, 10000));
+  Duration _retryDelay(int attempt) {
+    final ms = 800 * (1 << attempt);
+    return Duration(milliseconds: ms.clamp(0, 8000));
   }
 }
