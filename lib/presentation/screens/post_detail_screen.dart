@@ -211,7 +211,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = 'Error: ${e.runtimeType} - $e';
           _fullPost = widget.post; // Fallback to original post
           _isLoading = false;
         });
@@ -466,7 +466,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading post',
+                    _error.toString(),
                     style: AppTheme.titleStyle.copyWith(
                       color: AppTheme.errorColor,
                     ),
